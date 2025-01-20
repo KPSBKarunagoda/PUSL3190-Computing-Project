@@ -2,25 +2,22 @@
   "manifest_version": 3,
   "name": "Phishing Detector",
   "version": "1.0",
-  "description": "Phishing extension for detecting phishing attempts",
+  "description": "Detects phishing sites using WHOIS and risk analysis",
   "permissions": [
     "activeTab",
     "storage",
-    "tabs",
-    "webNavigation",
-    "notifications",
-    "scripting"
+    "tabs"
   ],
-  "host_permissions": [
-    "http://*/*",
-    "https://*/*",
-    "<all_urls>"
-  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html"
   },
-  "background": {
-    "service_worker": "background.js",
-    "type": "module"
-  }
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
 }
