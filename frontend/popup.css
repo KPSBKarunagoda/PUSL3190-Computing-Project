@@ -1,0 +1,174 @@
+/* General Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+    width: 300px;
+    min-height: 600px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    padding: 15px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 320px;
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 1.5em;
+    color: #333;
+    margin: 0;
+    padding: 10px 0;
+    border-bottom: 2px solid #007bff;
+}
+
+/* Site Information Section */
+.site-info {
+    margin-bottom: 20px;
+}
+
+.site-info h2 {
+    font-size: 1.2em;
+    color: #444;
+    margin-bottom: 10px;
+}
+
+.site-info p {
+    font-size: 1em;
+    color: #333;
+    word-break: break-all; /* Allows long URLs to break to the next line */
+    background-color: #f1f1f1;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.site-info a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.site-info a:hover {
+    text-decoration: underline;
+}
+
+/* Score Section */
+.score-section {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.score-section h3 {
+    font-size: 1.1em;
+    color: #444;
+    margin-bottom: 10px;
+}
+
+.score-section #score {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #d9534f; /* Red color for risk score */
+    background-color: #f1f1f1;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+/* Manual Link Entry */
+.manual-entry {
+    margin-top: 20px;
+}
+
+.manual-entry h3 {
+    font-size: 1em;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.manual-entry input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.manual-entry button {
+    width: 100%;
+    padding: 10px;
+    font-size: 0.9em;
+    border: none;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.manual-entry button:hover {
+    background-color: #0056b3;
+}
+
+/* Educational Section */
+.education-section {
+    margin-top: 20px;
+}
+
+.education-section h3 {
+    font-size: 1.1em;
+    color: #444;
+    margin-bottom: 10px;
+}
+
+.education-section p {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.education-section ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.education-section li {
+    margin-bottom: 5px;
+}
+
+.education-section a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.education-section a:hover {
+    text-decoration: underline;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 0.8em;
+    color: #aaa;
+}
+
+footer a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}

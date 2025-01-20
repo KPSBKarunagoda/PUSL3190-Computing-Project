@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="popup.css">
+    <title>Phishing Detector</title>
+</head>
+<body>
+    <div class="container">
+        <!-- Extension Name Header -->
+        <header>
+            <h1>Phishing Detector</h1>
+        </header>
+
+        <!-- Current Site Information -->
+        <section class="site-info">
+            <h2>Current Site Link:</h2>
+            <p id="siteLink"><a href="#" id="currentSiteLink" target="_blank">Loading...</a></p>
+        </section>
+
+        <!-- Site Score Section -->
+        <section class="score-section">
+            <h3>Site Risk Score</h3>
+            <p id="score">Loading...</p>
+        </section>
+
+        <!-- Risk Explanation Section -->
+        <section class="risk-explanation">
+            <h3>Why This Score?</h3>
+            <p id="riskExplanation">Loading...</p>
+        </section>
+
+        <!-- Manual Link Entry -->
+        <section class="manual-entry">
+            <h3>Check Links Manually:</h3>
+            <input type="text" id="manualLink" placeholder="Enter URL here" />
+            <button id="checkLink">Check Link</button>
+        </section>
+
+        <!-- Educational Section -->
+        <section class="education-section">
+            <h3>Learn About Phishing</h3>
+            <p>Phishing is a type of online scam where attackers trick users into providing sensitive information. Learn more about how to protect yourself:</p>
+            <ul>
+                <li><a href="https://www.phishing.org/what-is-phishing" target="_blank">What is Phishing?</a></li>
+                <li><a href="https://www.consumer.ftc.gov/articles/how-recognize-and-avoid-phishing-scams" target="_blank">How to Recognize and Avoid Phishing Scams</a></li>
+                <li><a href="https://www.microsoft.com/en-us/safety/online-privacy/phishing-symptoms.aspx" target="_blank">Phishing Symptoms</a></li>
+            </ul>
+        </section>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
