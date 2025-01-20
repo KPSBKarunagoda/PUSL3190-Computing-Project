@@ -1,12 +1,15 @@
 const whois = require('whois');
 
 function extractDomain(url) {
-  // Remove protocol (http, https) and www if present
   const domain = url
     .replace(/^https?:\/\/(www\.)?/i, '')
     .split('/')[0];
-  console.log(`Extracted domain: ${domain}`); // Debugging line
+  console.log(`Extracted domain: ${domain}`);
   return domain;
+}
+
+function hasHTTPS(url) {
+  return url.toLowerCase().startsWith('https://');
 }
 
 function getDomainCreationDate(domain) {
@@ -27,30 +30,40 @@ function getDomainCreationDate(domain) {
 
 async function getRiskScore(url) {
   const domain = extractDomain(url);
-  console.log(`Domain for WHOIS lookup: ${domain}`); // Debugging line
+  console.log(`Domain for WHOIS lookup: ${domain}`);
   const creationDate = await getDomainCreationDate(domain);
 
   let riskScore = 0;
-  let explanation = '';
+  let explanations = [];
 
+  // Domain age check
   if (creationDate) {
     const domainAgeDays = Math.floor((Date.now() - creationDate.getTime()) / (1000 * 60 * 60 * 24));
     if (domainAgeDays < 365) {
-      riskScore = 70; // Higher risk for domains younger than a year
-      explanation = 'The domain is less than a year old, which is often associated with phishing sites.';
-    } else if (domainAgeDays < 1095) { // Between 1 and 3 years
-      riskScore = 50; // Medium risk for domains between 1 and 3 years old
-      explanation = 'The domain is between 1 and 3 years old, which is moderately risky.';
+      riskScore += 70;
+      explanations.push('The domain is less than a year old, which is often associated with phishing sites.');
+    } else if (domainAgeDays < 1095) {
+      riskScore += 50;
+      explanations.push('The domain is between 1 and 3 years old, which is moderately risky.');
     } else {
-      riskScore = 20; // Lower risk for well-established domains older than 3 years
-      explanation = 'The domain is older than 3 years, which is generally safer.';
+      riskScore += 20;
+      explanations.push('The domain is older than 3 years, which is generally safer.');
     }
   } else {
-    riskScore = 50; // Medium risk if WHOIS data is unavailable
-    explanation = 'WHOIS data is unavailable, which makes it harder to determine the risk.';
+    riskScore += 50;
+    explanations.push('WHOIS data is unavailable, which makes it harder to determine the risk.');
   }
 
-  return { riskScore, explanation };
+  // HTTPS check
+  if (!hasHTTPS(url)) {
+    riskScore += 30;
+    explanations.push('The site does not use HTTPS, which is a security risk.');
+  }
+
+  return {
+    riskScore: Math.min(100, riskScore),
+    explanation: explanations.join(' ')
+  };
 }
 
 module.exports = { getRiskScore };

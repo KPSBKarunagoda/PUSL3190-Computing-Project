@@ -13,6 +13,11 @@ function checkSite(url, tabId) {
     if (result[url]) {
       console.log('Using cached risk score for:', url);
       updateUI(result[url], tabId);
+      // Send message to popup if open
+      chrome.runtime.sendMessage({
+        type: 'riskScoreUpdate',
+        data: result[url]
+      });
     } else {
       // Only fetch if we don't have stored data
       fetch('http://localhost:3000/check-url', {
@@ -23,15 +28,25 @@ function checkSite(url, tabId) {
       .then(response => response.json())
       .then(data => {
         // Store the risk score
-        chrome.storage.local.set({ 
-          [url]: {
-            riskScore: data.riskScore,
-            explanation: data.explanation
-          }
+        const scoreData = {
+          riskScore: data.riskScore,
+          explanation: data.explanation
+        };
+        chrome.storage.local.set({ [url]: scoreData });
+        updateUI(scoreData, tabId);
+        // Send message to popup if open
+        chrome.runtime.sendMessage({
+          type: 'riskScoreUpdate',
+          data: scoreData
         });
-        updateUI(data, tabId);
       })
-      .catch(error => console.error('Error checking site:', error));
+      .catch(error => {
+        console.error('Error checking site:', error);
+        chrome.runtime.sendMessage({
+          type: 'error',
+          error: 'Failed to check site safety'
+        });
+      });
     }
   });
 }
@@ -44,6 +59,11 @@ function updateUI(data, tabId) {
     });
     chrome.action.setBadgeBackgroundColor({ 
       color: '#FF0000',
+      tabId: tabId 
+    });
+  } else {
+    chrome.action.setBadgeText({ 
+      text: '',
       tabId: tabId 
     });
   }
