@@ -2,22 +2,25 @@
   "manifest_version": 3,
   "name": "Phishing Detector",
   "version": "1.0",
-  "description": "Phishing extension for detecting phishing attempts and educating the user on how to detect and prevent getting caught in phishing scams.",
+  "description": "Phishing extension for detecting phishing attempts",
   "permissions": [
     "activeTab",
     "storage",
-    "tabs"
+    "tabs",
+    "webNavigation",
+    "notifications",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*",
+    "<all_urls>"
   ],
   "action": {
     "default_popup": "popup.html"
   },
   "background": {
-    "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
-    }
-  ]
+    "service_worker": "background.js",
+    "type": "module"
+  }
 }
