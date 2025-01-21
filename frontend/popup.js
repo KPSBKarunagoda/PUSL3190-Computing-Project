@@ -1,69 +1,58 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const currentSiteLink = document.getElementById('currentSiteLink');
-    const score = document.getElementById('score');
-    const riskExplanation = document.getElementById('riskExplanation');
-    
-    // Listen for score updates
-    chrome.runtime.onMessage.addListener((message) => {
-        if (message.type === 'riskScoreUpdate') {
-            updateScore(message.data);
-        }
-    });
+document.addEventListener('DOMContentLoaded', async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.url) return;
 
-    function updateScore(data) {
-        score.textContent = data.riskScore;
-        if (data.riskScore < 30) {
-            score.style.color = '#28a745'; // Green for safe
-        } else if (data.riskScore >= 30 && data.riskScore <= 70) {
-            score.style.color = '#ffc107'; // Yellow for medium risk
+    const url = tab.url;
+    document.getElementById('currentSiteLink').textContent = url;
+    
+    // Get stored analysis
+    chrome.storage.local.get(url, (result) => {
+        if (result[url]) {
+            displayResults(result[url], url);
         } else {
-            score.style.color = '#dc3545'; // Red for high risk
+            displayLoading();
+            analyzeCurrentUrl(url);
         }
-        riskExplanation.textContent = data.explanation;
-    }
-    
-    function checkForUpdates() {
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            const tab = tabs[0];
-            if (!tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
-                chrome.storage.local.get(tab.url, (result) => {
-                    if (result[tab.url]) {
-                        updateScore(result[tab.url]);
-                    }
-                });
-            }
-        });
-    }
-
-    // Initial setup
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        const tab = tabs[0];
-        currentSiteLink.href = tab.url;
-        currentSiteLink.textContent = tab.url;
-
-        if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
-            score.textContent = 'This site is safe';
-            score.style.color = '#28a745';
-            riskExplanation.textContent = 'Risk analysis is not performed on Chrome system pages.';
-            return;
-        }
-
-        chrome.storage.local.get(tab.url, (result) => {
-            if (result[tab.url]) {
-                updateScore(result[tab.url]);
-            } else {
-                score.textContent = 'Analysis in Progress';
-                score.style.color = '#6c757d';
-                riskExplanation.textContent = 'The risk score is being calculated. Please wait a moment.';
-            }
-        });
-    });
-
-    // Poll for updates every 500ms while popup is open
-    const updateInterval = setInterval(checkForUpdates, 500);
-
-    // Cleanup interval when popup closes
-    window.addEventListener('unload', () => {
-        clearInterval(updateInterval);
     });
 });
+
+function displayResults(result, url) {
+    document.getElementById('siteLink').textContent = url;
+    document.getElementById('score').textContent = `Risk Score: ${result.risk_score}/100`;
+    document.getElementById('status').textContent = getRiskLevelText(result);
+    document.getElementById('status').className = getRiskLevelClass(result.risk_score);
+}
+
+function getRiskLevelText(result) {
+    return `Risk Level: ${result.risk_level}\n${result.is_phishing ? 'Potential Phishing Site' : 'Likely Safe'}`;
+}
+
+function getRiskLevelClass(score) {
+    if (score <= 20) return 'safe';
+    if (score <= 60) return 'warning';
+    return 'danger';
+}
+
+function displayLoading() {
+    document.getElementById('score').textContent = 'Analyzing...';
+    document.getElementById('status').textContent = 'Please wait while we analyze the site...';
+}
+
+async function analyzeCurrentUrl(url) {
+    try {
+        const response = await fetch('http://localhost:3000/analyze-url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url })
+        });
+        
+        const result = await response.json();
+        chrome.storage.local.set({ [url]: result });
+        displayResults(result, url);
+    } catch (error) {
+        console.error('Analysis failed:', error);
+        document.getElementById('status').textContent = 'Analysis failed. Please try again.';
+    }
+}

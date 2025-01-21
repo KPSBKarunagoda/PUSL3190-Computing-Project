@@ -172,3 +172,17 @@ footer a {
 footer a:hover {
     text-decoration: underline;
 }
+.safe {
+    color: green;
+    background-color: #e6ffe6;
+}
+
+.warning {
+    color: orange;
+    background-color: #fff3e6;
+}
+
+.danger {
+    color: red;
+    background-color: #ffe6e6;
+}

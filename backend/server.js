@@ -1,27 +1,39 @@
 const express = require('express');
-const cors = require('cors'); 
-const { getRiskScore } = require('./scoring'); 
+const cors = require('cors');
+const { spawn } = require('child_process');
 const app = express();
-const port = 3000;
 
 app.use(cors());
 app.use(express.json());
 
-app.post('/check-url', async (req, res) => {
-  const { url } = req.body;
-  if (!url) {
-    return res.status(400).json({ error: 'URL is required' });
-  }
+app.post('/analyze-url', async (req, res) => {
+    const { url } = req.body;
+    console.log(`Analyzing URL: ${url}`);
+    
+    const python = spawn('python', ['analyze_url.py', url]);
+    let dataString = '';
 
-  try {
-    const { riskScore, explanation } = await getRiskScore(url);
-    res.json({ url, riskScore, explanation });
-  } catch (error) {
-    console.error('Error checking URL:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+    python.stdout.on('data', (data) => {
+        dataString += data.toString();
+    });
+
+    python.stderr.on('data', (data) => {
+        console.error(`Error: ${data}`);
+    });
+
+    python.on('close', (code) => {
+        try {
+            const result = JSON.parse(dataString);
+            console.log(`Analysis result:`, result);
+            res.json(result);
+        } catch (e) {
+            console.error('Analysis failed:', e);
+            res.status(500).json({ error: 'Analysis failed' });
+        }
+    });
 });
 
-app.listen(port, () => {
-  console.log(`Phishing detector backend running at http://localhost:${port}`);
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
