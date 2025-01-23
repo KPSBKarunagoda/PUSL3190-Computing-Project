@@ -184,5 +184,11 @@ footer a:hover {
 
 .danger {
     color: red;
-    background-color: #ffe6e6;
+    background-color: #ffffff;
+}
+.high-risk {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 8px 12px;
+    border-radius: 4px;
 }
