@@ -8,32 +8,40 @@ app.use(express.json());
 
 app.post('/analyze-url', async (req, res) => {
     const { url } = req.body;
-    console.log(`Analyzing URL: ${url}`);
-    
     const python = spawn('python', ['analyze_url.py', url]);
-    let dataString = '';
+    let jsonData = '';
+    let debugOutput = '';
 
     python.stdout.on('data', (data) => {
-        dataString += data.toString();
+        jsonData += data.toString();
     });
 
     python.stderr.on('data', (data) => {
-        console.error(`Error: ${data}`);
+        debugOutput += data.toString();
+        console.log('Debug:', data.toString());
     });
 
     python.on('close', (code) => {
         try {
-            const result = JSON.parse(dataString);
-            console.log(`Analysis result:`, result);
-            res.json(result);
+            if (jsonData.trim()) {
+                const result = JSON.parse(jsonData.trim());
+                result.debug = debugOutput;
+                res.json(result);
+            } else {
+                res.status(500).json({
+                    error: 'Analysis failed',
+                    debug: debugOutput
+                });
+            }
         } catch (e) {
-            console.error('Analysis failed:', e);
-            res.status(500).json({ error: 'Analysis failed' });
+            res.status(500).json({
+                error: 'JSON parse error',
+                details: e.message,
+                debug: debugOutput
+            });
         }
     });
 });
 
 const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

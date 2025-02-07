@@ -120,7 +120,7 @@ def calculate_risk_score(features, debug=True):
         "Have_At": 15,
         "URL_Length": 10,
         "URL_Depth": 5,
-        "Redirection": 0,    # Updated weight
+        "Redirection": 0,    
         "https_Domain": -15,
         "TinyURL": 10,
         "Prefix/Suffix": 10,
@@ -128,10 +128,10 @@ def calculate_risk_score(features, debug=True):
         "Web_Traffic": -10,
         "Domain_Age": -10,
         "Domain_End": -10,
-        "iFrame": 8,          # Updated weight
-        "Mouse_Over": 8,      # Updated weight
-        "Right_Click": 8,     # Updated weight
-        "Web_Forwards": 8     # Updated weight
+        "iFrame": 8,          
+        "Mouse_Over": 8,      
+        "Right_Click": 8,     
+        "Web_Forwards": 8     
     }
     
     base_score = 50
