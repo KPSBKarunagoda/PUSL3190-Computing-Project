@@ -3,27 +3,77 @@ import json
 import os
 import pandas as pd
 from joblib import load
-from utils.feature_extractor import extract_features, calculate_risk_score
+from utils.feature_extractor import URLFeatureExtractor
 
-# Load ML model silently
+# Load ML model and feature names
 try:
-    model_path = os.path.join(os.path.dirname(__file__), 'machine learning', 'url_model_v1.pkl')
+    current_dir = os.path.dirname(__file__)
+    model_path = os.path.join(current_dir, 'machine learning','dataset', 'url_model_v4.pkl')
+    scaler_path = os.path.join(current_dir, 'machine learning','dataset', 'scaler_v4.pkl')
+    feature_names_path = os.path.join(current_dir, 'machine learning','dataset', 'feature_names.pkl')
+    
     model = load(model_path)
+    scaler = load(scaler_path)
+    feature_names = load(feature_names_path)
+    
+    print("Model loaded successfully", file=sys.stderr)
 except Exception as e:
+    print(f"Error loading model: {str(e)}", file=sys.stderr)
     model = None
+    scaler = None
+    feature_names = None
+
+def calculate_risk_score(features):
+    """Calculate risk score based on important features"""
+    weights = {
+        'qty_dot_url': 0.05,
+        'qty_hyphen_url': 0.05,
+        'length_url': 0.1,
+        'qty_at_url': 0.1,
+        'domain_in_ip': 0.15,
+        'tls_ssl_certificate': -0.15,  # Negative weight as it's a good signal
+        'url_google_index': -0.1,      # Negative weight as it's a good signal
+        'qty_redirects': 0.1,
+        'time_domain_activation': -0.1, # Negative weight as older domains are trusted
+        'qty_ip_resolved': -0.05       # Negative weight as multiple IPs can be legitimate
+    }
+    
+    risk_score = 50  # Base score
+    
+    for feature, weight in weights.items():
+        if feature in features:
+            value = features[feature]
+            if isinstance(value, bool):
+                value = 1 if value else 0
+            risk_score += value * weight
+    
+    return max(0, min(100, risk_score))
 
 def analyze_url(url):
     try:
-        features = extract_features(url, debug=False)
+        # Extract features using the new feature extractor
+        extractor = URLFeatureExtractor()
+        features = extractor.extract_features(url)
+        
+        if features is None:
+            raise Exception("Failed to extract features")
         
         # Calculate risk score
-        risk_score = calculate_risk_score(features, debug=False)
+        risk_score = calculate_risk_score(features)
         
         # ML prediction with detailed debug
-        if model is not None:
-            features_df = pd.DataFrame([features])
-            ml_prediction = model.predict(features_df)[0]
-            ml_probability = model.predict_proba(features_df)[0]
+        if model is not None and scaler is not None:
+            # Prepare features in correct order
+            feature_vector = []
+            for feature in feature_names:
+                feature_vector.append(features.get(feature, 0))
+            
+            # Scale features
+            features_scaled = scaler.transform([feature_vector])
+            
+            # Get prediction
+            ml_prediction = model.predict(features_scaled)[0]
+            ml_probability = model.predict_proba(features_scaled)[0]
             ml_confidence = float(max(ml_probability))
             
             # Debug ML output

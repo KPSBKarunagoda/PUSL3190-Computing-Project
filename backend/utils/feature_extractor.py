@@ -1,156 +1,144 @@
-import tldextract
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
+import re
 import dns.resolver
-from datetime import datetime
+import requests
 import socket
 import whois
-import requests
+from datetime import datetime
+import ssl
+import OpenSSL
+import concurrent.futures
 
-def extract_features(url, debug=True):
-    try:
-        parsed = urlparse(url)
-        extract = tldextract.extract(url)
-        domain = f"{extract.domain}.{extract.suffix}"
+class URLFeatureExtractor:
+    def __init__(self):
+        self.features = {}
         
-        if debug:
-            print(f"\nAnalyzing URL: {url}")
-            print(f"Domain: {domain}")
+    def count_chars(self, text, char):
+        return text.count(char)
         
-        features = {
-            "Have_IP": 1 if all(part.isdigit() for part in domain.split('.')) else 0,
-            "Have_At": 1 if "@" in url else 0,
-            "URL_Length": 1 if len(url) > 54 else 0,
-            "URL_Depth": min(len([x for x in parsed.path.split('/') if x]), 10),
-            "Redirection": 0,
-            "https_Domain": 1 if parsed.scheme == 'https' else 0,
-            "TinyURL": 1 if len(domain) < 7 else 0,
-            "Prefix/Suffix": 1 if '-' in domain else 0,
-            "DNS_Record": 0,
-            "Web_Traffic": 0,
-            "Domain_Age": 0,
-            "Domain_End": 0,
-            "iFrame": 0,
-            "Mouse_Over": 0,
-            "Right_Click": 0,
-            "Web_Forwards": 0
-        }
-
-        # DNS and Traffic Check
+    def extract_features(self, url):
         try:
-            dns.resolver.resolve(domain)
-            features["DNS_Record"] = 1
-            start = datetime.now()
-            socket.gethostbyname(domain)
-            resolution_time = (datetime.now() - start).total_seconds()
-            features["Web_Traffic"] = 1 if resolution_time < 0.1 else 0
-        except:
-            features["DNS_Record"] = 0
-            features["Web_Traffic"] = 0
-
-        # Domain Age Check
+            # Parse URL
+            parsed = urlparse(url)
+            
+            # URL component extraction
+            domain = parsed.netloc
+            path = parsed.path
+            params = parsed.query
+            
+            # Basic URL features
+            self.features['length_url'] = len(url)
+            self.features['qty_dot_url'] = self.count_chars(url, '.')
+            self.features['qty_hyphen_url'] = self.count_chars(url, '-')
+            self.features['qty_underline_url'] = self.count_chars(url, '_')
+            self.features['qty_slash_url'] = self.count_chars(url, '/')
+            self.features['qty_questionmark_url'] = self.count_chars(url, '?')
+            self.features['qty_equal_url'] = self.count_chars(url, '=')
+            self.features['qty_at_url'] = self.count_chars(url, '@')
+            self.features['qty_and_url'] = self.count_chars(url, '&')
+            self.features['qty_exclamation_url'] = self.count_chars(url, '!')
+            self.features['qty_space_url'] = self.count_chars(url, ' ')
+            self.features['qty_tilde_url'] = self.count_chars(url, '~')
+            self.features['qty_comma_url'] = self.count_chars(url, ',')
+            self.features['qty_plus_url'] = self.count_chars(url, '+')
+            self.features['qty_asterisk_url'] = self.count_chars(url, '*')
+            self.features['qty_hashtag_url'] = self.count_chars(url, '#')
+            self.features['qty_dollar_url'] = self.count_chars(url, '$')
+            self.features['qty_percent_url'] = self.count_chars(url, '%')
+            
+            # Domain features
+            self.features['domain_length'] = len(domain)
+            self.features['qty_dot_domain'] = self.count_chars(domain, '.')
+            self.features['qty_hyphen_domain'] = self.count_chars(domain, '-')
+            # ... Add all domain-related features
+            
+            # Directory features
+            self.features['directory_length'] = len(path)
+            self.features['qty_dot_directory'] = self.count_chars(path, '.')
+            self.features['qty_hyphen_directory'] = self.count_chars(path, '-')
+            # ... Add all directory-related features
+            
+            # Parameter features
+            self.features['params_length'] = len(params)
+            self.features['qty_params'] = len(parse_qs(params))
+            # ... Add all parameter-related features
+            
+            # Additional security features
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                # DNS features
+                future_dns = executor.submit(self.get_dns_features, domain)
+                # SSL features
+                future_ssl = executor.submit(self.get_ssl_features, domain)
+                # Domain age features
+                future_domain = executor.submit(self.get_domain_features, domain)
+                
+                # Get results
+                dns_features = future_dns.result()
+                ssl_features = future_ssl.result()
+                domain_features = future_domain.result()
+                
+                self.features.update(dns_features)
+                self.features.update(ssl_features)
+                self.features.update(domain_features)
+            
+            return self.features
+            
+        except Exception as e:
+            print(f"Error extracting features: {str(e)}")
+            return None
+            
+    def get_dns_features(self, domain):
+        features = {}
         try:
-            w = whois.whois(domain)
-            if w.creation_date:
-                age = (datetime.now() - (w.creation_date[0] if isinstance(w.creation_date, list) 
-                       else w.creation_date)).days
-                features["Domain_Age"] = 1 if age > 180 else 0
+            # DNS resolution
+            answers = dns.resolver.resolve(domain, 'A')
+            features['qty_ip_resolved'] = len(answers)
             
-            if w.expiration_date:
-                exp = (w.expiration_date[0] if isinstance(w.expiration_date, list) 
-                      else w.expiration_date)
-                features["Domain_End"] = 1 if (exp - datetime.now()).days > 90 else 0
-        except:
-            features["Domain_Age"] = 0
-            features["Domain_End"] = 0
-
-        # Content Analysis
-        try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-            response = requests.get(url, headers=headers, timeout=5, allow_redirects=True)
-            html = response.text.lower()
+            # MX records
+            mx_records = dns.resolver.resolve(domain, 'MX')
+            features['qty_mx_servers'] = len(mx_records)
             
-            features["iFrame"] = 1 if '<iframe' in html else 0
-            features["Mouse_Over"] = 1 if 'onmouseover=' in html else 0
-            
-            right_click_patterns = [
-                'oncontextmenu="return false"',
-                'addEventListener("contextmenu"',
-                'preventDefault()',
-                'contextmenu: false'
-            ]
-            features["Right_Click"] = 1 if any(pattern in html for pattern in right_click_patterns) else 0
-            
-            redirect_patterns = [
-                '<meta http-equiv="refresh"',
-                'window.location.href',
-                'document.location.href'
-            ]
-            features["Redirection"] = 1 if (
-                any(pattern in html for pattern in redirect_patterns) or 
-                len(response.history) > 0
-            ) else 0
-            
-            features["Web_Forwards"] = len(response.history)
+            # NS records
+            ns_records = dns.resolver.resolve(domain, 'NS')
+            features['qty_nameservers'] = len(ns_records)
             
         except:
-            features["iFrame"] = 0
-            features["Mouse_Over"] = 0
-            features["Right_Click"] = 0
-            features["Redirection"] = 0
-            features["Web_Forwards"] = 0
-
-        if debug:
-            for key, value in features.items():
-                print(f"{key}: {value}")
-        
+            features['qty_ip_resolved'] = 0
+            features['qty_mx_servers'] = 0
+            features['qty_nameservers'] = 0
+            
         return features
         
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return None
-
-def calculate_risk_score(features, debug=True):
-    if not features:
-        return 100
+    def get_ssl_features(self, domain):
+        features = {}
+        try:
+            ctx = ssl.create_default_context()
+            with ctx.wrap_socket(socket.socket(), server_hostname=domain) as s:
+                s.connect((domain, 443))
+                cert = s.getpeercert()
+                features['tls_ssl_certificate'] = 1
+        except:
+            features['tls_ssl_certificate'] = 0
+            
+        return features
         
-    weights = {
-        "Have_IP": 15,
-        "Have_At": 15,
-        "URL_Length": 10,
-        "URL_Depth": 5,
-        "Redirection": 0,    
-        "https_Domain": -15,
-        "TinyURL": 10,
-        "Prefix/Suffix": 10,
-        "DNS_Record": -10,
-        "Web_Traffic": -10,
-        "Domain_Age": -10,
-        "Domain_End": -10,
-        "iFrame": 8,          
-        "Mouse_Over": 8,      
-        "Right_Click": 8,     
-        "Web_Forwards": 8     
-    }
-    
-    base_score = 50
-    total_score = base_score
-    
-    if debug:
-        print("\nRisk Score Calculation:")
-        print(f"Starting score: {base_score}")
-    
-    for feature, weight in weights.items():
-        contribution = features[feature] * weight
-        total_score += contribution
-        
-        if debug:
-            print(f"{feature}: {features[feature]} * {weight} = {contribution}")
-    
-    final_score = max(0, min(100, total_score))
-    
-    if debug:
-        print(f"Final risk score: {final_score}")
-    
-    return int(final_score)
+    def get_domain_features(self, domain):
+        features = {}
+        try:
+            w = whois.whois(domain)
+            creation_date = w.creation_date
+            expiration_date = w.expiration_date
+            
+            if isinstance(creation_date, list):
+                creation_date = creation_date[0]
+            if isinstance(expiration_date, list):
+                expiration_date = expiration_date[0]
+                
+            features['time_domain_activation'] = (datetime.now() - creation_date).days
+            features['time_domain_expiration'] = (expiration_date - datetime.now()).days
+            
+        except:
+            features['time_domain_activation'] = -1
+            features['time_domain_expiration'] = -1
+            
+        return features
