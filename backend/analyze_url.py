@@ -8,9 +8,9 @@ from utils.feature_extractor import URLFeatureExtractor
 # Load ML model and feature names
 try:
     current_dir = os.path.dirname(__file__)
-    model_path = os.path.join(current_dir, 'machine learning','dataset', 'url_model_v4.pkl')
-    scaler_path = os.path.join(current_dir, 'machine learning','dataset', 'scaler_v4.pkl')
-    feature_names_path = os.path.join(current_dir, 'machine learning','dataset', 'feature_names.pkl')
+    model_path = os.path.join(current_dir, 'machine learning', 'url_model_v4.pkl')
+    scaler_path = os.path.join(current_dir, 'machine learning', 'scaler_v4.pkl')
+    feature_names_path = os.path.join(current_dir, 'machine learning', 'feature_names.pkl')
     
     model = load(model_path)
     scaler = load(scaler_path)
