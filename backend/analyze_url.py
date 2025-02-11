@@ -21,9 +21,9 @@ class URLAnalyzer:
         """Load ML model and related components"""
         try:
             current_dir = os.path.dirname(__file__)
-            model_path = os.path.join(current_dir, 'machine learning', 'url_model_v4.pkl')
-            scaler_path = os.path.join(current_dir, 'machine learning', 'scaler_v4.pkl')
-            feature_names_path = os.path.join(current_dir, 'machine learning', 'feature_names.pkl')
+            model_path = os.path.join(current_dir, 'machine learning', 'dataset', 'url_model_v4.pkl')
+            scaler_path = os.path.join(current_dir, 'machine learning', 'dataset', 'scaler_v4.pkl')
+            feature_names_path = os.path.join(current_dir, 'machine learning', 'dataset', 'feature_names.pkl')
             
             self.model = load(model_path)
             self.scaler = load(scaler_path)
@@ -66,14 +66,13 @@ class URLAnalyzer:
     def _ml_analysis(self, features: Dict[str, Any], use_safe_browsing: bool = False) -> Dict[str, Any]:
         """Perform ML-based analysis"""
         try:
-            # Calculate basic risk score
-            risk_score = self.calculate_risk_score(features)
-            print(f"\nBase Risk Score: {risk_score}", file=sys.stderr)
-
             if self.model and self.scaler and self.feature_names:
+                # Calculate basic risk score
+                risk_score = self.calculate_risk_score(features)
+                
                 # Prepare feature vector in correct order
                 feature_vector = []
-                print("\n=== Feature Values ===", file=sys.stderr)
+                print("\n=== Feature Analysis ===", file=sys.stderr)
                 for feature in self.feature_names:
                     value = features.get(feature, 0)
                     feature_vector.append(value)
@@ -87,12 +86,13 @@ class URLAnalyzer:
                 ml_probability = self.model.predict_proba(features_scaled)[0]
                 ml_confidence = float(max(ml_probability))
                 
-                print(f"\n=== ML Model Results ===", file=sys.stderr)
-                print(f"Raw Prediction: {ml_prediction}", file=sys.stderr)
-                print(f"Probabilities: Safe={ml_probability[0]:.2f}, Phishing={ml_probability[1]:.2f}", file=sys.stderr)
-                print(f"Confidence: {ml_confidence:.2f}", file=sys.stderr)
-
-                # Refined decision logic
+                # Debug ML output
+                print(f"\n=== ML Debug ===", file=sys.stderr)
+                print(f"Raw ML Prediction: {ml_prediction}", file=sys.stderr)
+                print(f"Probabilities: Legitimate: {ml_probability[0]:.2%}, Phishing: {ml_probability[1]:.2%}", file=sys.stderr)
+                print(f"Confidence: {ml_confidence:.2%}", file=sys.stderr)
+                
+                # Refined decision logic from working version
                 is_phishing = False
                 if risk_score > 80:  # Very high risk
                     is_phishing = True
@@ -100,11 +100,20 @@ class URLAnalyzer:
                     is_phishing = ml_confidence > 0.8
                 else:  # Lower risk
                     is_phishing = ml_prediction == 1 and ml_confidence > 0.9
-
+                
                 print(f"\n=== Final Decision ===", file=sys.stderr)
                 print(f"Risk Score: {risk_score}", file=sys.stderr)
-                print(f"Is Phishing: {is_phishing}", file=sys.stderr)
+                print(f"ML Confidence: {ml_confidence:.2%}", file=sys.stderr)
+                print(f"Decision: {'Phishing' if is_phishing else 'Legitimate'}", file=sys.stderr)
                 print("=" * 25 + "\n", file=sys.stderr)
+
+                # Generate appropriate message
+                if is_phishing:
+                    message = f"High risk - Phishing detected (Confidence: {ml_confidence:.1%})"
+                elif risk_score > 60:
+                    message = f"Medium risk - Suspicious URL (Confidence: {ml_confidence:.1%})"
+                else:
+                    message = f"Low risk - Legitimate URL (Confidence: {ml_confidence:.1%})"
 
                 return {
                     "risk_score": risk_score,
@@ -113,11 +122,13 @@ class URLAnalyzer:
                     "ml_confidence": ml_confidence,
                     "features": features,
                     "ml_used": True,
-                    "safe_browsing": False,  # ML analysis only
+                    "safe_browsing": False,
                     "safe_browsing_enabled": use_safe_browsing,
-                    "message": "Phishing detected" if is_phishing else "Safe - ML Analysis"
+                    "message": message
                 }
             else:
+                # Fallback to basic risk scoring if ML model is unavailable
+                risk_score = self.calculate_risk_score(features)
                 is_phishing = risk_score > 60
                 return {
                     "risk_score": risk_score,
@@ -152,24 +163,26 @@ class URLAnalyzer:
                     sb_result = await self.safe_browsing.check_url(url)
                     print(f"Safe Browsing Result: {sb_result}", file=sys.stderr)
                     
+                    # Check if there are any threats in the result
+                    has_threats = bool(sb_result.get("threats"))
+                    
                     # Always return Safe Browsing result when enabled
                     return {
-                        "risk_score": 100 if not sb_result.get("is_safe") else 0,
-                        "is_phishing": not sb_result.get("is_safe"),
+                        "risk_score": 100 if has_threats else 0,
+                        "is_phishing": has_threats,
                         "ml_used": False,
                         "safe_browsing": True,
                         "safe_browsing_enabled": True,
                         "features": features,
                         "threats": sb_result.get("threats"),
                         "message": (
-                            "Warning - Flagged by Google Safe Browsing" 
-                            if not sb_result.get("is_safe") 
+                            f"Warning - {sb_result.get('threats')[0].get('threat_type')} detected by Google Safe Browsing"
+                            if has_threats
                             else "Safe - Verified by Google Safe Browsing"
                         )
                     }
                 except Exception as sb_error:
                     print(f"Safe Browsing API error: {str(sb_error)}", file=sys.stderr)
-                    # Don't fall back to ML analysis, return error
                     return {
                         "error": str(sb_error),
                         "risk_score": 100,
