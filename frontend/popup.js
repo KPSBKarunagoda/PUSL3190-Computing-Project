@@ -10,16 +10,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Set up toggle handler
     toggle.addEventListener('change', async function(e) {
         const enabled = e.target.checked;
-        console.log('Toggle changed:', enabled);
-        
-        // Save state
         await chrome.storage.sync.set({ safeSearchEnabled: enabled });
         updateDiagnosticNote(enabled);
-
-        // Re-analyze current URL with new settings
+        
+        // Clear all cached results when changing modes
+        await chrome.storage.local.clear();
+        
+        // Re-analyze current tab
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (tab?.url) {
-            await analyzeCurrentUrl(tab.url);
+            await loadCachedResults(tab.url);
         }
     });
 
@@ -51,6 +51,22 @@ async function analyzeCurrentUrl(url) {
     } catch (error) {
         console.error('Analysis failed:', error);
         displayError('Analysis failed. Please try again.');
+    }
+}
+
+async function loadCachedResults(url) {
+    try {
+        // Get cached results
+        const stored = await chrome.storage.local.get(url);
+        if (stored[url]) {
+            console.log('Using cached result for:', url);
+            displayResults(stored[url], url);
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('Error loading cached results:', error);
+        return false;
     }
 }
 
@@ -123,7 +139,21 @@ async function initializeCurrentTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.url) {
         document.getElementById('currentSiteLink').textContent = tab.url;
-        await analyzeCurrentUrl(tab.url);
+        const hasCachedResults = await loadCachedResults(tab.url);
+        
+        if (!hasCachedResults) {
+            displayLoading();
+            // Wait for background script to analyze and cache results
+            const checkCache = setInterval(async () => {
+                const hasResults = await loadCachedResults(tab.url);
+                if (hasResults) {
+                    clearInterval(checkCache);
+                }
+            }, 500);
+            
+            // Clear interval after 10 seconds to prevent infinite checking
+            setTimeout(() => clearInterval(checkCache), 10000);
+        }
     }
 }
 

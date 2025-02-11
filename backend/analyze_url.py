@@ -166,21 +166,21 @@ class URLAnalyzer:
                     "is_phishing": True
                 }
 
-            # Final decision combining both results
-            is_phishing = ml_result["is_phishing"]
-            risk_score = ml_result["risk_score"]
-            message = (
-                f"High risk - Phishing detected (ML Confidence: {ml_result['ml_confidence']:.1%})"
-                if is_phishing
-                else "Safe - Verified by both Safe Browsing and ML analysis"
-            )
+            # Ensure boolean values are properly handled
+            is_phishing = bool(ml_result["is_phishing"])
+            risk_score = float(ml_result["risk_score"])
 
+            message = "Phishing site detected" if is_phishing else "Site appears legitimate"
             return {
                 "risk_score": risk_score,
                 "is_phishing": is_phishing,
-                "ml_result": ml_result,
+                "ml_result": {
+                    "prediction": int(ml_result["ml_prediction"]),
+                    "confidence": float(ml_result["ml_confidence"]),
+                    "features": {k: float(v) if isinstance(v, (int, float)) else bool(v) if isinstance(v, bool) else str(v)
+                               for k, v in ml_result["features"].items()}
+                },
                 "safe_browsing_result": sb_result,
-                "features": features,
                 "message": message,
                 "source": "Combined Analysis"
             }
@@ -189,20 +189,49 @@ class URLAnalyzer:
             error_msg = str(e)
             print(f"Error analyzing URL: {error_msg}", file=sys.stderr)
             return {
-                "error": error_msg,
-                "risk_score": 100,
+                "error": str(error_msg),
+                "risk_score": 100.0,
                 "is_phishing": True,
                 "message": f"Error during analysis: {error_msg}"
             }
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        try:
+            if isinstance(obj, bool):
+                return bool(obj)  # Ensure boolean values are properly converted
+            if isinstance(obj, (float, int)):
+                return float(obj)  # Convert numbers properly
+            return json.JSONEncoder.default(self, obj)
+        except TypeError:
+            return str(obj)  # Fallback to string conversion
 
 def main():
     """CLI entry point"""
     if len(sys.argv) > 1:
         analyzer = URLAnalyzer()
         url = sys.argv[1]
+        use_safe_browsing = sys.argv[2].lower() == 'true' if len(sys.argv) > 2 else True
+        print(f"CLI args: url={url}, safe_browsing={use_safe_browsing}", file=sys.stderr)
+        
         import asyncio
         result = asyncio.run(analyzer.analyze_url(url))
-        print(json.dumps(result, indent=2))
+        
+        # Convert result dict to ensure all values are JSON serializable
+        serializable_result = {}
+        for key, value in result.items():
+            if isinstance(value, bool):
+                serializable_result[key] = bool(value)
+            elif isinstance(value, (int, float)):
+                serializable_result[key] = float(value)
+            elif isinstance(value, dict):
+                # Handle nested dictionaries
+                serializable_result[key] = {k: str(v) if not isinstance(v, (bool, int, float, str, dict, list)) else v 
+                                          for k, v in value.items()}
+            else:
+                serializable_result[key] = str(value) if not isinstance(value, (str, list, dict)) else value
+        
+        print(json.dumps(serializable_result, indent=2, cls=JSONEncoder))
     else:
         print(json.dumps({"error": "No URL provided"}))
 
