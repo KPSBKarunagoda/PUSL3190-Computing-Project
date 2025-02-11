@@ -55,17 +55,28 @@ async function analyzeCurrentUrl(url) {
 }
 
 function displayResults(result, url) {
-    document.getElementById('siteLink').textContent = url;
-    document.getElementById('score').textContent = `Risk Score: ${result.risk_score}/100`;
-    document.getElementById('status').textContent = getRiskLevelText(result);
-    document.getElementById('status').className = getRiskLevelClass(result.risk_score);
+    document.getElementById('currentSiteLink').textContent = url;
+    
+    // Display risk score and source
+    let scoreText = `Risk Score: ${result.risk_score}/100`;
+    if (result.ml_result?.ml_confidence) {
+        scoreText += ` (ML Confidence: ${(result.ml_result.ml_confidence * 100).toFixed(1)}%)`;
+    }
+    document.getElementById('score').textContent = scoreText;
 
-    // Update diagnostic note with analysis method used
+    // Set status message and class
+    document.getElementById('status').textContent = result.message;
+    document.getElementById('status').className = getRiskLevelClass(result);
+
+    // Update diagnostic note
     const diagnosticNote = document.querySelector('.diagnostic-note');
     if (diagnosticNote) {
-        let message = result.ml_used ? 'Using ML analysis' : '';
-        if (result.safe_browsing_enabled) {
-            message += result.ml_used ? ' with Safe Browsing API' : 'Using Safe Browsing API';
+        let message = `Analysis: ${result.source || 'Unknown'}`;
+        if (result.threats) {
+            message += `\nThreats found: ${result.threats.map(t => t.threat_type).join(', ')}`;
+        }
+        if (result.ml_result) {
+            message += `\nML Analysis: ${result.ml_result.is_phishing ? 'Suspicious' : 'Safe'}`;
         }
         diagnosticNote.textContent = message;
     }
@@ -81,10 +92,10 @@ function getRiskLevelText(result) {
     return result.message || 'Analysis Complete';
 }
 
-function getRiskLevelClass(score) {
-    if (score <= 20) return 'safe';
-    if (score <= 60) return 'warning';
-    return 'danger';
+function getRiskLevelClass(result) {
+    if (result.is_phishing) return 'danger';
+    if (result.risk_score > 60) return 'warning';
+    return 'safe';
 }
 
 function updateDiagnosticNote(enabled) {
