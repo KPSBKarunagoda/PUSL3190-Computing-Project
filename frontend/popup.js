@@ -1,183 +1,296 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const toggle = document.getElementById('safeSearchToggle');
+  try {
+    // Get current tab with CURRENT_WINDOW focus only
+    const tabs = await chrome.tabs.query({active: true, currentWindow: true});
     
-    // Load initial state
-    chrome.storage.sync.get(['safeSearchEnabled'], function(result) {
-        toggle.checked = result.safeSearchEnabled !== false;
-        updateDiagnosticNote(toggle.checked);
-    });
+    if (!tabs || tabs.length === 0) {
+      throw new Error('No active tab found');
+    }
+    
+    const tab = tabs[0];
+    console.log('Current tab URL:', tab.url);
+    
+    // FIXED: Better check for internal pages
+    if (!tab.url || 
+        tab.url.startsWith('chrome:') || 
+        tab.url.startsWith('chrome-extension:') ||
+        tab.url.startsWith('edge:') ||
+        tab.url.startsWith('about:') ||
+        tab.url === 'new tab') {
+      console.log('Skipping internal page:', tab.url);
+      showError('Cannot analyze browser internal pages');
+      return;
+    }
+    
+    // Show URL being analyzed
+    const urlDisplay = document.getElementById('currentSiteLink');
+    if (urlDisplay) {
+      urlDisplay.textContent = tab.url;
+      urlDisplay.href = tab.url;
+    }
+    
+    showLoading();
+    console.log('Analyzing URL:', tab.url);
+    
+    // Use promise-based messaging with timeout
+    try {
+      const result = await sendMessageWithTimeout(
+        { type: 'analyzeNow', url: tab.url },
+        10000 // 10 second timeout
+      );
+      
+      console.log('Analysis result:', result);
+      
+      if (!result) {
+        throw new Error('Empty response received');
+      }
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      showResult(result);
+    } catch (error) {
+      showError(error.message);
+    }
+    
+  } catch (error) {
+    console.error('Popup error:', error);
+    showError(error.message);
+  }
 
-    // Set up toggle handler
-    toggle.addEventListener('change', async function(e) {
-        const enabled = e.target.checked;
-        await chrome.storage.sync.set({ safeSearchEnabled: enabled });
-        updateDiagnosticNote(enabled);
-        
-        // Clear all cached results when changing modes
-        await chrome.storage.local.clear();
-        
-        // Re-analyze current tab
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab?.url) {
-            await loadCachedResults(tab.url);
-        }
-    });
-
-    // Initialize current tab
-    initializeCurrentTab();
+  // Call this function at the end of your DOMContentLoaded event
+  // logStoredAnalysisResults();
 });
 
-async function analyzeCurrentUrl(url) {
-    try {
-        const { safeSearchEnabled } = await chrome.storage.sync.get(['safeSearchEnabled']);
-        console.log('Analyzing with Safe Browsing:', safeSearchEnabled);
-
-        displayLoading();
-        
-        const response = await fetch('http://localhost:3000/analyze-url', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-                url,
-                useSafeBrowsing: safeSearchEnabled 
-            })
-        });
-        
-        const result = await response.json();
-        chrome.storage.local.set({ [url]: result });
-        displayResults(result, url);
-    } catch (error) {
-        console.error('Analysis failed:', error);
-        displayError('Analysis failed. Please try again.');
-    }
-}
-
-async function loadCachedResults(url) {
-    try {
-        // Get cached results
-        const stored = await chrome.storage.local.get(url);
-        if (stored[url]) {
-            console.log('Using cached result for:', url);
-            displayResults(stored[url], url);
-            return true;
-        }
-        return false;
-    } catch (error) {
-        console.error('Error loading cached results:', error);
-        return false;
-    }
-}
-
-function displayResults(result, url) {
-    document.getElementById('currentSiteLink').textContent = url;
+// Helper function to send message with timeout
+function sendMessageWithTimeout(message, timeout) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('Analysis timed out after ' + timeout/1000 + ' seconds.'));
+    }, timeout);
     
-    // Display risk score and source
-    let scoreText = `Risk Score: ${result.risk_score}/100`;
-    if (result.ml_result?.ml_confidence) {
-        scoreText += ` (ML Confidence: ${(result.ml_result.ml_confidence * 100).toFixed(1)}%)`;
-    }
-    document.getElementById('score').textContent = scoreText;
-
-    // Set status message and class
-    document.getElementById('status').textContent = result.message;
-    document.getElementById('status').className = getRiskLevelClass(result);
-
-    // Update diagnostic note
-    const diagnosticNote = document.querySelector('.diagnostic-note');
-    if (diagnosticNote) {
-        let message = `Analysis: ${result.source || 'Unknown'}`;
-        if (result.threats) {
-            message += `\nThreats found: ${result.threats.map(t => t.threat_type).join(', ')}`;
+    try {
+      chrome.runtime.sendMessage(message, (response) => {
+        clearTimeout(timer);
+        
+        if (chrome.runtime.lastError) {
+          console.error('Chrome runtime error:', chrome.runtime.lastError);
+          reject(new Error(chrome.runtime.lastError.message));
+          return;
         }
-        if (result.ml_result) {
-            message += `\nML Analysis: ${result.ml_result.is_phishing ? 'Suspicious' : 'Safe'}`;
+        
+        if (!response) {
+          reject(new Error('Empty response received'));
+          return;
         }
-        diagnosticNote.textContent = message;
+        
+        resolve(response);
+      });
+    } catch (err) {
+      clearTimeout(timer);
+      console.error('Message sending error:', err);
+      reject(err);
     }
+  });
 }
 
-function getRiskLevelText(result) {
-    if (result.safe_browsing === true) {
-        return 'Safe - Verified by Google Safe Browsing';
+function setupSafeSearchToggle() {
+  const toggle = document.getElementById('safeSearchToggle');
+  if (!toggle) return;
+  
+  chrome.storage.sync.get(['safeSearchEnabled'], function(result) {
+    toggle.checked = result.safeSearchEnabled !== false;
+    updateDiagnosticNote(toggle.checked);
+  });
+  
+  toggle.addEventListener('change', async function(e) {
+    const enabled = e.target.checked;
+    await chrome.storage.sync.set({ safeSearchEnabled: enabled });
+    updateDiagnosticNote(enabled);
+    
+    // Re-analyze with new setting
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.url) {
+      showLoading();
+      chrome.runtime.sendMessage({ 
+        type: 'analyze', 
+        url: tab.url,
+        useSafeBrowsing: enabled
+      }, response => {
+        if (response?.error) {
+          showError(response.error);
+        } else {
+          showResult(response);
+        }
+      });
     }
-    if (result.is_phishing) {
-        return 'Warning: Potential Phishing Site Detected';
-    }
-    return result.message || 'Analysis Complete';
-}
-
-function getRiskLevelClass(result) {
-    if (result.is_phishing) return 'danger';
-    if (result.risk_score > 60) return 'warning';
-    return 'safe';
+  });
 }
 
 function updateDiagnosticNote(enabled) {
-    const diagnosticNote = document.querySelector('.diagnostic-note');
-    if (diagnosticNote) {
-        diagnosticNote.textContent = enabled ? 
-            'Using both ML and Safe Browsing API' : 
-            'Using ML analysis only';
+  const diagnosticNote = document.querySelector('.diagnostic-note');
+  if (diagnosticNote) {
+    diagnosticNote.textContent = enabled ? 
+      'Using both ML and Safe Browsing API' : 
+      'Using ML analysis only';
+  }
+}
+
+function showLoading() {
+  // Update score to show loading state
+  const scoreElement = document.getElementById('score');
+  if (scoreElement) {
+    scoreElement.textContent = '...';
+    scoreElement.className = '';
+  }
+  
+  // Update status to show loading state
+  const statusElement = document.getElementById('status');
+  if (statusElement) {
+    statusElement.textContent = '';
+    statusElement.className = '';
+  }
+  
+  // Just show a spinner in the result container without text
+  const resultContainer = document.getElementById('result-container');
+  if (resultContainer) {
+    resultContainer.innerHTML = `
+      <div class="analyzing">
+        <div class="spinner"></div>
+      </div>
+    `;
+  }
+  
+  // Reset section styling
+  const scoreSection = document.querySelector('.score-section');
+  if (scoreSection) {
+    scoreSection.className = 'score-section';
+  }
+  
+  const riskExplanation = document.querySelector('.risk-explanation');
+  if (riskExplanation) {
+    riskExplanation.className = 'risk-explanation';
+  }
+}
+
+function showResult(result) {
+  console.log('Processing result:', result);
+  
+  // Extract data with defaults
+  const displayData = {
+    risk_score: Number(result.risk_score) || 0,
+    is_phishing: Boolean(result.is_phishing),
+    risk_explanation: result.risk_explanation || 'No detailed explanation available',
+    features: result.features || {},
+    url: result.url || ''
+  };
+
+  console.log('Display data:', displayData);
+
+  // 1. Update the risk score in the Site Risk Score section
+  const scoreElement = document.getElementById('score');
+  if (scoreElement) {
+    // Just show the actual score in the score section
+    scoreElement.textContent = `${displayData.risk_score}/100`;
+    scoreElement.className = displayData.is_phishing ? 'unsafe-score' : 'safe-score';
+  }
+  
+  // 2. Update the explanation in the Risk Explanation section
+  const statusElement = document.getElementById('status');
+  if (statusElement) {
+    // Just show the risk explanation in the status section
+    statusElement.textContent = displayData.risk_explanation;
+    statusElement.className = displayData.is_phishing ? 'unsafe-status' : 'safe-status';
+    
+    // Add a visual indicator of safe/unsafe
+    const indicator = displayData.is_phishing ? '⚠️ Warning: ' : '✅ Safe: ';
+    statusElement.textContent = indicator + statusElement.textContent;
+  }
+  
+  // 3. Add colored backgrounds to the sections
+  const scoreSection = document.querySelector('.score-section');
+  if (scoreSection) {
+    scoreSection.className = `score-section ${displayData.is_phishing ? 'unsafe' : 'safe'}`;
+  }
+  
+  const riskExplanation = document.querySelector('.risk-explanation');
+  if (riskExplanation) {
+    riskExplanation.className = `risk-explanation ${displayData.is_phishing ? 'unsafe' : 'safe'}`;
+  }
+
+  // 4. Update the URL link
+  const currentUrlLink = document.getElementById('currentSiteLink');
+  if (currentUrlLink) {
+    currentUrlLink.textContent = displayData.url;
+    currentUrlLink.href = displayData.url;
+  }
+  
+  // 5. IMPORTANT: Clear the result-container to remove spinner
+  const resultContainer = document.getElementById('result-container');
+  if (resultContainer) {
+    // Only add features if we have them, otherwise clear the container
+    if (Object.keys(displayData.features).length > 0) {
+      resultContainer.innerHTML = `
+        <section class="features-section ${displayData.is_phishing ? 'unsafe' : 'safe'}">
+          <h3>Detection Features</h3>
+          <ul class="feature-list">
+            ${Object.entries(displayData.features)
+              .filter(([key]) => key !== '__class__')
+              .map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`)
+              .join('')}
+          </ul>
+        </section>
+      `;
+    } else {
+      resultContainer.innerHTML = ''; // Clear container if no features
     }
+  }
 }
 
-function displayLoading() {
-    document.getElementById('status').textContent = 'Analyzing...';
-    document.getElementById('score').textContent = 'Please wait...';
-    document.getElementById('status').className = '';
+function showError(message) {
+  console.error("Error in popup:", message);
+  const resultContainer = document.getElementById('result-container');
+  if (!resultContainer) return;
+  
+  resultContainer.innerHTML = `
+    <div class="error">
+      <p>Error: ${message}</p>
+    </div>
+  `;
 }
 
-function displayError(message) {
-    document.getElementById('status').textContent = message;
-    document.getElementById('score').textContent = 'Error';
-    document.getElementById('status').className = 'error';
+function getRiskClass(score) {
+  if (score < 30) return 'safe';
+  if (score < 70) return 'medium';
+  return 'high';
 }
 
-async function initializeCurrentTab() {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.url) {
-        document.getElementById('currentSiteLink').textContent = tab.url;
-        const hasCachedResults = await loadCachedResults(tab.url);
-        
-        if (!hasCachedResults) {
-            displayLoading();
-            // Wait for background script to analyze and cache results
-            const checkCache = setInterval(async () => {
-                const hasResults = await loadCachedResults(tab.url);
-                if (hasResults) {
-                    clearInterval(checkCache);
-                }
-            }, 500);
-            
-            // Clear interval after 10 seconds to prevent infinite checking
-            setTimeout(() => clearInterval(checkCache), 10000);
-        }
-    }
+// Add this new function to show general messages
+function showMessage(message) {
+  const resultContainer = document.getElementById('result-container');
+  if (!resultContainer) return;
+  
+  resultContainer.innerHTML = `
+    <div class="message">
+      <p>${message}</p>
+    </div>
+  `;
 }
 
-// Manual URL check handler
-document.getElementById('checkLink').addEventListener('click', async () => {
-    const manualLink = document.getElementById('manualLink').value;
-    if (manualLink) {
-        displayLoading();
-        await analyzeCurrentUrl(manualLink);
-    }
-});
-
-// Helper function to validate URLs
-function isValidUrl(url) {
-    try {
-        new URL(url);
-        return true;
-    } catch {
-        return false;
-    }
+// Add this function to help with debugging
+function logStoredAnalysisResults() {
+  chrome.storage.local.get(null, function(items) {
+    console.log('All stored analyses:', items);
+    
+    // Find analysis for current URL
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (tabs && tabs.length > 0) {
+        const currentUrl = tabs[0].url;
+        const key = `analysis_${currentUrl}`;
+        console.log('Current URL:', currentUrl);
+        console.log('Analysis for current URL:', items[key]);
+      }
+    });
+  });
 }
-
-// Add input validation for manual URL entry
-document.getElementById('manualLink').addEventListener('input', function(e) {
-    const checkButton = document.getElementById('checkLink');
-    checkButton.disabled = !isValidUrl(e.target.value);
-});

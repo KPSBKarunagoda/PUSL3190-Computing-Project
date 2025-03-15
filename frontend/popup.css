@@ -1,10 +1,10 @@
 /* General Styles */
 body {
     font-family: Arial, sans-serif;
-    margin: 0;
+    margin: 2;
     padding: 0;
     background-color: #f9f9f9;
-    width: 300px;
+    width: 325px;
     min-height: 600px;
     display: flex;
     justify-content: center;
@@ -72,6 +72,7 @@ header h1 {
     font-size: 1.1em;
     color: #444;
     margin-bottom: 10px;
+    margin-top: 30px; /* Added this line */
 }
 
 .score-section #score {
@@ -237,3 +238,61 @@ input:checked + .slider {
 input:checked + .slider:before {
     transform: translateX(26px);
 }
+
+/* Add these styles if not already present */
+.analyzing {
+    text-align: center;
+    padding: 15px;
+}
+
+.url {
+    font-weight: bold;
+    word-break: break-all;
+    margin-bottom: 15px;
+}
+
+.spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 10px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error {
+    color: red;
+    padding: 10px;
+    border: 1px solid red;
+    margin: 10px 0;
+}
+
+#result-container {
+    min-width: 300px;
+    padding: 15px;
+}
+
+.safe {
+    color: green;
+    font-weight: bold;
+}
+
+.medium {
+    color: orange;
+    font-weight: bold;
+}
+
+.high {
+    color: red;
+    font-weight: bold;
+}
+
+.risk-explanation h3 {
+    margin-top: 30px;
+  }

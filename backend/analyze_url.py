@@ -89,9 +89,13 @@ class URLAnalyzer:
                     is_phishing = ml_prediction == 1 and ml_confidence > 0.9
                 
                 print(f"\n=== Final Decision ===", file=sys.stderr)
-                print(f"Risk Score: {risk_score}", file=sys.stderr)
-                print(f"ML Confidence: {ml_confidence:.2%}", file=sys.stderr)
-                print(f"Decision: {'Phishing' if is_phishing else 'Legitimate'}", file=sys.stderr)
+                result = {
+                    "risk_score": risk_score,
+                    "ml_confidence": ml_confidence,
+                    "is_phishing": is_phishing,
+                    "decision": "Phishing" if is_phishing else "Legitimate",
+                    "risk_explanation": "This site appears to be legitimate based on our analysis." if not is_phishing else "This site appears to be phishing based on our analysis."
+                }
                 print("=" * 25 + "\n", file=sys.stderr)
 
                 return {
@@ -231,7 +235,11 @@ def main():
             else:
                 serializable_result[key] = str(value) if not isinstance(value, (str, list, dict)) else value
         
+        # Only print the final result to stdout - this is what Node.js will capture
         print(json.dumps(serializable_result, indent=2, cls=JSONEncoder))
+        
+        # Debug info goes to stderr
+        print("Analysis complete", file=sys.stderr)
     else:
         print(json.dumps({"error": "No URL provided"}))
 
