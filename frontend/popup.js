@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // Get current tab with CURRENT_WINDOW focus only
+    // Get current tab
     const tabs = await chrome.tabs.query({active: true, currentWindow: true});
     
     if (!tabs || tabs.length === 0) {
@@ -10,32 +10,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tab = tabs[0];
     console.log('Current tab URL:', tab.url);
     
-    // FIXED: Better check for internal pages
-    if (!tab.url || 
-        tab.url.startsWith('chrome:') || 
-        tab.url.startsWith('chrome-extension:') ||
-        tab.url.startsWith('edge:') ||
-        tab.url.startsWith('about:') ||
-        tab.url === 'new tab') {
-      console.log('Skipping internal page:', tab.url);
+    // Skip internal browser pages
+    if (!tab.url || tab.url.startsWith('chrome:') || tab.url.startsWith('chrome-extension:')) {
       showError('Cannot analyze browser internal pages');
       return;
     }
     
-    // Show URL being analyzed
-    const urlDisplay = document.getElementById('currentSiteLink');
-    if (urlDisplay) {
-      urlDisplay.textContent = tab.url;
-      urlDisplay.href = tab.url;
+    // Update URL display
+    const currentSiteLink = document.getElementById('currentSiteLink');
+    if (currentSiteLink) {
+      currentSiteLink.textContent = tab.url;
+      currentSiteLink.href = tab.url;
     }
     
     showLoading();
     console.log('Analyzing URL:', tab.url);
     
-    // Use promise-based messaging with timeout
+    // Get user preferences
+    const preferences = await chrome.storage.sync.get(['safeSearchEnabled']);
+    const useSafeBrowsing = preferences.safeSearchEnabled !== false; // default to true
+    
     try {
+      // Request analysis (will return cached result if available)
       const result = await sendMessageWithTimeout(
-        { type: 'analyzeNow', url: tab.url },
+        { 
+          type: 'analyzeNow', 
+          url: tab.url,
+          useSafeBrowsing: useSafeBrowsing,
+          forceRefresh: false // Don't force reanalysis
+        },
         10000 // 10 second timeout
       );
       
@@ -50,6 +53,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       
       showResult(result);
+      
+      // Add refresh button functionality
+      const refreshButton = document.getElementById('refreshAnalysis');
+      if (refreshButton) {
+        refreshButton.addEventListener('click', async () => {
+          showLoading();
+          try {
+            const freshResult = await sendMessageWithTimeout(
+              { 
+                type: 'analyzeNow', 
+                url: tab.url,
+                useSafeBrowsing: useSafeBrowsing,
+                forceRefresh: true // Force reanalysis
+              },
+              10000
+            );
+            showResult(freshResult);
+          } catch (error) {
+            showError(error.message);
+          }
+        });
+      }
+      
     } catch (error) {
       showError(error.message);
     }
@@ -58,9 +84,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Popup error:', error);
     showError(error.message);
   }
-
-  // Call this function at the end of your DOMContentLoaded event
-  // logStoredAnalysisResults();
+  
+  // Rest of your setup functions...
 });
 
 // Helper function to send message with timeout
@@ -294,3 +319,90 @@ function logStoredAnalysisResults() {
     });
   });
 }
+
+// Update your message handler to use the enhanced cache
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('Background received message:', message);
+  
+  if (message.type === 'analyzeNow') {
+    // Skip internal pages
+    if (!message.url.startsWith('http')) {
+      sendResponse({error: 'Cannot analyze browser internal pages'});
+      return true;
+    }
+    
+    // Check in-memory cache first
+    const cacheKey = message.url;
+    if (!message.forceRefresh && analyzedURLs[cacheKey] && 
+        (Date.now() - analyzedURLs[cacheKey].timestamp < CACHE_EXPIRY)) {
+      console.log('Using cached result for:', message.url);
+      sendResponse(analyzedURLs[cacheKey].result);
+      return true;
+    }
+    
+    // If not in memory, try Chrome storage
+    if (!message.forceRefresh) {
+      const domain = new URL(message.url).hostname;
+      const storageKey = `analysis_${domain}`;
+      
+      chrome.storage.local.get([storageKey], function(data) {
+        const domainCache = data[storageKey] || {};
+        
+        if (domainCache[message.url] && 
+            (Date.now() - domainCache[message.url].timestamp < CACHE_EXPIRY)) {
+          console.log('Using storage cached result for:', message.url);
+          
+          // Also update in-memory cache
+          analyzedURLs[cacheKey] = domainCache[message.url];
+          
+          sendResponse(domainCache[message.url].result);
+          return;
+        }
+        
+        // Not in storage cache either, perform fresh analysis
+        performFreshAnalysis();
+      });
+      
+      return true;
+    } else {
+      // Force refresh requested
+      performFreshAnalysis();
+      return true;
+    }
+    
+    function performFreshAnalysis() {
+      analyzeURL(message.url, message.useSafeBrowsing)
+        .then(result => {
+          // Cache the new result in memory
+          analyzedURLs[cacheKey] = {
+            result,
+            timestamp: Date.now()
+          };
+          
+          // Also cache in Chrome storage
+          const domain = new URL(message.url).hostname;
+          const storageKey = `analysis_${domain}`;
+          
+          chrome.storage.local.get([storageKey], function(data) {
+            const domainCache = data[storageKey] || {};
+            domainCache[message.url] = {
+              result: result,
+              timestamp: Date.now()
+            };
+            
+            // Store back to Chrome storage
+            chrome.storage.local.set({ [storageKey]: domainCache });
+          });
+          
+          console.log('Fresh analysis complete:', result);
+          sendResponse(result);
+        })
+        .catch(error => {
+          console.error('Analysis error:', error);
+          sendResponse({error: error.message});
+        });
+    }
+  }
+  
+  return true; // Keep message port open
+});

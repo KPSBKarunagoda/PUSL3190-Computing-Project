@@ -1,160 +1,110 @@
-let analyzedURLs = {};
+// Enhanced caching system for background.js
+const analyzedURLs = {}; // In-memory cache
+const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes cache lifetime
 
-// Listen for tab updates to analyze URLs automatically
+// Track tab history to avoid reanalyzing the same URL
+const tabURLHistory = {};
+
+// Listen for tab updates (when user navigates to a new page)
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Only analyze when the page has completely loaded
   if (changeInfo.status === 'complete' && tab.url && tab.url.startsWith('http')) {
     console.log('Tab updated, analyzing URL:', tab.url);
-    analyzeURL(tab.url)
-      .then(result => {
-        console.log('Analysis complete for tab update:', result);
-        // Store results in local storage using URL as key
-        chrome.storage.local.set({
-          [`analysis_${tab.url}`]: {
-            result,
-            timestamp: Date.now()
-          }
-        });
-      })
-      .catch(error => {
-        console.error('Analysis failed for tab update:', error);
-        chrome.storage.local.set({
-          [`analysis_${tab.url}`]: {
-            error: error.message,
-            timestamp: Date.now()
-          }
-        });
-      });
-  }
-});
-
-// THIS IS THE CRITICAL PART - listen for messages
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Background received message:', message);
-  
-  if (message.type === 'analyzeNow') {
-    // Verify URL is valid
-    if (!message.url || !message.url.startsWith('http')) {
-      console.log('Skipping invalid URL:', message.url);
-      sendResponse({error: 'Cannot analyze non-HTTP URLs'});
-      return true;
-    }
     
-    // Handle URL analysis (use cache or fetch)
-    const cacheKey = message.url;
+    // Store the current URL for this tab
+    tabURLHistory[tabId] = tab.url;
     
-    // Check cache first (5 minute expiration)
+    // Skip analysis if this URL was recently analyzed
+    const cacheKey = tab.url;
     if (analyzedURLs[cacheKey] && 
-        (Date.now() - analyzedURLs[cacheKey].timestamp < 5 * 60 * 1000)) {
-      console.log('Using cached result for:', message.url);
-      sendResponse(analyzedURLs[cacheKey].result);
-      return true;
+        (Date.now() - analyzedURLs[cacheKey].timestamp < CACHE_EXPIRY)) {
+      console.log('Using cached analysis for:', tab.url);
+      return;
     }
     
-    // Fetch fresh analysis
-    console.log('Fetching fresh analysis for:', message.url);
-    
-    fetch('http://localhost:3000/analyze-url', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({url: message.url})
-    })
-    .then(response => response.json())
-    .then(result => {
-      console.log('Analysis result:', result);
-      
-      // Cache result
-      analyzedURLs[cacheKey] = {
-        result,
-        timestamp: Date.now()
-      };
-      
-      sendResponse(result);
-    })
-    .catch(error => {
-      console.error('Analysis error:', error);
-      sendResponse({error: error.message});
-    });
-    
-    return true; // Keep message port open
+    // Analyze the URL and cache the result
+    analyzeAndCacheURL(tab.url);
   }
 });
 
-// Separate function to handle async work
-function handleAnalysisRequest(message, sendResponse) {
-  const url = message.url;
-  const cacheKey = url;
-  
-  // Check cache first for quick response
-  if (analyzedURLs[cacheKey] && 
-      Date.now() - analyzedURLs[cacheKey].timestamp < 60000) {
-    console.log('Using cached result for:', url);
-    sendResponse(analyzedURLs[cacheKey].result);
-    return;
-  }
-
-  console.log('Fetching fresh analysis for:', url);
-  
-  // Make the network request
-  fetch('http://localhost:3000/analyze-url', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url })
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`Server returned status ${response.status}`);
+// Track tab activation (when user switches tabs)
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    
+    // Skip if not a valid URL
+    if (!tab.url || !tab.url.startsWith('http')) return;
+    
+    // Check if this tab's URL has changed since we last saw it
+    const lastKnownURL = tabURLHistory[tab.tabId];
+    if (lastKnownURL === tab.url) {
+      console.log('Tab activated with known URL:', tab.url);
+      // No need to reanalyze - URL hasn't changed
+      return;
     }
-    return response.json();
-  })
-  .then(result => {
-    console.log('Analysis result:', result);
+    
+    // URL has changed or we haven't seen this tab before
+    tabURLHistory[tab.tabId] = tab.url;
+    
+    // Check if this URL is in our cache
+    const cacheKey = tab.url;
+    if (analyzedURLs[cacheKey] && 
+        (Date.now() - analyzedURLs[cacheKey].timestamp < CACHE_EXPIRY)) {
+      console.log('Using cached analysis for activated tab:', tab.url);
+      return;
+    }
+    
+    // New URL that's not in our cache - analyze it
+    console.log('Analyzing URL in activated tab:', tab.url);
+    analyzeAndCacheURL(tab.url);
+    
+  } catch (error) {
+    console.error('Error handling tab activation:', error);
+  }
+});
+
+// Cleanup when tabs are closed
+chrome.tabs.onRemoved.addListener((tabId) => {
+  // Clean up our tab history
+  if (tabURLHistory[tabId]) {
+    delete tabURLHistory[tabId];
+  }
+});
+
+// Function to analyze and cache results
+async function analyzeAndCacheURL(url) {
+  try {
+    // Get user preferences
+    const preferences = await chrome.storage.sync.get(['safeSearchEnabled']);
+    const useSafeBrowsing = preferences.safeSearchEnabled !== false;
+    
+    // Analyze the URL
+    const result = await analyzeURL(url, useSafeBrowsing);
     
     // Cache the result
+    const cacheKey = url;
     analyzedURLs[cacheKey] = {
-      result,
+      result: result,
       timestamp: Date.now()
     };
     
-    // Send response back to popup
-    sendResponse(result);
-  })
-  .catch(error => {
-    console.error('Analysis error:', error);
-    sendResponse({ error: error.message });
-  });
-}
-
-async function analyzeURL(url, useSafeBrowsing = true) {
-  console.log(`Starting analysis for: ${url} (Safe Browsing: ${useSafeBrowsing})`);
-  
-  try {
-    if (!url.startsWith('http')) {
-      return { 
-        status: 'skipped', 
-        is_phishing: false,
-        risk_score: 0,
-        risk_explanation: 'Internal browser page - analysis skipped',
-        features: {}
-      };
-    }
+    // Also save to chrome.storage for persistence across browser sessions
+    // Group results by domain to avoid storage limits
+    const domain = new URL(url).hostname;
+    const storageKey = `analysis_${domain}`;
     
-    const response = await fetch('http://localhost:3000/analyze-url', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, useSafeBrowsing })
+    chrome.storage.local.get([storageKey], function(data) {
+      const domainCache = data[storageKey] || {};
+      domainCache[url] = {
+        result: result,
+        timestamp: Date.now()
+      };
+      
+      // Store back to Chrome storage
+      chrome.storage.local.set({ [storageKey]: domainCache });
     });
     
-    if (!response.ok) {
-      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    console.log('Analysis result received:', result);
-    
-    // Cache the result with a key specific to URL and safe browsing flag
-    const cacheKey = `${url}_${useSafeBrowsing}`;
-    analyzedURLs[cacheKey] = { result, timestamp: Date.now() };
-    
+    console.log('Analysis complete and cached:', result);
     return result;
   } catch (error) {
     console.error('Analysis error:', error);
@@ -162,12 +112,72 @@ async function analyzeURL(url, useSafeBrowsing = true) {
   }
 }
 
-// Optionally clear cache periodically (every 5 minutes)
-setInterval(() => {
+// Function to analyze URLs
+async function analyzeURL(url, useSafeBrowsing) {
+  // Implementation of your analysis function
+  try {
+    const response = await fetch('http://localhost:3000/analyze-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        url: url,
+        useSafeBrowsing: useSafeBrowsing
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('API request failed:', error);
+    throw error;
+  }
+}
+
+// Clean up expired cache entries periodically
+function cleanupCache() {
+  console.log('Cleaning up analysis cache...');
   const now = Date.now();
-  Object.keys(analyzedURLs).forEach(key => {
-    if (now - analyzedURLs[key].timestamp > 5 * 60 * 1000) {
-      delete analyzedURLs[key];
+  
+  // Clean in-memory cache
+  Object.keys(analyzedURLs).forEach(url => {
+    if (now - analyzedURLs[url].timestamp > CACHE_EXPIRY) {
+      delete analyzedURLs[url];
     }
   });
-}, 5 * 60 * 1000);
+  
+  // Clean storage cache
+  chrome.storage.local.get(null, function(items) {
+    const analysisKeys = Object.keys(items).filter(key => key.startsWith('analysis_'));
+    
+    analysisKeys.forEach(key => {
+      const domainCache = items[key];
+      let modified = false;
+      
+      Object.keys(domainCache).forEach(url => {
+        if (now - domainCache[url].timestamp > CACHE_EXPIRY) {
+          delete domainCache[url];
+          modified = true;
+        }
+      });
+      
+      if (modified) {
+        if (Object.keys(domainCache).length > 0) {
+          // Update with cleaned cache
+          chrome.storage.local.set({ [key]: domainCache });
+        } else {
+          // Remove empty cache entries
+          chrome.storage.local.remove(key);
+        }
+      }
+    });
+  });
+}
+
+// Run cleanup every hour
+setInterval(cleanupCache, 60 * 60 * 1000);
+
+// Also clean on startup
+cleanupCache();
