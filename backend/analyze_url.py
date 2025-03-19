@@ -41,8 +41,8 @@ class URLAnalyzer:
             'qty_dot_url': 0.05,
             'qty_hyphen_url': 0.05,
             'length_url': 0.1,
-            'qty_at_url': 0.1,
-            'domain_in_ip': 0.15,
+            'qty_at_url': 0.1, 
+            'domain_in_ip': 0.35,         # Significantly increased weight for IP addresses 
             'tls_ssl_certificate': -0.15,
             'url_google_index': -0.1,
             'qty_redirects': 0.1,
@@ -54,8 +54,26 @@ class URLAnalyzer:
         """Perform ML-based analysis"""
         try:
             if self.model and self.scaler and self.feature_names:
+                # Check explicitly for IP address in URL
+                url = features.get('_url', '')
+                
+                # Check for IP address pattern in domain using regex
+                import re
+                ip_pattern = re.compile(r'^https?://\d+\.\d+\.\d+\.\d+')
+                is_ip_based = bool(ip_pattern.match(url)) if url else False
+                
+                # Override the feature if we detect an IP
+                if is_ip_based and not features.get('domain_in_ip', 0):
+                    print("IP address detected in URL but not in features - fixing", file=sys.stderr)
+                    features['domain_in_ip'] = 1
+                
                 # Calculate risk score
                 risk_score = self.calculate_risk_score(features)
+                
+                # IP address override - increase risk score
+                if is_ip_based:
+                    print("IP-based URL detected - applying risk bonus", file=sys.stderr)
+                    risk_score += 25  # Add significant risk for IP-based URLs
                 
                 # Prepare feature vector in correct order
                 feature_vector = []
@@ -134,30 +152,38 @@ class URLAnalyzer:
         
         return max(0, min(100, risk_score))
 
-    async def analyze_url(self, url: str) -> Dict[str, Any]:
+    async def analyze_url(self, url: str, use_safe_browsing: bool = True) -> Dict[str, Any]:
         """Two-step URL analysis using Safe Browsing and ML"""
         try:
             print(f"\n=== Starting Two-Step URL Analysis ===", file=sys.stderr)
             print(f"URL: {url}", file=sys.stderr)
+            print(f"Using Safe Browsing API: {use_safe_browsing}", file=sys.stderr)
             
             # Extract features
             features = self.feature_extractor.extract_features(url)
             if features is None:
                 raise Exception("Failed to extract features")
-
-            # Step 1: Check Safe Browsing API
-            print("\nStep 1: Checking Google Safe Browsing...", file=sys.stderr)
-            sb_result = await self.safe_browsing.check_url(url)
-            has_threats = bool(sb_result.get("threats"))
+                
+            # Add raw URL to features for pattern analysis
+            features['_url'] = url
             
-            if has_threats:
-                return {
-                    "risk_score": 100,
-                    "is_phishing": True,
-                    "source": "Safe Browsing API",
-                    "threats": sb_result.get("threats"),
-                    "message": f"Warning - {sb_result.get('threats')[0].get('threat_type')} detected by Google Safe Browsing"
-                }
+            # Step 1: Check Safe Browsing API if enabled
+            sb_result = {"threats": [], "is_safe": True}
+            if use_safe_browsing:
+                print("\nStep 1: Checking Google Safe Browsing...", file=sys.stderr)
+                sb_result = await self.safe_browsing.check_url(url)
+                has_threats = bool(sb_result.get("threats"))
+                
+                if has_threats:
+                    return {
+                        "risk_score": 100,
+                        "is_phishing": True,
+                        "source": "Safe Browsing API",
+                        "threats": sb_result.get("threats"),
+                        "message": f"Warning - {sb_result.get('threats')[0].get('threat_type')} detected by Google Safe Browsing"
+                    }
+            else:
+                print("\nStep 1: Safe Browsing check skipped", file=sys.stderr)
 
             # Step 2: ML Analysis
             print("\nStep 2: Performing ML Analysis...", file=sys.stderr)
@@ -219,7 +245,7 @@ def main():
         print(f"CLI args: url={url}, safe_browsing={use_safe_browsing}", file=sys.stderr)
         
         import asyncio
-        result = asyncio.run(analyzer.analyze_url(url))
+        result = asyncio.run(analyzer.analyze_url(url, use_safe_browsing))
         
         # Convert result dict to ensure all values are JSON serializable
         serializable_result = {}
