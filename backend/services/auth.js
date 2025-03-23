@@ -1,8 +1,11 @@
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 class AuthService {
     constructor(connection) {
         this.connection = connection;
+        this.jwtSecret = process.env.JWT_SECRET || 'your-secret-key'; // Use environment variable in production
+        this.jwtExpiry = '8h'; // Token expiry time
     }
 
     async hashPassword(plainPassword) {
@@ -67,6 +70,26 @@ class AuthService {
             'SELECT UserID, Username, Email FROM User WHERE Role = "Admin"'
         );
         return adminInfo[0];
+    }
+
+    generateToken(user) {
+        const payload = {
+            user: {
+                id: user.UserID,
+                username: user.Username,
+                role: user.Role
+            }
+        };
+        
+        return jwt.sign(payload, this.jwtSecret, { expiresIn: this.jwtExpiry });
+    }
+    
+    verifyToken(token) {
+        try {
+            return jwt.verify(token, this.jwtSecret);
+        } catch (error) {
+            throw new Error('Invalid token');
+        }
     }
 }
 

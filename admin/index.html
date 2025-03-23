@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard Admin</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <div id="login-container" class="card">
+      <h1>PhishGuard Admin</h1>
+      <div id="login-error" class="error-message"></div>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Login</button>
+      </form>
+    </div>
+    
+    <div id="dashboard-container" class="dashboard" style="display: none;">
+      <header class="dashboard-header">
+        <h1>PhishGuard Admin Panel</h1>
+        <div class="user-info">
+          <span id="current-user">admin</span>
+          <button id="logout-btn" class="btn btn-outline">Logout</button>
+        </div>
+      </header>
+      
+      <div class="dashboard-content">
+        <div class="card">
+          <h2>Whitelist Management</h2>
+          <p>Safe domains that should never be flagged as phishing.</p>
+          <div class="form-group">
+            <input type="text" id="whitelist-domain" placeholder="Enter domain to whitelist (e.g., google.com)">
+            <button id="add-whitelist" class="btn btn-primary">Add to Whitelist</button>
+          </div>
+          <div class="list-container">
+            <div class="list-header">
+              <span>Domain</span>
+              <span>Actions</span>
+            </div>
+            <ul id="whitelist" class="domain-list">
+              <li class="loading">Loading whitelist...</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="card">
+          <h2>Blacklist Management</h2>
+          <p>Known malicious domains that should always be flagged as phishing.</p>
+          <div class="form-group">
+            <input type="text" id="blacklist-domain" placeholder="Enter domain to blacklist (e.g., malicious-site.com)">
+            <button id="add-blacklist" class="btn btn-primary">Add to Blacklist</button>
+          </div>
+          <div class="list-container">
+            <div class="list-header">
+              <span>Domain</span>
+              <span>Actions</span>
+            </div>
+            <ul id="blacklist" class="domain-list">
+              <li class="loading">Loading blacklist...</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="js/api.js"></script>
+  <script src="js/login.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
