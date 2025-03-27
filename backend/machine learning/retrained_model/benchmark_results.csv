@@ -1,0 +1,16 @@
+url,expected,predicted,probability,correct
+https://github.com/microsoft/vscode/tree/main/src/vs/editor/contrib,0,1,0.9749744619798028,False
+https://chat.openai.com/c/3e0b0a14-3b5c-4af0-9b10-ed96f15790db,0,0,0.01645269195007518,True
+https://www.amazon.com/dp/B09JFSMVH7/ref=sr_1_3?keywords=laptop&qid=1645544823,0,0,0.2051685290704192,True
+https://stackoverflow.com/questions/56254925/how-to-fix-installation-error,0,0,0.044348122557282266,True
+https://www.nytimes.com/2023/05/10/technology/ai-regulation-europe.html,0,0,0.007561975720657726,True
+https://www.reddit.com/r/ProgrammerHumor/comments/13m2vsf/hello_world/,0,1,0.9562119508815952,False
+https://www.linkedin.com/in/john-doe-12345678/,0,0,0.013586034713364909,True
+https://twitter.com/elonmusk/status/1656141749259726850,0,0,0.09294676194186428,True
+https://www.youtube.com/watch?v=dQw4w9WgXcQ,0,0,0.0928775183355671,True
+https://www.instagram.com/p/CsdQ8-RLiKd/,0,0,0.12945321230609755,True
+https://docs.google.com/document/d/1abcdefghijklmnopqrstuvwxyz1234567890/edit,0,0,0.0073577040875673705,True
+https://en.wikipedia.org/wiki/Machine_learning,0,0,0.0013279101127912562,True
+https://www.paypa1.com/signin/verify?account=user,1,0,0.005167258339886286,False
+http://192.168.12.43/login/verify.php,1,1,0.9319418185321737,True
+https://secure-paypal.phishing-domain.com/login,1,1,0.9611134397807699,True

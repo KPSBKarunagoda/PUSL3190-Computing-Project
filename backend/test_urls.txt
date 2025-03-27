@@ -1,0 +1,13 @@
+# Legitimate URLs
+https://www.google.com
+https://github.com/microsoft/vscode/tree/main/src/vs/editor/contrib
+https://chat.openai.com/c/3e0b0a14-3b5c-4af0-9b10-ed96f15790db
+https://www.amazon.com/dp/B09JFSMVH7/ref=sr_1_3?keywords=laptop&qid=1645544823
+https://stackoverflow.com/questions/56254925/how-to-fix-installation-error
+
+# Likely phishing URLs
+https://www.paypa1.com/signin/verify?account=user
+http://192.168.12.43/login/verify.php
+https://secure-paypal.phishing-domain.com/login
+https://login.microsoft.verify-account.tk/signin
+https://badsite.com/www.paypal.com/login.html

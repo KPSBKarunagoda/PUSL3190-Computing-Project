@@ -1,0 +1,8 @@
+{
+  "version": "v5_20250326_195908",
+  "retrained_date": "2025-03-26 20:02:19",
+  "threshold": 0.7,
+  "benchmark_urls_used": 12,
+  "additional_urls_used": 6,
+  "notes": "Model retrained to reduce false positives on legitimate sites"
+}

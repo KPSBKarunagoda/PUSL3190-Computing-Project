@@ -1,0 +1,47 @@
+PHISHING DETECTION BENCHMARK REPORT
+==================================================
+
+Date: 2025-03-26 18:25:20
+
+PERFORMANCE METRICS
+-------------------------
+Accuracy: 88.46%
+Precision: 90.62%
+Recall: 88.46%
+F1 Score: 88.31%
+False Positive Rate: 0.00%
+False Negative Rate: 23.08%
+
+TEST DATASET
+-------------------------
+Total URLs: 26
+Legitimate URLs: 13
+Phishing URLs: 13
+
+CONFUSION MATRIX
+-------------------------
+             Predicted      
+             Legit  Phishing
+Actual Legit  13     0
+      Phishing 3     10
+
+INCORRECTLY CLASSIFIED URLs
+-------------------------
+URL: https://www.paypa1.com/signin/verify?account=user
+  Expected: Phishing, Predicted: Legitimate
+  Risk Score: 0.0, ML Confidence: 53.89%
+
+URL: https://badsite.com/www.paypal.com/login.html
+  Expected: Phishing, Predicted: Legitimate
+  Risk Score: 0.0, ML Confidence: 68.33%
+
+URL: https://www.faceb00k.com/login/recovery/password
+  Expected: Phishing, Predicted: Legitimate
+  Risk Score: 0.0, ML Confidence: 69.77%
+
+
+RECOMMENDATIONS
+-------------------------
+• High false negative rate detected. Consider increasing sensitivity
+  for phishing detection patterns.
+• Overall accuracy below 90%. Model retraining with misclassified examples recommended.

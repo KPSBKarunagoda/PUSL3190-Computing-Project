@@ -1,0 +1,32 @@
+{
+  "timestamp": "20250326_182236",
+  "needs_retraining": true,
+  "reasons": [
+    "Overall accuracy below 90%",
+    "False negative rate above 10%"
+  ],
+  "metrics": {
+    "accuracy": 0.8846153846153846,
+    "precision": 0.90625,
+    "recall": 0.8846153846153846,
+    "f1_score": 0.8830584707646177,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 0.23076923076923078,
+    "legitimate_accuracy": 1.0,
+    "phishing_accuracy": 0.7692307692307693,
+    "total_urls": 26.0,
+    "legitimate_urls": 13.0,
+    "phishing_urls": 13.0
+  },
+  "false_positives": [],
+  "false_negatives": [
+    "https://www.paypa1.com/signin/verify?account=user",
+    "https://badsite.com/www.paypal.com/login.html",
+    "https://www.faceb00k.com/login/recovery/password"
+  ],
+  "all_incorrect": [
+    "https://www.paypa1.com/signin/verify?account=user",
+    "https://badsite.com/www.paypal.com/login.html",
+    "https://www.faceb00k.com/login/recovery/password"
+  ]
+}

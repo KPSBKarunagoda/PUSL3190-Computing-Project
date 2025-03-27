@@ -3,9 +3,47 @@ import json
 import os
 import pandas as pd
 from joblib import load
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 from utils.feature_extractor import URLFeatureExtractor
 from services.safe_browsing import SafeBrowsingService
+import numpy as np
+
+class ModelWrapper:
+    """Wrapper to standardize model interface regardless of underlying model type"""
+    def __init__(self, model):
+        self.model = model
+        # Detect model type
+        self.is_lightgbm_booster = self._is_lightgbm_booster(model)
+        self.is_sklearn = hasattr(model, 'predict_proba')
+        
+    def _is_lightgbm_booster(self, model):
+        """Check if the model is a LightGBM Booster object"""
+        return model.__class__.__name__ == 'Booster'
+        
+    def predict(self, X):
+        """Make binary predictions"""
+        if self.is_lightgbm_booster:
+            # LightGBM Booster returns raw probabilities
+            probs = self.model.predict(X)
+            return (probs > 0.5).astype(int)
+        else:
+            # Standard sklearn interface
+            return self.model.predict(X)
+    
+    def predict_proba(self, X):
+        """Return probability predictions [prob_class0, prob_class1]"""
+        if self.is_lightgbm_booster:
+            # LightGBM Booster returns just the probability for class 1
+            probs_1 = self.model.predict(X)
+            if probs_1.ndim == 1:
+                # Ensure it's a 1D array
+                probs_0 = 1 - probs_1
+                # Return in sklearn format: [[prob_0, prob_1], [prob_0, prob_1], ...]
+                return np.column_stack((probs_0, probs_1))
+            return probs_1  # If already in correct format
+        else:
+            # Standard sklearn interface
+            return self.model.predict_proba(X)
 
 class URLAnalyzer:
     def __init__(self):
@@ -14,6 +52,7 @@ class URLAnalyzer:
         self.model = None
         self.scaler = None
         self.feature_names = None
+        self.threshold = 0.7  # Default threshold
         self._load_model()
         self._initialize_weights()
 
@@ -21,13 +60,57 @@ class URLAnalyzer:
         """Load ML model and related components"""
         try:
             current_dir = os.path.dirname(__file__)
-            model_path = os.path.join(current_dir, 'machine learning', 'url_model_v4.pkl')
-            scaler_path = os.path.join(current_dir, 'machine learning',  'scaler_v4.pkl')
-            feature_names_path = os.path.join(current_dir, 'machine learning', 'dataset', 'feature_names.pkl')
+            # Try loading the v5 model with new feature names first
+            model_path = os.path.join(current_dir, 'machine learning', 'url_model_v5.pkl')
+            scaler_path = os.path.join(current_dir, 'machine learning', 'scaler_v5.pkl')
+            feature_names_path = os.path.join(current_dir, 'machine learning', 'feature_names_v5.pkl')
+            threshold_path = os.path.join(current_dir, 'machine learning', 'classification_threshold.json')
             
-            self.model = load(model_path)
-            self.scaler = load(scaler_path)
-            self.feature_names = load(feature_names_path)
+            # Try to load the v5 components
+            try:
+                raw_model = load(model_path)
+                self.scaler = load(scaler_path)
+                self.model = ModelWrapper(raw_model)  # Wrap the model to standardize the interface
+                
+                try:
+                    self.feature_names = load(feature_names_path)
+                    print(f"Model v5 loaded successfully with {len(self.feature_names)} features", file=sys.stderr)
+                except:
+                    # Fall back to feature names from analyzer
+                    from train_model import FEATURE_NAMES
+                    self.feature_names = FEATURE_NAMES
+                    print(f"Using default feature names with {len(self.feature_names)} features", file=sys.stderr)
+                
+            except Exception as e:
+                print(f"Error loading v5 model: {str(e)}", file=sys.stderr)
+                # Fall back to v4 model
+                model_path = os.path.join(current_dir, 'machine learning', 'url_model_v4.pkl')
+                scaler_path = os.path.join(current_dir, 'machine learning', 'scaler_v4.pkl')
+                raw_model = load(model_path)
+                self.scaler = load(scaler_path)
+                self.model = ModelWrapper(raw_model)  # Wrap the model
+                
+                # Try different locations for feature names
+                try:
+                    # First try v5 feature names (may have been saved separately)
+                    feature_names_path = os.path.join(current_dir, 'machine learning', 'feature_names_v5.pkl')
+                    self.feature_names = load(feature_names_path)
+                except:
+                    # Fall back to original feature names
+                    feature_names_path = os.path.join(current_dir, 'machine learning', 'feature_names.pkl')
+                    self.feature_names = load(feature_names_path)
+                
+                print(f"Fell back to model v4 with {len(self.feature_names)} features", file=sys.stderr)
+            
+            # Load threshold if available
+            try:
+                with open(threshold_path, 'r') as f:
+                    threshold_data = json.load(f)
+                    self.threshold = threshold_data.get('threshold', 0.7)
+                    print(f"Using threshold: {self.threshold}", file=sys.stderr)
+            except:
+                print(f"Using default threshold: {self.threshold}", file=sys.stderr)
+                
             print("Model loaded successfully", file=sys.stderr)
         except Exception as e:
             print(f"Error loading model: {str(e)}", file=sys.stderr)
@@ -54,23 +137,13 @@ class URLAnalyzer:
         """Perform ML-based analysis"""
         try:
             if self.model and self.scaler and self.feature_names:
-                # Check explicitly for IP address in URL
-                url = features.get('_url', '')
-                
-                # Check for IP address pattern in domain using regex
-                import re
-                ip_pattern = re.compile(r'^https?://\d+\.\d+\.\d+\.\d+')
-                is_ip_based = bool(ip_pattern.match(url)) if url else False
-                
-                # Override the feature if we detect an IP
-                if is_ip_based and not features.get('domain_in_ip', 0):
-                    print("IP address detected in URL but not in features - fixing", file=sys.stderr)
-                    features['domain_in_ip'] = 1
-                
                 # Calculate risk score
                 risk_score = self.calculate_risk_score(features)
                 
-                # IP address override - increase risk score
+                # Check if this is an IP-based domain (using the feature extractor's result)
+                is_ip_based = bool(features.get('domain_in_ip', 0))
+                
+                # Apply risk bonus for IP-based domains
                 if is_ip_based:
                     print("IP-based URL detected - applying risk bonus", file=sys.stderr)
                     risk_score += 25  # Add significant risk for IP-based URLs
@@ -84,27 +157,72 @@ class URLAnalyzer:
                     print(f"{feature}: {value}", file=sys.stderr)
 
                 # Scale features
-                features_scaled = self.scaler.transform([feature_vector])
+                try:
+                    features_scaled = self.scaler.transform([feature_vector])
+                except ValueError as e:
+                    print(f"Feature vector scaling error: {str(e)}", file=sys.stderr)
+                    # Create diagnostics for feature count mismatch
+                    print(f"Features expected: {self.scaler.n_features_in_}, Features provided: {len(feature_vector)}", file=sys.stderr)
+                    
+                    # Try to handle feature count mismatch
+                    if hasattr(self.scaler, 'n_features_in_'):
+                        if len(feature_vector) > self.scaler.n_features_in_:
+                            # Too many features, truncate
+                            print(f"Truncating feature vector from {len(feature_vector)} to {self.scaler.n_features_in_}", file=sys.stderr)
+                            feature_vector = feature_vector[:self.scaler.n_features_in_]
+                        elif len(feature_vector) < self.scaler.n_features_in_:
+                            # Too few features, pad with zeros
+                            print(f"Padding feature vector from {len(feature_vector)} to {self.scaler.n_features_in_}", file=sys.stderr)
+                            feature_vector.extend([0] * (self.scaler.n_features_in_ - len(feature_vector)))
+                        
+                        # Try scaling again
+                        features_scaled = self.scaler.transform([feature_vector])
+                    else:
+                        raise
                 
-                # Get prediction
-                ml_prediction = self.model.predict(features_scaled)[0]
-                ml_probability = self.model.predict_proba(features_scaled)[0]
-                ml_confidence = float(max(ml_probability))
+                # Get prediction using the wrapper's unified interface
+                try:
+                    # Get probabilities using the wrapper's predict_proba
+                    ml_probability = self.model.predict_proba(features_scaled)[0]
+                    phishing_prob = float(ml_probability[1])
+                    legitimate_prob = float(ml_probability[0])
+                    ml_prediction = 1 if phishing_prob > self.threshold else 0
+                    ml_confidence = float(max(legitimate_prob, phishing_prob))
+                    
+                    # Debug ML output
+                    print(f"\n=== ML Debug ===", file=sys.stderr)
+                    print(f"Raw ML Prediction: {ml_prediction}", file=sys.stderr)
+                    print(f"Probabilities: Legitimate: {legitimate_prob:.2%}, Phishing: {phishing_prob:.2%}", file=sys.stderr)
+                    print(f"Confidence: {ml_confidence:.2%}", file=sys.stderr)
+                    print(f"Threshold: {self.threshold}", file=sys.stderr)
+                    
+                except Exception as e:
+                    print(f"Error in prediction: {str(e)}", file=sys.stderr)
+                    # Fallback to direct prediction
+                    ml_prediction = int(self.model.predict(features_scaled)[0])
+                    phishing_prob = float(ml_prediction)  # Use prediction as probability
+                    legitimate_prob = 1.0 - phishing_prob
+                    ml_confidence = max(legitimate_prob, phishing_prob)
                 
-                # Debug ML output
-                print(f"\n=== ML Debug ===", file=sys.stderr)
-                print(f"Raw ML Prediction: {ml_prediction}", file=sys.stderr)
-                print(f"Probabilities: Legitimate: {ml_probability[0]:.2%}, Phishing: {ml_probability[1]:.2%}", file=sys.stderr)
-                print(f"Confidence: {ml_confidence:.2%}", file=sys.stderr)
-                
-                # Refined decision logic from working version
+                # Decision logic
                 is_phishing = False
+                
+                # Special pattern detection
+                has_credentials = '@' in features.get('_url', '') and ':' in features.get('_url', '').split('@')[0]
+                has_at_symbol = features.get('qty_at_url', 0) > 0
+                
                 if risk_score > 80:  # Very high risk
                     is_phishing = True
+                    risk_explanation = "Very high risk score detected"
                 elif risk_score > 60:  # High risk
-                    is_phishing = ml_confidence > 0.8
+                    is_phishing = phishing_prob > self.threshold
+                    risk_explanation = "High risk score combined with ML prediction"
+                elif has_at_symbol:  # Special case for @ symbol
+                    is_phishing = phishing_prob > 0.6
+                    risk_explanation = "URL contains @ symbol (often used in phishing)"
                 else:  # Lower risk
-                    is_phishing = ml_prediction == 1 and ml_confidence > 0.9
+                    is_phishing = phishing_prob > self.threshold and ml_confidence > 0.8
+                    risk_explanation = "ML model prediction with high confidence"
                 
                 print(f"\n=== Final Decision ===", file=sys.stderr)
                 result = {
@@ -112,7 +230,7 @@ class URLAnalyzer:
                     "ml_confidence": ml_confidence,
                     "is_phishing": is_phishing,
                     "decision": "Phishing" if is_phishing else "Legitimate",
-                    "risk_explanation": "This site appears to be legitimate based on our analysis." if not is_phishing else "This site appears to be phishing based on our analysis."
+                    "risk_explanation": risk_explanation
                 }
                 print("=" * 25 + "\n", file=sys.stderr)
 
@@ -122,8 +240,9 @@ class URLAnalyzer:
                     "ml_prediction": int(ml_prediction),
                     "ml_confidence": ml_confidence,
                     "features": features,
-                    "safe_probability": float(ml_probability[0]),
-                    "phishing_probability": float(ml_probability[1])
+                    "safe_probability": legitimate_prob,
+                    "phishing_probability": phishing_prob,
+                    "risk_explanation": risk_explanation
                 }
             else:
                 # Fallback to basic risk scoring if ML model is unavailable
@@ -134,9 +253,11 @@ class URLAnalyzer:
                     "is_phishing": is_phishing,
                     "ml_prediction": 1 if is_phishing else 0,
                     "ml_confidence": 0.0,
-                    "features": features
+                    "features": features,
+                    "risk_explanation": "Basic risk score analysis (ML model not available)"
                 }
         except Exception as e:
+            print(f"ML analysis error: {str(e)}", file=sys.stderr)
             raise Exception(f"ML analysis failed: {str(e)}")
 
     def calculate_risk_score(self, features: Dict[str, Any]) -> float:
@@ -148,6 +269,12 @@ class URLAnalyzer:
                 value = features[feature]
                 if isinstance(value, bool):
                     value = 1 if value else 0
+                    
+                # Apply maximum impact cap for specific features
+                if feature == 'time_domain_activation' and value > 0:
+                    # Cap domain age impact to maximum of 365 days (1 year)
+                    value = min(value, 365)
+                
                 risk_score += value * weight
         
         return max(0, min(100, risk_score))
