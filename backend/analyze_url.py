@@ -6,6 +6,7 @@ from joblib import load
 from typing import Dict, Any, Optional, Union
 from utils.feature_extractor import URLFeatureExtractor
 from services.safe_browsing import SafeBrowsingService
+from services.whitelist import WhitelistService
 import numpy as np
 
 class ModelWrapper:
@@ -47,6 +48,7 @@ class ModelWrapper:
 
 class URLAnalyzer:
     def __init__(self):
+        self.whitelist_service = WhitelistService()
         self.feature_extractor = URLFeatureExtractor()
         self.safe_browsing = SafeBrowsingService()
         self.model = None
@@ -280,24 +282,32 @@ class URLAnalyzer:
         return max(0, min(100, risk_score))
 
     async def analyze_url(self, url: str, use_safe_browsing: bool = True) -> Dict[str, Any]:
-        """Two-step URL analysis using Safe Browsing and ML"""
+        """Analyze a URL using a multi-step approach"""
         try:
-            print(f"\n=== Starting Two-Step URL Analysis ===", file=sys.stderr)
+            print(f"\n=== Starting Three-Step URL Analysis ===", file=sys.stderr)
             print(f"URL: {url}", file=sys.stderr)
             print(f"Using Safe Browsing API: {use_safe_browsing}", file=sys.stderr)
             
-            # Extract features
-            features = self.feature_extractor.extract_features(url)
-            if features is None:
-                raise Exception("Failed to extract features")
+            # Step 1: Check whitelist - fastest and most accurate
+            print(f"\nStep 1: Checking whitelist...", file=sys.stderr)
+            if self.whitelist_service.is_whitelisted(url):
+                print(f"URL is in trusted whitelist - skipping further analysis", file=sys.stderr)
+                return {
+                    "risk_score": 0,
+                    "is_phishing": False,
+                    "source": "Whitelist",
+                    "message": "Domain is in trusted whitelist",
+                    "ml_result": None,
+                    "safe_browsing_result": {
+                        "is_safe": True, 
+                        "message": "Skipped - domain in whitelist"
+                    }
+                }
                 
-            # Add raw URL to features for pattern analysis
-            features['_url'] = url
-            
-            # Step 1: Check Safe Browsing API if enabled
-            sb_result = {"threats": [], "is_safe": True}
+            # Step 2: Check Safe Browsing API if enabled
+            sb_result = {"is_safe": True, "message": "Not checked"}
             if use_safe_browsing:
-                print("\nStep 1: Checking Google Safe Browsing...", file=sys.stderr)
+                print("\nStep 2: Checking Google Safe Browsing...", file=sys.stderr)
                 sb_result = await self.safe_browsing.check_url(url)
                 has_threats = bool(sb_result.get("threats"))
                 
@@ -310,10 +320,11 @@ class URLAnalyzer:
                         "message": f"Warning - {sb_result.get('threats')[0].get('threat_type')} detected by Google Safe Browsing"
                     }
             else:
-                print("\nStep 1: Safe Browsing check skipped", file=sys.stderr)
+                print("\nStep 2: Safe Browsing check skipped", file=sys.stderr)
 
-            # Step 2: ML Analysis
-            print("\nStep 2: Performing ML Analysis...", file=sys.stderr)
+            # Step 3: ML Analysis
+            print("\nStep 3: Performing ML Analysis...", file=sys.stderr)
+            features = self.feature_extractor.extract_features(url)
             ml_result = self._ml_analysis(features)
             
             if ml_result is None:
