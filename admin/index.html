@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PhishGuard Admin</title>
   <link rel="stylesheet" href="css/styles.css">
+  <!-- Add Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <div class="container">
@@ -37,16 +38,31 @@
       <div class="dashboard-content">
         <div class="card">
           <h2>Whitelist Management</h2>
-          <p>Safe domains that should never be flagged as phishing.</p>
+          <p>Safe domains that should never be flagged as <br> phishing.</p>
           <div class="form-group">
             <input type="text" id="whitelist-domain" placeholder="Enter domain to whitelist (e.g., google.com)">
             <button id="add-whitelist" class="btn btn-primary">Add to Whitelist</button>
           </div>
-          <div class="list-container">
+          <div class="list-header-container">
             <div class="list-header">
               <span>Domain</span>
-              <span>Actions</span>
+              <span class="actions-col">
+                <button id="whitelist-search-toggle" class="search-toggle">
+                  <i class="fas fa-search"></i>
+                </button>
+                Actions
+              </span>
             </div>
+            <div id="whitelist-search-container" class="search-container hidden">
+              <div class="search-box">
+                <input type="text" id="whitelist-search" placeholder="Search whitelist...">
+                <button class="search-clear" aria-label="Clear search">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="list-container">
             <ul id="whitelist" class="domain-list">
               <li class="loading">Loading whitelist...</li>
             </ul>
@@ -60,11 +76,26 @@
             <input type="text" id="blacklist-domain" placeholder="Enter domain to blacklist (e.g., malicious-site.com)">
             <button id="add-blacklist" class="btn btn-primary">Add to Blacklist</button>
           </div>
-          <div class="list-container">
+          <div class="list-header-container">
             <div class="list-header">
               <span>Domain</span>
-              <span>Actions</span>
+              <span class="actions-col">
+                <button id="blacklist-search-toggle" class="search-toggle">
+                  <i class="fas fa-search"></i>
+                </button>
+                Actions
+              </span>
             </div>
+            <div id="blacklist-search-container" class="search-container hidden">
+              <div class="search-box">
+                <input type="text" id="blacklist-search" placeholder="Search blacklist...">
+                <button class="search-clear" aria-label="Clear search">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="list-container">
             <ul id="blacklist" class="domain-list">
               <li class="loading">Loading blacklist...</li>
             </ul>
