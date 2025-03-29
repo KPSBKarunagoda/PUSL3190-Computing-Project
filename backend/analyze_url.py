@@ -7,6 +7,7 @@ from typing import Dict, Any, Optional, Union
 from utils.feature_extractor import URLFeatureExtractor
 from services.safe_browsing import SafeBrowsingService
 from services.whitelist import WhitelistService
+from services.blacklist import BlacklistService
 import numpy as np
 
 class ModelWrapper:
@@ -49,6 +50,7 @@ class ModelWrapper:
 class URLAnalyzer:
     def __init__(self):
         self.whitelist_service = WhitelistService()
+        self.blacklist_service = BlacklistService()
         self.feature_extractor = URLFeatureExtractor()
         self.safe_browsing = SafeBrowsingService()
         self.model = None
@@ -282,32 +284,42 @@ class URLAnalyzer:
         return max(0, min(100, risk_score))
 
     async def analyze_url(self, url: str, use_safe_browsing: bool = True) -> Dict[str, Any]:
-        """Analyze a URL using a multi-step approach"""
+        """Four-step URL analysis including blacklist and whitelist checks"""
         try:
-            print(f"\n=== Starting Three-Step URL Analysis ===", file=sys.stderr)
+            print(f"\n=== Starting Four-Step URL Analysis ===", file=sys.stderr)
             print(f"URL: {url}", file=sys.stderr)
             print(f"Using Safe Browsing API: {use_safe_browsing}", file=sys.stderr)
             
-            # Step 1: Check whitelist - fastest and most accurate
-            print(f"\nStep 1: Checking whitelist...", file=sys.stderr)
+            # Step 1: Check BLACKLIST first (highest priority)
+            print("\nStep 1: Checking blacklist...", file=sys.stderr)
+            if self.blacklist_service.is_blacklisted(url):
+                print("URL is in blacklist - blocking access", file=sys.stderr)
+                return {
+                    "risk_score": 100,
+                    "is_phishing": True,
+                    "source": "Blacklist",
+                    "message": "Domain is in known phishing blacklist",
+                    "ml_result": None,
+                    "safe_browsing_result": None
+                }
+                
+            # Step 2: Check WHITELIST next
+            print("\nStep 2: Checking whitelist...", file=sys.stderr)
             if self.whitelist_service.is_whitelisted(url):
-                print(f"URL is in trusted whitelist - skipping further analysis", file=sys.stderr)
+                print("URL is in trusted whitelist - allowing access", file=sys.stderr)
                 return {
                     "risk_score": 0,
                     "is_phishing": False,
                     "source": "Whitelist",
                     "message": "Domain is in trusted whitelist",
                     "ml_result": None,
-                    "safe_browsing_result": {
-                        "is_safe": True, 
-                        "message": "Skipped - domain in whitelist"
-                    }
+                    "safe_browsing_result": None
                 }
                 
-            # Step 2: Check Safe Browsing API if enabled
-            sb_result = {"is_safe": True, "message": "Not checked"}
+            # Step 3: Check Safe Browsing API if enabled
+            sb_result = {"threats": [], "is_safe": True}
             if use_safe_browsing:
-                print("\nStep 2: Checking Google Safe Browsing...", file=sys.stderr)
+                print("\nStep 3: Checking Google Safe Browsing...", file=sys.stderr)
                 sb_result = await self.safe_browsing.check_url(url)
                 has_threats = bool(sb_result.get("threats"))
                 
@@ -320,10 +332,10 @@ class URLAnalyzer:
                         "message": f"Warning - {sb_result.get('threats')[0].get('threat_type')} detected by Google Safe Browsing"
                     }
             else:
-                print("\nStep 2: Safe Browsing check skipped", file=sys.stderr)
+                print("\nStep 3: Safe Browsing check skipped", file=sys.stderr)
 
-            # Step 3: ML Analysis
-            print("\nStep 3: Performing ML Analysis...", file=sys.stderr)
+            # Step 4: ML Analysis
+            print("\nStep 4: Performing ML Analysis...", file=sys.stderr)
             features = self.feature_extractor.extract_features(url)
             ml_result = self._ml_analysis(features)
             
