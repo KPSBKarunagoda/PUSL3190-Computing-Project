@@ -1,4 +1,40 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  // Setup settings dropdown
+  const settingsBtn = document.getElementById('settings-btn');
+  const settingsDropdown = document.getElementById('settings-dropdown');
+  
+  if (settingsBtn && settingsDropdown) {
+    // Toggle dropdown when settings button is clicked
+    settingsBtn.addEventListener('click', () => {
+      settingsDropdown.classList.toggle('active');
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('#settings-btn') && !event.target.closest('#settings-dropdown')) {
+        settingsDropdown.classList.remove('active');
+      }
+    });
+    
+    // Update links with the base URL - FIXED PATH
+    const baseUrl = 'http://localhost:3000'; // Change to actual domain in production
+    const loginLink = settingsDropdown.querySelector('a[href="login.html"]');
+    if (loginLink) {
+      // Changed from frontend/login.html to just login.html since the server now handles static files
+      loginLink.href = `${baseUrl}/login.html`;
+    }
+    
+    // Set up the report link functionality (disabled for now)
+    const reportLink = document.getElementById('report-link');
+    if (reportLink) {
+      reportLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Display a message that this functionality is coming soon
+        showMessage("Reporting functionality will be available soon.");
+      });
+    }
+  }
+  
   try {
     // Get current tab
     const tabs = await chrome.tabs.query({active: true, currentWindow: true});

@@ -11,6 +11,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Setup static file serving for frontend
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
+
 // Initialize server with database connection
 async function initializeServer() {
   // Test database connection
@@ -108,6 +111,20 @@ async function initializeServer() {
         error: 'Server error',
         message: error.message
       });
+    }
+  });
+
+  // Route to handle frontend page requests
+  app.get('*.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'frontend', req.path));
+  });
+
+  // Catch-all route to serve index.html for client-side routing
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api') && !path.extname(req.path)) {
+      res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
+    } else {
+      res.status(404).json({ error: 'Not found' });
     }
   });
 

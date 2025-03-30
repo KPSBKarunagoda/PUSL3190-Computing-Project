@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard Register</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Override some styles locally */
+    body.dark-theme {
+      padding-top: 80px;
+      padding-bottom: 80px;
+      display: block;
+    }
+    
+    .login-container {
+      margin: 80px auto;
+    }
+    
+    /* Additional styles for register form */
+    .password-requirements {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 5px;
+      padding-left: 5px;
+    }
+    
+    .password-strength {
+      height: 5px;
+      margin-top: 8px;
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+    
+    .strength-weak {
+      background-color: #f44336;
+      width: 30%;
+    }
+    
+    .strength-medium {
+      background-color: #ff9800;
+      width: 60%;
+    }
+    
+    .strength-strong {
+      background-color: #4caf50;
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <div class="login-container">
+    <div class="login-header">
+      <h1>Create an Account</h1>
+      <p>Join PhishGuard for enhanced protection</p>
+    </div>
+    
+    <div id="register-error" class="login-error"></div>
+    
+    <div class="oauth-buttons">
+      <button class="oauth-button">
+        <i class="fab fa-google"></i> Google
+      </button>
+      <button class="oauth-button">
+        <i class="fab fa-github"></i> GitHub
+      </button>
+    </div>
+    
+    <div class="divider">
+      <span>OR REGISTER WITH EMAIL</span>
+    </div>
+    
+    <form id="register-form">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <div class="input-wrapper">
+          <i class="fas fa-user input-icon"></i>
+          <input type="text" id="name" name="name" required>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="email">Email</label>
+        <div class="input-wrapper">
+          <i class="fas fa-envelope input-icon"></i>
+          <input type="email" id="email" name="email" required>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-wrapper">
+          <i class="fas fa-lock input-icon"></i>
+          <input type="password" id="password" name="password" required>
+          <button type="button" class="toggle-password" id="toggle-password">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+        <div class="password-strength" id="password-strength"></div>
+        <div class="password-requirements">
+          Password must be at least 8 characters with letters, numbers, and symbols.
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="confirm-password">Confirm Password</label>
+        <div class="input-wrapper">
+          <i class="fas fa-lock input-icon"></i>
+          <input type="password" id="confirm-password" name="confirm-password" required>
+        </div>
+      </div>
+      
+      <button type="submit" class="login-button">Create Account</button>
+    </form>
+    
+    <div class="login-footer">
+      <p>Already have an account? <a href="login.html">Sign in</a></p>
+      <p style="margin-top: 10px; font-size: 0.8rem;">By registering, you agree to our <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a></p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const registerForm = document.getElementById('register-form');
+      const registerError = document.getElementById('register-error');
+      const passwordField = document.getElementById('password');
+      const confirmPasswordField = document.getElementById('confirm-password');
+      const passwordStrength = document.getElementById('password-strength');
+      
+      // Toggle password visibility
+      const togglePassword = document.getElementById('toggle-password');
+      
+      togglePassword.addEventListener('click', () => {
+        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordField.setAttribute('type', type);
+        
+        // Change eye icon
+        togglePassword.querySelector('i').className = 
+          type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+      });
+      
+      // Password strength checker
+      passwordField.addEventListener('input', () => {
+        const password = passwordField.value;
+        let strength = 0;
+        
+        // Check password length
+        if (password.length >= 8) strength += 1;
+        
+        // Check for letters
+        if (/[a-zA-Z]/.test(password)) strength += 1;
+        
+        // Check for numbers
+        if (/\d/.test(password)) strength += 1;
+        
+        // Check for special characters
+        if (/[^a-zA-Z0-9]/.test(password)) strength += 1;
+        
+        // Update password strength indicator
+        if (password.length === 0) {
+          passwordStrength.className = 'password-strength';
+        } else if (strength < 3) {
+          passwordStrength.className = 'password-strength strength-weak';
+        } else if (strength === 3) {
+          passwordStrength.className = 'password-strength strength-medium';
+        } else {
+          passwordStrength.className = 'password-strength strength-strong';
+        }
+      });
+      
+      // Form submission
+      registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Reset error message
+        registerError.style.display = 'none';
+        
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const password = passwordField.value;
+        const confirmPassword = confirmPasswordField.value;
+        
+        // Basic validation
+        if (password !== confirmPassword) {
+          registerError.textContent = 'Passwords do not match';
+          registerError.style.display = 'block';
+          return;
+        }
+        
+        if (password.length < 8) {
+          registerError.textContent = 'Password must be at least 8 characters long';
+          registerError.style.display = 'block';
+          return;
+        }
+        
+        try {
+          // For now, just show a success message
+          alert('Registration functionality will be implemented in the next phase.');
+          
+          // Eventually, this will redirect to a verification page or login
+          // window.location.href = 'verification.html';
+        } catch (error) {
+          registerError.textContent = error.message || 'Registration failed. Please try again.';
+          registerError.style.display = 'block';
+        }
+      });
+      
+      // OAuth button functionality (placeholder)
+      document.querySelectorAll('.oauth-button').forEach(button => {
+        button.addEventListener('click', () => {
+          alert('OAuth registration will be implemented in the next phase.');
+        });
+      });
+    });
+  </script>
+</body>
+</html>
