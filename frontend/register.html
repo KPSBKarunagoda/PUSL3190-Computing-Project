@@ -47,6 +47,16 @@
       background-color: #4caf50;
       width: 100%;
     }
+
+    .success-message {
+      text-align: center;
+      padding: 2rem 0;
+    }
+    
+    .success-message h3 {
+      margin: 1rem 0;
+      color: #4EC9B0;
+    }
   </style>
 </head>
 <body class="dark-theme">
@@ -181,7 +191,7 @@
         const password = passwordField.value;
         const confirmPassword = confirmPasswordField.value;
         
-        // Basic validation
+        // Client-side validation
         if (password !== confirmPassword) {
           registerError.textContent = 'Passwords do not match';
           registerError.style.display = 'block';
@@ -194,13 +204,110 @@
           return;
         }
         
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          registerError.textContent = 'Please enter a valid email address';
+          registerError.style.display = 'block';
+          return;
+        }
+
+        // Define submitButton outside try block so it's accessible in catch
+        const submitButton = registerForm.querySelector('button[type="submit"]');
+        const originalText = submitButton.textContent;
+
         try {
-          // For now, just show a success message
-          alert('Registration functionality will be implemented in the next phase.');
+          // Show loading state
+          submitButton.disabled = true;
+          submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+          console.log('Sending registration request...');
+
+          // First verify the server is responding
+          try {
+            const testResponse = await fetch('http://localhost:3000/api/test');
+            if (!testResponse.ok) {
+              console.warn('Server test endpoint failed. API might be down.');
+            } else {
+              console.log('Server is responding.');
+            }
+          } catch (e) {
+            console.error('Server appears to be down:', e);
+          }
           
-          // Eventually, this will redirect to a verification page or login
-          // window.location.href = 'verification.html';
+          // Send registration request to backend with explicit name
+          const userData = { 
+            name: name.trim(), 
+            email: email.trim(), 
+            password 
+          };
+          
+          console.log('Sending user data:', {
+            name: userData.name,
+            email: userData.email,
+            password: '******'
+          });
+          
+          const response = await fetch('http://localhost:3000/api/auth/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+          });
+
+          console.log('Response status:', response.status);
+          
+          // Get response text first, then try to parse as JSON
+          const responseText = await response.text();
+          console.log('Response body:', responseText);
+          
+          let data;
+          if (responseText) {
+            try {
+              // Try to parse as JSON
+              data = JSON.parse(responseText);
+              console.log('Parsed data:', data);
+            } catch (jsonError) {
+              console.error('Invalid JSON in response:', jsonError);
+              if (responseText.includes('<!DOCTYPE html>')) {
+                // HTML error page indicates route is not found
+                throw new Error('API route not found. Please ensure the server is running and routes are registered.');
+              }
+              throw new Error('Server returned an invalid response');
+            }
+          } else {
+            throw new Error('Empty response from server');
+          }
+          
+          if (!response.ok) {
+            throw new Error(data.message || 'Registration failed');
+          }
+          
+          // Store token if provided
+          if (data.token) {
+            localStorage.setItem('phishguardToken', data.token);
+          }
+          
+          // Success - Show success message
+          registerForm.innerHTML = `
+            <div class="success-message">
+              <i class="fas fa-check-circle" style="color: #4EC9B0; font-size: 3rem; margin-bottom: 1rem;"></i>
+              <h3>Registration Successful!</h3>
+              <p>Your account has been created.</p>
+              <button type="button" class="login-button" onclick="window.location.href='login.html'" style="margin-top: 1.5rem;">
+                Go to Login
+              </button>
+            </div>
+          `;
         } catch (error) {
+          console.error('Registration error:', error);
+          
+          // Reset button (submitButton is now accessible here)
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+          
+          // Display error
           registerError.textContent = error.message || 'Registration failed. Please try again.';
           registerError.style.display = 'block';
         }

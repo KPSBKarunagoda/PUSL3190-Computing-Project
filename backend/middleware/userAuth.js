@@ -9,7 +9,7 @@ module.exports = function(dbConnection) {
         
         // Check if no token
         if (!token) {
-            return res.status(401).json({ message: 'No token, authorization denied' });
+            return res.status(401).json({ message: 'Authentication required' });
         }
         
         try {
@@ -17,14 +17,13 @@ module.exports = function(dbConnection) {
             const decoded = authService.verifyToken(token);
             req.user = decoded.user;
             
-            // Check if admin role
-            if (req.user.role !== 'Admin') {
-                return res.status(403).json({ message: 'Access denied: Admin privileges required' });
+            // Allow both Admin and User roles
+            if (!['Admin', 'User'].includes(req.user.role)) {
+                return res.status(403).json({ message: 'Invalid user role' });
             }
             
             next();
         } catch (err) {
-            // Don't reveal internal error details
             res.status(401).json({ message: 'Authentication failed' });
         }
     };
