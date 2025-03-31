@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard - URL Analysis</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body.dark-theme {
+      padding-top: 80px;
+      padding-bottom: 80px;
+    }
+    
+    .analysis-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px; /* Reduced from 30px */
+      padding-bottom: 15px; /* Reduced from 20px */
+      border-bottom: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .analysis-form {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 30px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .url-input-wrapper {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .url-input {
+      flex: 1;
+      padding: 12px 15px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      background-color: var(--input-bg);
+      color: var(--text-primary);
+      font-size: 1rem;
+    }
+    
+    .analyze-button {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .analyze-button:hover {
+      background-color: var(--primary-hover);
+    }
+    
+    .analyze-button:disabled {
+      background-color: var(--disabled-color);
+      cursor: not-allowed;
+    }
+    
+    .results-container {
+      display: none;
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 30px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .result-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .result-header i {
+      font-size: 2rem;
+      margin-right: 15px;
+    }
+    
+    .safe-icon {
+      color: #4caf50;
+    }
+    
+    .danger-icon {
+      color: #f44336;
+    }
+    
+    .warning-icon {
+      color: #ff9800;
+    }
+    
+    .risk-score {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .score-bar {
+      flex: 1;
+      height: 8px;
+      background-color: var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 0 15px;
+    }
+    
+    .score-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease-in-out;
+    }
+    
+    .score-safe {
+      background-color: #4caf50;
+    }
+    
+    .score-medium {
+      background-color: #ff9800;
+    }
+    
+    .score-danger {
+      background-color: #f44336;
+    }
+    
+    .details-section {
+      margin-top: 20px;
+    }
+    
+    .feature-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .feature-value.positive {
+      color: #4caf50;
+    }
+    
+    .feature-value.negative {
+      color: #f44336;
+    }
+    
+    .explanation-box {
+      background-color: rgba(var(--primary-rgb), 0.1);
+      border-left: 4px solid var(--primary-color);
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    
+    .loading i {
+      font-size: 2rem;
+      color: var(--primary-color);
+      margin-bottom: 20px;
+      animation: spin 1.5s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+    
+    .nav-buttons button {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .nav-buttons button:hover {
+      background-color: var(--primary-hover);
+    }
+    
+    .education-section {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      padding: 25px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .education-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      background-color: rgba(var(--accent-rgb), 0.05);
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .btn-secondary {
+      background-color: var(--card-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .btn-secondary:hover {
+      background-color: var(--border-color);
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <div class="analysis-container">
+    <div class="page-header">
+        <h1 style="margin-left: 20px;">URL Analysis</h1>
+      <div class="user-info">
+        <a href="dashboard.html" class="btn-secondary">
+          <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+      </div>
+    </div>
+    
+    <div class="analysis-form">
+      <h2>Check a URL for Phishing</h2>
+      <p>Enter a suspicious URL below to analyze it for potential phishing threats.</p>
+      
+      <div class="url-input-wrapper">
+        <input type="url" id="url-input" class="url-input" placeholder="https://example.com" required>
+        <button id="analyze-button" class="analyze-button">Analyze</button>
+      </div>
+      <div id="input-error" class="error-message" style="display: none; color: #f44336; margin-top: 10px;"></div>
+    </div>
+    
+    <div id="loading-container" class="results-container" style="display: none;">
+      <div class="loading">
+        <i class="fas fa-spinner"></i>
+        <p>Analyzing URL, please wait...</p>
+      </div>
+    </div>
+    
+    <div id="results-container" class="results-container">
+      <div class="result-header">
+        <i id="result-icon" class="fas fa-shield-alt"></i>
+        <div>
+          <h2 id="result-title">Analysis Results</h2>
+          <p id="analyzed-url" style="word-break: break-all;">URL: </p>
+        </div>
+      </div>
+      
+      <div class="risk-score">
+        <span>Risk Score:</span>
+        <div class="score-bar">
+          <div id="score-fill" class="score-fill" style="width: 0%"></div>
+        </div>
+        <span id="risk-score-value">0/100</span>
+      </div>
+      
+      <div class="explanation-box">
+        <p id="risk-explanation">The URL will be analyzed for phishing indicators.</p>
+      </div>
+      
+      <div class="details-section">
+        <h3>Analysis Details</h3>
+        <div id="features-list">
+          <!-- Features will be populated here -->
+        </div>
+      </div>
+      
+      <div class="nav-buttons">
+        <button id="new-analysis" class="btn-secondary">Analyze Another URL</button>
+      </div>
+    </div>
+    
+    <div class="education-section">
+      <h2>Learn About Phishing</h2>
+      <div class="education-placeholder">
+        <i class="fas fa-book-open" style="font-size: 3rem; margin-bottom: 20px; color: var(--accent-color);"></i>
+        <h3>Educational Content Coming Soon</h3>
+        <p>This section will contain educational materials about phishing attacks, how to identify them, and how to protect yourself.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check if user is logged in
+      const token = localStorage.getItem('phishguardToken');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      const urlInput = document.getElementById('url-input');
+      const analyzeButton = document.getElementById('analyze-button');
+      const inputError = document.getElementById('input-error');
+      const loadingContainer = document.getElementById('loading-container');
+      const resultsContainer = document.getElementById('results-container');
+      const resultIcon = document.getElementById('result-icon');
+      const resultTitle = document.getElementById('result-title');
+      const analyzedUrl = document.getElementById('analyzed-url');
+      const scoreFill = document.getElementById('score-fill');
+      const riskScoreValue = document.getElementById('risk-score-value');
+      const riskExplanation = document.getElementById('risk-explanation');
+      const featuresList = document.getElementById('features-list');
+      const newAnalysisButton = document.getElementById('new-analysis');
+      
+      // Hide results initially
+      resultsContainer.style.display = 'none';
+      
+      // URL validation function
+      function isValidUrl(url) {
+        try {
+          new URL(url);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }
+      
+      // Handle analysis button click
+      analyzeButton.addEventListener('click', async () => {
+        const url = urlInput.value.trim();
+        
+        // Reset error
+        inputError.style.display = 'none';
+        
+        // Validate URL
+        if (!url) {
+          inputError.textContent = 'Please enter a URL';
+          inputError.style.display = 'block';
+          return;
+        }
+        
+        // Check for valid URL format
+        if (!isValidUrl(url)) {
+          inputError.textContent = 'Please enter a valid URL (e.g., https://example.com)';
+          inputError.style.display = 'block';
+          return;
+        }
+        
+        // Show loading
+        loadingContainer.style.display = 'block';
+        resultsContainer.style.display = 'none';
+        analyzeButton.disabled = true;
+        
+        try {
+          // Send URL for analysis
+          const response = await fetch('http://localhost:3000/analyze-url', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-auth-token': token // Send token for authentication if needed
+            },
+            body: JSON.stringify({ 
+              url: url,
+              useSafeBrowsing: true // Enable Google Safe Browsing API if available
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to analyze URL');
+          }
+          
+          const result = await response.json();
+          
+          // Display results
+          displayResults(url, result);
+          
+        } catch (error) {
+          console.error('Analysis error:', error);
+          inputError.textContent = error.message || 'Failed to analyze URL. Please try again.';
+          inputError.style.display = 'block';
+          loadingContainer.style.display = 'none';
+        } finally {
+          analyzeButton.disabled = false;
+        }
+      });
+      
+      // Display analysis results
+      function displayResults(url, result) {
+        // Set analyzed URL
+        analyzedUrl.textContent = `URL: ${url}`;
+        
+        // Set risk score - Fix for proper decimal handling
+        let score;
+        if (result.risk_score > 1) {
+          // Already in 0-100 range (like 15.8)
+          score = Math.min(100, result.risk_score); // Cap at 100
+        } else {
+          // In 0-1 range (like 0.158)
+          score = result.risk_score * 100;
+        }
+        
+        // Round to 1 decimal place for better display
+        const displayScore = Math.round(score * 10) / 10;
+        riskScoreValue.textContent = `${displayScore}/100`;
+        scoreFill.style.width = `${score}%`;
+        
+        // Set result icon and title based on result
+        if (result.is_phishing) {
+          resultIcon.className = 'fas fa-exclamation-triangle danger-icon';
+          resultTitle.textContent = 'Phishing Detected!';
+          scoreFill.className = 'score-fill score-danger';
+        } else if (score > 30) {
+          resultIcon.className = 'fas fa-exclamation-circle warning-icon';
+          resultTitle.textContent = 'Suspicious - Use Caution';
+          scoreFill.className = 'score-fill score-medium';
+        } else {
+          resultIcon.className = 'fas fa-shield-alt safe-icon';
+          resultTitle.textContent = 'Likely Safe';
+          scoreFill.className = 'score-fill score-safe';
+        }
+        
+        // Set explanation
+        riskExplanation.textContent = result.risk_explanation || 'No detailed explanation available.';
+        
+        // Clear previous features
+        featuresList.innerHTML = '';
+        
+        // Add features to list
+        if (result.features && Object.keys(result.features).length > 0) {
+          Object.entries(result.features).forEach(([key, value]) => {
+            // Format key for display
+            const displayKey = key
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, l => l.toUpperCase());
+            
+            // Create feature item
+            const featureItem = document.createElement('div');
+            featureItem.className = 'feature-item';
+            
+            // Create feature name
+            const featureName = document.createElement('div');
+            featureName.className = 'feature-name';
+            featureName.textContent = displayKey;
+            
+            // Create feature value
+            const featureValue = document.createElement('div');
+            featureValue.className = 'feature-value';
+            
+            // Format and colorize the value based on type
+            if (typeof value === 'boolean') {
+              featureValue.textContent = value ? 'Yes' : 'No';
+              if ((key.includes('suspicious') || key.includes('phish')) && value) {
+                featureValue.classList.add('negative');
+              } else if (key.includes('legitimate') && !value) {
+                featureValue.classList.add('negative');
+              }
+            } else if (typeof value === 'number') {
+              featureValue.textContent = value.toFixed(2);
+              // Determine if this numeric feature indicates risk
+              if ((key.includes('suspicious') || key.includes('risk')) && value > 0.5) {
+                featureValue.classList.add('negative');
+              }
+            } else {
+              featureValue.textContent = String(value);
+            }
+            
+            featureItem.appendChild(featureName);
+            featureItem.appendChild(featureValue);
+            featuresList.appendChild(featureItem);
+          });
+        } else {
+          const noFeatures = document.createElement('p');
+          noFeatures.textContent = 'No detailed features available for this analysis.';
+          featuresList.appendChild(noFeatures);
+        }
+        
+        // Hide loading, show results
+        loadingContainer.style.display = 'none';
+        resultsContainer.style.display = 'block';
+      }
+      
+      // New analysis button
+      newAnalysisButton.addEventListener('click', () => {
+        urlInput.value = '';
+        resultsContainer.style.display = 'none';
+        inputError.style.display = 'none';
+      });
+      
+      // Allow Enter key to submit
+      urlInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          analyzeButton.click();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
