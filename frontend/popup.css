@@ -1,22 +1,37 @@
+/* Dark theme styles following main app design */
+:root {
+  --primary-color: #3D85C6;
+  --primary-hover: #5E9CD3;
+  --accent-color: #4EC9B0;
+  --danger-color: #F72585;
+  --warning-color: #F8961E;
+  --dark-bg: #121212;
+  --card-bg: #1E1E1E;
+  --card-hover: #252525;
+  --border-color: #333;
+  --text-primary: #E0E0E0;
+  --text-secondary: #A0A0A0;
+  --input-bg: #2D2D2D;
+  --input-border: #444;
+  --input-focus: #4EC9B0;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
 /* General Styles */
 body {
-    font-family: Arial, sans-serif;
-    margin: 2;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
     padding: 0;
-    background-color: #f9f9f9;
-    width: 325px;
+    background-color: var(--dark-bg);
+    color: var(--text-primary);
+    width: 350px;
     min-height: 600px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 .container {
     padding: 15px;
-    background-color: #ffffff;
-    border-radius: 8px;
     width: 100%;
-    max-width: 320px;
+    box-sizing: border-box;
 }
 
 /* Header with settings icon */
@@ -25,13 +40,29 @@ header {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    position: relative;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+header h1 {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+header h1::before {
+    content: "\f3ed"; /* Shield icon */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
 }
 
 .settings-icon {
     background: none;
     border: none;
-    color: var(--primary-color, #3D85C6);
+    color: var(--text-secondary);
     font-size: 1.2rem;
     cursor: pointer;
     padding: 5px;
@@ -41,7 +72,7 @@ header {
 
 .settings-icon:hover {
     background-color: rgba(61, 133, 198, 0.1);
-    transform: rotate(15deg);
+    color: var(--primary-color);
 }
 
 /* Settings dropdown */
@@ -54,12 +85,13 @@ header {
     display: none;
     position: absolute;
     right: 0;
-    background-color: white;
+    background-color: var(--card-bg);
     min-width: 160px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow);
     z-index: 1;
     border-radius: 4px;
     overflow: hidden;
+    border: 1px solid var(--border-color);
 }
 
 .dropdown-content.active {
@@ -73,7 +105,7 @@ header {
 }
 
 .dropdown-content a {
-    color: var(--dark-color, #333);
+    color: var(--text-primary);
     padding: 12px 16px;
     text-decoration: none;
     display: block;
@@ -82,32 +114,39 @@ header {
 }
 
 .dropdown-content a:hover {
-    background-color: #f1f1f1;
-    color: var(--primary-color, #3D85C6);
+    background-color: var(--card-hover);
+    color: var(--primary-color);
 }
 
-/* Site Information Section */
+/* Site Information Section - Card Style */
 .site-info {
-    margin-bottom: 20px;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
 }
 
 .site-info h2 {
-    font-size: 1.2em;
-    color: #444;
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-top: 0;
     margin-bottom: 10px;
 }
 
 .site-info p {
-    font-size: 1em;
-    color: #333;
-    word-break: break-all; /* Allows long URLs to break to the next line */
-    background-color: #f1f1f1;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    word-break: break-all;
+    background-color: var(--input-bg);
     padding: 10px;
     border-radius: 4px;
+    border: 1px solid var(--input-border);
+    margin: 0;
 }
 
 .site-info a {
-    color: #007bff;
+    color: var(--primary-color);
     text-decoration: none;
 }
 
@@ -115,37 +154,89 @@ header {
     text-decoration: underline;
 }
 
-/* Score Section */
+/* Score Section - Card Style */
 .score-section {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
     text-align: center;
-    margin-bottom: 20px;
 }
 
 .score-section h3 {
-    font-size: 1.1em;
-    color: #444;
-    margin-bottom: 10px;
-    margin-top: 30px; /* Added this line */
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-top: 0;
+    margin-bottom: 12px;
 }
 
 .score-section #score {
-    font-size: 1.5em;
+    font-size: 2rem;
     font-weight: bold;
-    color: #d9534f; /* Red color for risk score */
-    background-color: #f1f1f1;
-    padding: 10px;
-    border-radius: 4px;
+    margin: 15px 0;
 }
 
-/* Manual Link Entry */
+/* Risk colors */
+.safe {
+    color: #4caf50;
+}
+
+.warning {
+    color: var(--warning-color);
+}
+
+.danger {
+    color: var(--danger-color);
+}
+
+/* Risk Explanation - Card Style */
+.risk-explanation {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.risk-explanation h3 {
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+.risk-explanation p {
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Result container - Card Style */
+#result-container {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+/* Manual Link Entry - Card Style */
 .manual-entry {
-    margin-top: 20px;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
 }
 
 .manual-entry h3 {
-    font-size: 1em;
-    color: #666;
-    margin-bottom: 10px;
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-top: 0;
+    margin-bottom: 12px;
 }
 
 .manual-entry input {
@@ -153,43 +244,57 @@ header {
     padding: 10px;
     margin-top: 5px;
     margin-bottom: 10px;
-    font-size: 0.9em;
-    border: 1px solid #ccc;
+    font-size: 0.9rem;
+    border: 1px solid var(--input-border);
     border-radius: 4px;
     box-sizing: border-box;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+}
+
+.manual-entry input:focus {
+    outline: none;
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 2px rgba(78, 201, 176, 0.2);
 }
 
 .manual-entry button {
     width: 100%;
     padding: 10px;
-    font-size: 0.9em;
+    font-size: 0.9rem;
     border: none;
     border-radius: 4px;
-    background-color: #007bff;
+    background-color: var(--primary-color);
     color: white;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
 .manual-entry button:hover {
-    background-color: #0056b3;
+    background-color: var(--primary-hover);
 }
 
-/* Educational Section */
+/* Educational Section - Card Style */
 .education-section {
-    margin-top: 20px;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
 }
 
 .education-section h3 {
-    font-size: 1.1em;
-    color: #444;
-    margin-bottom: 10px;
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-top: 0;
+    margin-bottom: 12px;
 }
 
 .education-section p {
-    font-size: 0.9em;
-    color: #666;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
     margin-bottom: 10px;
+    line-height: 1.5;
 }
 
 .education-section ul {
@@ -198,60 +303,71 @@ header {
 }
 
 .education-section li {
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    position: relative;
+    padding-left: 20px;
+}
+
+.education-section li::before {
+    content: "\f0c8";
+    font-family: "Font Awesome 5 Free";
+    position: absolute;
+    left: 0;
+    color: var(--accent-color);
+    font-size: 0.6rem;
+    top: 6px;
 }
 
 .education-section a {
-    color: #007bff;
+    color: var(--primary-color);
     text-decoration: none;
 }
 
 .education-section a:hover {
     text-decoration: underline;
+    color: var(--primary-hover);
 }
 
-/* Footer */
-footer {
-    text-align: center;
-    margin-top: 20px;
-    font-size: 0.8em;
-    color: #aaa;
+/* Diagnostic tools - Card Style */
+.diagnostic-tools {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
 }
 
-footer a {
-    color: #007bff;
-    text-decoration: none;
+.diagnostic-tools h3 {
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-top: 0;
+    margin-bottom: 12px;
 }
 
-footer a:hover {
-    text-decoration: underline;
-}
-.safe {
-    color: green;
-    background-color: #e6ffe6;
+.settings-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
 }
 
-.warning {
-    color: orange;
-    background-color: #fff3e6;
+.toggle-label {
+    margin-left: 10px;
+    color: var(--text-primary);
 }
 
-.danger {
-    color: red;
-    background-color: #ffffff;
-}
-.high-risk {
-    background-color: #f8d7da;
-    color: #721c24;
-    padding: 8px 12px;
-    border-radius: 4px;
+.diagnostic-note {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-top: 5px;
+    margin-bottom: 0;
 }
 
+/* Toggle Switch */
 .switch {
     position: relative;
     display: inline-block;
-    width: 60px;
-    height: 34px;
+    width: 50px;
+    height: 24px;
 }
 
 .switch input {
@@ -267,16 +383,16 @@ footer a:hover {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
+    background-color: var(--input-border);
     transition: .4s;
-    border-radius: 34px;
+    border-radius: 24px;
 }
 
 .slider:before {
     content: "";
     position: absolute;
-    height: 26px;
-    width: 26px;
+    height: 16px;
+    width: 16px;
     left: 4px;
     bottom: 4px;
     background-color: white;
@@ -285,30 +401,24 @@ footer a:hover {
 }
 
 input:checked + .slider {
-    background-color: #2196F3;
+    background-color: var(--primary-color);
 }
 
 input:checked + .slider:before {
     transform: translateX(26px);
 }
 
-/* Add these styles if not already present */
+/* Loading animation */
 .analyzing {
     text-align: center;
     padding: 15px;
 }
 
-.url {
-    font-weight: bold;
-    word-break: break-all;
-    margin-bottom: 15px;
-}
-
 .spinner {
     width: 30px;
     height: 30px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #3498db;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 10px auto;
@@ -319,33 +429,31 @@ input:checked + .slider:before {
     100% { transform: rotate(360deg); }
 }
 
+/* Error message */
 .error {
-    color: red;
+    color: var(--danger-color);
+    background-color: rgba(247, 37, 133, 0.1);
+    border: 1px solid rgba(247, 37, 133, 0.2);
+    border-radius: 4px;
     padding: 10px;
-    border: 1px solid red;
     margin: 10px 0;
 }
 
-#result-container {
-    min-width: 300px;
-    padding: 15px;
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-.safe {
-    color: green;
-    font-weight: bold;
+::-webkit-scrollbar-track {
+    background: var(--input-bg);
 }
 
-.medium {
-    color: orange;
-    font-weight: bold;
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
 }
 
-.high {
-    color: red;
-    font-weight: bold;
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
 }
-
-.risk-explanation h3 {
-    margin-top: 30px;
-  }
