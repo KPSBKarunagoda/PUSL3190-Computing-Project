@@ -1,13 +1,39 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 class AuthService {
     constructor(connection) {
         this.connection = connection;
-        // Don't use hardcoded JWT secret in production
-        this.jwtSecret = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
-        this.jwtExpiry = '2h'; // Reduced token expiry time for better security
+        
+        // Use environment variable with fallback that's consistent across restarts
+        // Store a generated secret in a file if needed for persistence
+        const secretPath = path.join(__dirname, '../config/jwt-secret.txt');
+        
+        if (process.env.JWT_SECRET) {
+            this.jwtSecret = process.env.JWT_SECRET;
+        } else {
+            try {
+                // Try to read existing secret file
+                if (fs.existsSync(secretPath)) {
+                    this.jwtSecret = fs.readFileSync(secretPath, 'utf8');
+                } else {
+                    // Generate and save a new secret
+                    this.jwtSecret = crypto.randomBytes(64).toString('hex');
+                    fs.writeFileSync(secretPath, this.jwtSecret);
+                    console.log('Generated new JWT secret');
+                }
+            } catch (err) {
+                // Fallback to random secret if file operations fail
+                console.error('Error with JWT secret file, using random secret:', err);
+                this.jwtSecret = crypto.randomBytes(64).toString('hex');
+            }
+        }
+        
+        // Shorter expiry time for better security
+        this.jwtExpiry = '1h'; 
     }
 
     async hashPassword(plainPassword) {
@@ -34,6 +60,31 @@ class AuthService {
         }
     }
 
+    async authenticateByEmail(email, password) {
+        try {
+            // Find user by email
+            const [users] = await this.connection.execute(
+                'SELECT UserID, Username, Email, PasswordHash, Role FROM User WHERE Email = ?',
+                [email]
+            );
+
+            console.log(`Found ${users.length} user(s) with matching email`);
+            
+            if (users.length === 0) return null;
+
+            const user = users[0];
+            console.log('Comparing password hash');
+            const passwordMatch = await bcrypt.compare(password, user.PasswordHash);
+            
+            console.log('Password match result:', passwordMatch);
+            
+            return passwordMatch ? user : null;
+        } catch (error) {
+            console.error('Email authentication error detail:', error);
+            return null;
+        }
+    }
+
     async getUserById(userId) {
         const [users] = await this.connection.execute(
             'SELECT UserID, Username, Role FROM User WHERE UserID = ?',
@@ -50,15 +101,21 @@ class AuthService {
     }
 
     generateToken(user) {
+        // Only include essential claims in the token
         const payload = {
             user: {
                 id: user.UserID,
-                username: user.Username,
                 role: user.Role
+                // Don't include username in token
             }
         };
         
-        return jwt.sign(payload, this.jwtSecret, { expiresIn: this.jwtExpiry });
+        // Add more security options
+        return jwt.sign(payload, this.jwtSecret, { 
+            expiresIn: this.jwtExpiry,
+            algorithm: 'HS256',
+            issuer: 'phishguard-api' 
+        });
     }
     
     verifyToken(token) {

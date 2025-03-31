@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const { spawn } = require('child_process');
 const { pool, testConnection } = require('./config/db');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 
@@ -19,6 +20,19 @@ app.get('/api/debug', (req, res) => {
 
 // Setup static file serving for frontend
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
+
+// Add login-specific rate limiting
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login attempts per window
+  message: { message: 'Too many login attempts, please try again later' },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Apply login rate limiter only to login routes
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth/admin-login', loginLimiter);
 
 // Initialize server with database connection
 async function initializeServer() {

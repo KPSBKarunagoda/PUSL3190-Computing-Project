@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body.dark-theme {
+      padding-top: 80px;
+      padding-bottom: 80px;
+    }
+    
+    .dashboard-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .welcome-section {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      padding: 30px;
+      margin-bottom: 30px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .dashboard-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .action-card {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      padding: 25px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .action-card h3 {
+      margin-bottom: 15px;
+      color: var(--primary-color);
+    }
+    
+    .action-card .card-icon {
+      font-size: 2.5rem;
+      color: var(--accent-color);
+      margin-bottom: 15px;
+    }
+    
+    .btn-logout {
+      background-color: transparent;
+      border: 1px solid var(--danger-color);
+      color: var(--danger-color);
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .btn-logout:hover {
+      background-color: var(--danger-color);
+      color: white;
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <h1>PhishGuard Dashboard</h1>
+      <div class="user-info">
+        <span id="username">User</span>
+        <button id="btn-logout" class="btn-logout">Logout</button>
+      </div>
+    </div>
+    
+    <div class="welcome-section">
+      <h2>Welcome to PhishGuard</h2>
+      <p>Your account is ready. Start protecting yourself from phishing attacks.</p>
+    </div>
+    
+    <div class="dashboard-actions">
+      <div class="action-card">
+        <i class="fas fa-shield-alt card-icon"></i>
+        <h3>Check URL</h3>
+        <p>Analyze any suspicious URL to detect phishing attempts.</p>
+        <button onclick="window.location.href='index.html#check-url'" class="login-button" style="margin-top: auto;">Analyze URL</button>
+      </div>
+      
+      <div class="action-card">
+        <i class="fas fa-history card-icon"></i>
+        <h3>Recent Checks</h3>
+        <p>View your recently analyzed URLs and their results.</p>
+        <button onclick="alert('This feature will be available soon.')" class="login-button" style="margin-top: auto;">View History</button>
+      </div>
+      
+      <div class="action-card">
+        <i class="fas fa-cog card-icon"></i>
+        <h3>Account Settings</h3>
+        <p>Update your profile and notification preferences.</p>
+        <button onclick="alert('This feature will be available soon.')" class="login-button" style="margin-top: auto;">Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check if user is logged in
+      const token = localStorage.getItem('phishguardToken');
+      const userJson = localStorage.getItem('phishguardUser');
+      
+      if (!token || !userJson) {
+        // Redirect to login if no token
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      try {
+        const user = JSON.parse(userJson);
+        // Display username
+        document.getElementById('username').textContent = user.username || 'User';
+      } catch (e) {
+        console.error('Error parsing user data', e);
+        localStorage.removeItem('phishguardUser');
+      }
+      
+      // Handle logout
+      document.getElementById('btn-logout').addEventListener('click', () => {
+        localStorage.removeItem('phishguardToken');
+        localStorage.removeItem('phishguardUser');
+        window.location.href = 'login.html?logout=success';
+      });
+    });
+  </script>
+</body>
+</html>

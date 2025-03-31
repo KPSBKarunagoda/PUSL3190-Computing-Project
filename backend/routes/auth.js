@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const AuthService = require('../services/auth');
+const bcrypt = require('bcrypt'); // Add this import for bcrypt
 
 module.exports = function(dbConnection) {
     const authService = new AuthService(dbConnection);
@@ -8,6 +9,46 @@ module.exports = function(dbConnection) {
     
     // Login route
     router.post('/login', async (req, res) => {
+        try {
+            // Get email/username and password
+            const { email, password } = req.body;
+            
+            console.log('Login attempt with email:', email ? email.substring(0, 2) + '***' : 'null');
+            
+            if (!email || !password) {
+                return res.status(400).json({ message: 'Email and password are required' });
+            }
+            
+            // Authenticate user using email
+            const user = await authService.authenticateByEmail(email, password);
+            
+            if (!user) {
+                console.log('Authentication failed for user');
+                return res.status(401).json({ message: 'Invalid credentials' });
+            }
+            
+            console.log('User authenticated successfully, role:', user.Role);
+            
+            // Generate token
+            const token = authService.generateToken(user);
+            
+            // Return user info (excluding sensitive data) and token
+            res.json({
+                token,
+                user: {
+                    id: user.UserID,
+                    username: user.Username,
+                    role: user.Role
+                }
+            });
+        } catch (error) {
+            console.error('Login error details:', error);
+            res.status(500).json({ message: 'Server error during login' });
+        }
+    });
+    
+    // Admin login route
+    router.post('/admin-login', async (req, res) => {
         try {
             const { username, password } = req.body;
             

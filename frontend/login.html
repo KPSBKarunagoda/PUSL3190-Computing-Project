@@ -93,15 +93,78 @@
         e.preventDefault();
         
         const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+        let passwordVal = document.getElementById('password').value; // Use let instead of const
+        
+        // Reset error display
+        loginError.textContent = '';
+        loginError.style.display = 'none';
+        
+        // Define submitButton to show loading state
+        const submitButton = loginForm.querySelector('button[type="submit"]');
+        const originalText = submitButton.textContent;
         
         try {
-          // For now, just show a success message
-          alert('Login functionality will be implemented in the next phase.');
+          // Show loading state
+          submitButton.disabled = true;
+          submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
           
-          // Eventually, this will redirect to a dashboard or reporting page
-          // window.location.href = 'dashboard.html';
+          console.log('Sending login request for email:', email);
+          
+          // Send login request to server
+          const response = await fetch('http://localhost:3000/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              email: email, 
+              password: passwordVal
+            })
+            // Remove credentials option for now
+          });
+          
+          // Clear password field and variable
+          document.getElementById('password').value = '';
+          passwordVal = '';
+          
+          console.log('Login response status:', response.status);
+          
+          const responseText = await response.text();
+          console.log('Response text:', responseText);
+          
+          let data;
+          try {
+            data = JSON.parse(responseText);
+          } catch(e) {
+            console.error('Failed to parse response:', e);
+            throw new Error('Invalid server response');
+          }
+          
+          if (!response.ok) {
+            throw new Error(data.message || 'Login failed');
+          }
+          
+          console.log('Login successful, token received');
+          
+          // Store only non-sensitive data in localStorage
+          localStorage.setItem('phishguardToken', data.token);
+          localStorage.setItem('phishguardUser', JSON.stringify({
+            id: data.user.id,
+            username: data.user.username,
+            role: data.user.role
+          }));
+          
+          // Redirect to dashboard page
+          window.location.href = 'dashboard.html';
+          
         } catch (error) {
+          console.error('Login error details:', error);
+          
+          // Reset button
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+          
+          // Display error message
           loginError.textContent = error.message || 'Login failed. Please check your credentials.';
           loginError.style.display = 'block';
         }
