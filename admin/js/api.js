@@ -23,12 +23,17 @@ const isLoggedIn = () => {
 // Login function
 const login = async (username, password) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    console.log('Attempting admin login with:', username);
+    
+    const response = await fetch(`${API_BASE_URL}/auth/admin-login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ 
+        email: username, // Use the username parameter as email
+        password 
+      })
     });
     
     const data = await response.json();

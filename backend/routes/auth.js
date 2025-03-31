@@ -47,33 +47,60 @@ module.exports = function(dbConnection) {
         }
     });
     
-    // Admin login route
+    // Admin login route - completely separated from regular login
     router.post('/admin-login', async (req, res) => {
         try {
-            const { username, password } = req.body;
+            // Get admin credentials from request body
+            const { username, email, password } = req.body;
             
-            if (!username || !password) {
-                return res.status(400).json({ message: 'Username and password are required' });
+            // Check what credential was provided (username or email)
+            let user = null;
+            
+            if (!password) {
+                return res.status(400).json({ message: 'Password is required' });
             }
             
-            // Authenticate user
-            const user = await authService.authenticateUser(username, password);
+            // Try to authenticate with email if provided
+            if (email) {
+                console.log('Admin login attempt with email:', email);
+                user = await authService.authenticateByEmail(email, password);
+            } 
+            // Otherwise try with username if provided
+            else if (username) {
+                console.log('Admin login attempt with username:', username);
+                user = await authService.authenticateUser(username, password);
+            } else {
+                return res.status(400).json({ message: 'Username or email is required' });
+            }
             
+            // Check if authentication succeeded
             if (!user) {
+                console.log('Admin authentication failed: Invalid credentials');
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
             
-            // Check if user is admin
+            // Check if user has admin role
             if (user.Role !== 'Admin') {
+                console.log('Admin access denied: User role is', user.Role);
                 return res.status(403).json({ message: 'Access denied: Admin privileges required' });
             }
             
-            // Generate token
+            console.log('Admin authenticated successfully');
+            
+            // Generate token with admin role explicitly included
             const token = authService.generateToken(user);
             
-            res.json({ token });
+            res.json({ 
+                token,
+                user: {
+                    id: user.UserID,
+                    username: user.Username,
+                    email: user.Email,
+                    role: user.Role
+                }
+            });
         } catch (error) {
-            console.error('Login error:', error);
+            console.error('Admin login error:', error);
             res.status(500).json({ message: 'Server error' });
         }
     });

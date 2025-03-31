@@ -17,14 +17,18 @@ module.exports = function(dbConnection) {
             const decoded = authService.verifyToken(token);
             req.user = decoded.user;
             
-            // Check if admin role
-            if (req.user.role !== 'Admin') {
-                return res.status(403).json({ message: 'Access denied: Admin privileges required' });
+            // Admin route check - Only runs for admin-specific routes
+            if (req.baseUrl.includes('/admin') || req.path.includes('/admin')) {
+                console.log('Admin route accessed, checking role:', req.user.role);
+                if (req.user.role !== 'Admin') {
+                    console.log('Admin access denied for user role:', req.user.role);
+                    return res.status(403).json({ message: 'Access denied: Admin privileges required' });
+                }
             }
             
             next();
         } catch (err) {
-            // Don't reveal internal error details
+            console.error('Auth middleware error:', err);
             res.status(401).json({ message: 'Authentication failed' });
         }
     };

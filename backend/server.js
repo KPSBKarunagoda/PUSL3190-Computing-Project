@@ -21,10 +21,10 @@ app.get('/api/debug', (req, res) => {
 // Setup static file serving for frontend
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
-// Add login-specific rate limiting
+// Add login-specific rate limiting with more generous limits
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login attempts per window
+  windowMs: 5 * 60 * 1000, // 5 minutes instead of 15
+  max: 20, // Increased from 5 to 20 attempts
   message: { message: 'Too many login attempts, please try again later' },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
