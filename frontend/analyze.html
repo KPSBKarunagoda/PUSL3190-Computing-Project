@@ -311,10 +311,10 @@
     
     <div class="education-section">
       <h2>Learn About Phishing</h2>
-      <div class="education-placeholder">
+      <div id="education-content" class="education-placeholder">
         <i class="fas fa-book-open" style="font-size: 3rem; margin-bottom: 20px; color: var(--accent-color);"></i>
-        <h3>Educational Content Coming Soon</h3>
-        <p>This section will contain educational materials about phishing attacks, how to identify them, and how to protect yourself.</p>
+        <h3>Educational Content</h3>
+        <p>Loading educational content...</p>
       </div>
     </div>
   </div>
@@ -504,9 +504,67 @@
           featuresList.appendChild(noFeatures);
         }
         
+        // Load educational content based on the analysis
+        loadEducationalContent(result);
+        
         // Hide loading, show results
         loadingContainer.style.display = 'none';
         resultsContainer.style.display = 'block';
+      }
+      
+      // Function to load educational content
+      async function loadEducationalContent(analysisResult) {
+        try {
+          const educationContent = document.getElementById('education-content');
+          
+          // First show loading state
+          educationContent.innerHTML = `
+            <div class="loading">
+              <i class="fas fa-spinner"></i>
+              <p>Loading educational content...</p>
+            </div>
+          `;
+          
+          // Request educational content from the server
+          const response = await fetch('http://localhost:3000/api/education/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-auth-token': token
+            },
+            body: JSON.stringify({
+              analysisResult: analysisResult,
+              contentType: 'explain'  // Options: summary, explain, tips, learn
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to load educational content');
+          }
+          
+          const data = await response.json();
+          
+          if (data.success && data.content) {
+            // Use a markdown parser library if you want to render markdown
+            // For now, we'll just use basic formatting with white-space: pre-wrap
+            educationContent.innerHTML = `
+              <div class="education-content">
+                <pre style="white-space: pre-wrap; font-family: inherit;">${data.content}</pre>
+              </div>
+            `;
+          } else {
+            throw new Error('Invalid content received');
+          }
+        } catch (error) {
+          console.error('Error loading educational content:', error);
+          document.getElementById('education-content').innerHTML = `
+            <div class="education-error">
+              <i class="fas fa-exclamation-circle" style="font-size: 2rem; color: var(--danger-color); margin-bottom: 15px;"></i>
+              <h3>Content Unavailable</h3>
+              <p>Could not load educational content. Please try again later.</p>
+            </div>
+          `;
+        }
       }
       
       // New analysis button
