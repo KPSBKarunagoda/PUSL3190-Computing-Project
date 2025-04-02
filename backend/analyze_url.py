@@ -210,12 +210,17 @@ class URLAnalyzer:
                 
                 # Decision logic
                 is_phishing = False
-                
+
                 # Special pattern detection
                 has_credentials = '@' in features.get('_url', '') and ':' in features.get('_url', '').split('@')[0]
                 has_at_symbol = features.get('qty_at_url', 0) > 0
-                
-                if risk_score > 80:  # Very high risk
+                is_ip_based = bool(features.get('domain_in_ip', 0))
+
+                if is_ip_based:
+                    # IP-based URLs are almost always suspicious unless in whitelist
+                    is_phishing = True
+                    risk_explanation = "IP-based URL detected (rarely used for legitimate websites)"
+                elif risk_score > 80:  # Very high risk
                     is_phishing = True
                     risk_explanation = "Very high risk score detected"
                 elif risk_score > 60:  # High risk
@@ -352,7 +357,7 @@ class URLAnalyzer:
 
             message = "Phishing site detected" if is_phishing else "Site appears legitimate"
             return {
-                "risk_score": risk_score,
+                "risk_score": round(risk_score, 1),  # Round to 1 decimal place
                 "is_phishing": is_phishing,
                 "ml_result": {
                     "prediction": int(ml_result["ml_prediction"]),
