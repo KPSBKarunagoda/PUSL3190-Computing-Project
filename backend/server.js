@@ -57,6 +57,7 @@ async function initializeServer() {
   console.log('Setting up API routes...');
   const authRouter = require('./routes/auth')(pool);
   const listRouter = require('./routes/lists')(pool);
+  const educationRouter = require('./routes/education')(pool);
   
   // Log routes before mounting
   console.log('Auth routes stack:', authRouter.stack.length);
@@ -64,6 +65,7 @@ async function initializeServer() {
   // Mount routes
   app.use('/api/auth', authRouter);
   app.use('/api/lists', listRouter);
+  app.use('/api/education', educationRouter);
   
   // Add test endpoint directly to app
   app.get('/api/test', (req, res) => {

@@ -97,7 +97,7 @@
     </div>
     
     <div class="welcome-section">
-      <h2>Welcome to PhishGuard</h2>
+      <h2>Welcome  <span id="welcome-name">User</span> to PhishGuard,</h2>
       <p>Your account is ready. Start protecting yourself from phishing attacks.</p>
     </div>
     
@@ -141,6 +141,7 @@
         const user = JSON.parse(userJson);
         // Display username
         document.getElementById('username').textContent = user.username || 'User';
+        document.getElementById('welcome-name').textContent = user.username || 'User';
       } catch (e) {
         console.error('Error parsing user data', e);
         localStorage.removeItem('phishguardUser');

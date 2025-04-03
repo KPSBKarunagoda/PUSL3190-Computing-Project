@@ -307,6 +307,132 @@ function showResult(result) {
       resultContainer.innerHTML = ''; // Clear container if no features
     }
   }
+
+  // Add additional educational content when site is flagged as risky
+  if (displayData.is_phishing || displayData.risk_score > 30 || isIpAddressUrl(displayData.url)) {
+    // Make API call to get educational content from server
+    fetchFeatureExplanations(displayData);
+  }
+}
+
+/**
+ * Check if a URL is an IP address
+ */
+function isIpAddressUrl(url) {
+  try {
+    const hostname = new URL(url).hostname;
+    const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+    return ipPattern.test(hostname);
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Fetch feature explanations from the server
+ */
+async function fetchFeatureExplanations(displayData) {
+  try {
+    // Check if the URL is an IP address before making the API call
+    const isIpAddress = isIpAddressUrl(displayData.url);
+    
+    // If it's an IP address, make sure the domain_in_ip feature is set
+    if (isIpAddress && displayData.features) {
+      displayData.features.domain_in_ip = 1;
+    }
+    
+    const response = await fetch('http://localhost:3000/api/education/features', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        analysisResult: displayData
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch feature explanations');
+    }
+    
+    const data = await response.json();
+    
+    // Create or update the educational section
+    updateEducationalSection(displayData, data.html, isIpAddress);
+    
+  } catch (error) {
+    console.error('Error fetching feature explanations:', error);
+    
+    // Use client-side ML Feature Explainer as fallback
+    const mlExplainer = new MLFeatureExplainer();
+    const explanationHtml = mlExplainer.generateHTML(displayData.features, displayData.url);
+    
+    // Update educational section with client-generated content
+    updateEducationalSection(displayData, explanationHtml, isIpAddressUrl(displayData.url));
+  }
+}
+
+/**
+ * Update the educational section with the provided content
+ */
+function updateEducationalSection(displayData, htmlContent, isIpAddress) {
+  let educationalSection = document.querySelector('.education-section');
+  const manualEntrySection = document.querySelector('.manual-entry');
+  
+  if (!educationalSection) {
+    educationalSection = document.createElement('section');
+    educationalSection.className = 'education-section';
+    
+    // Add it after the result container
+    const resultContainer = document.getElementById('result-container');
+    resultContainer.parentNode.insertBefore(educationalSection, resultContainer.nextSibling);
+  }
+  
+  // Special title for IP addresses
+  const title = isIpAddress ? 
+    "Why Are IP Address URLs Dangerous?" : 
+    "Why Was This Flagged?";
+  
+  // Add detailed education for IP addresses
+  const ipAddressWarning = isIpAddress ? 
+    "<p style='color:#f44336;font-weight:bold;'>This website uses a raw IP address instead of a domain name. This is a major red flag for phishing attempts.</p>" : 
+    "";
+  
+  educationalSection.innerHTML = `
+    <h3>${title}</h3>
+    <div class="education-content-popup">
+      ${ipAddressWarning}
+      <p>${displayData.risk_explanation}</p>
+      <div id="detailed-reasons">
+        <p>Key factors:</p>
+        <ul>
+          ${htmlContent}
+        </ul>
+      </div>
+      <p><strong>Tip:</strong> Always verify the URL before entering sensitive information.</p>
+    </div>
+  `;
+  
+  // Move the educational section above "Check Links Manually" if this is a phishing site
+  if (displayData.is_phishing || displayData.risk_score > 60 || isIpAddress) {
+    // Add transitional styles for smooth movement
+    educationalSection.style.transition = 'opacity 0.3s ease-out';
+    educationalSection.style.opacity = '0';
+    
+    // Remove from current position
+    educationalSection.parentNode.removeChild(educationalSection);
+    
+    // Insert before the manual entry section
+    manualEntrySection.parentNode.insertBefore(educationalSection, manualEntrySection);
+    
+    // Add highlight effect
+    educationalSection.style.border = '1px solid var(--warning-color)';
+    
+    // Fade in after repositioning
+    setTimeout(() => {
+      educationalSection.style.opacity = '1';
+    }, 50);
+  }
 }
 
 function showError(message) {

@@ -534,7 +534,7 @@
             },
             body: JSON.stringify({
               analysisResult: analysisResult,
-              contentType: 'explain'  // Options: summary, explain, tips, learn
+              contentType: 'explain'  // Options: explain, tips, learn
             })
           });
           
@@ -545,8 +545,7 @@
           const data = await response.json();
           
           if (data.success && data.content) {
-            // Use a markdown parser library if you want to render markdown
-            // For now, we'll just use basic formatting with white-space: pre-wrap
+            // Render markdown content
             educationContent.innerHTML = `
               <div class="education-content">
                 <pre style="white-space: pre-wrap; font-family: inherit;">${data.content}</pre>
@@ -557,13 +556,34 @@
           }
         } catch (error) {
           console.error('Error loading educational content:', error);
-          document.getElementById('education-content').innerHTML = `
-            <div class="education-error">
-              <i class="fas fa-exclamation-circle" style="font-size: 2rem; color: var(--danger-color); margin-bottom: 15px;"></i>
-              <h3>Content Unavailable</h3>
-              <p>Could not load educational content. Please try again later.</p>
-            </div>
-          `;
+          
+          // Fallback to client-side ML Feature Explainer
+          const mlExplainer = new MLFeatureExplainer();
+          
+          if (analysisResult.features && Object.keys(analysisResult.features).length > 0) {
+            const analysis = mlExplainer.explainFeatures(analysisResult.features);
+            
+            educationContent.innerHTML = `
+              <div class="education-content">
+                <h3>${analysis.summary}</h3>
+                ${analysis.riskFactors.length > 0 ? `
+                  <h4>Risk Factors Detected</h4>
+                  <ul>
+                    ${analysis.riskFactors.map(factor => `<li><strong>${factor.name}:</strong> ${factor.explanation}</li>`).join('')}
+                  </ul>
+                ` : ''}
+                <p><strong>Tip:</strong> Always verify the URL before entering sensitive information.</p>
+              </div>
+            `;
+          } else {
+            document.getElementById('education-content').innerHTML = `
+              <div class="education-error">
+                <i class="fas fa-exclamation-circle" style="font-size: 2rem; color: var(--danger-color); margin-bottom: 15px;"></i>
+                <h3>Content Unavailable</h3>
+                <p>Could not load educational content. Please try again later.</p>
+              </div>
+            `;
+          }
         }
       }
       
