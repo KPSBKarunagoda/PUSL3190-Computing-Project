@@ -222,5 +222,17 @@ module.exports = function(dbConnection) {
         }
     });
 
+    // Privacy-focused endpoint
+    router.get('/privacy-policy', async (req, res) => {
+        try {
+            res.json({
+                message: "PhishGuard prioritizes your privacy. We don't store your browsing history or analyzed URLs on our servers. All scan history is stored locally on your device only."
+            });
+        } catch (err) {
+            console.error('Error:', err);
+            res.status(500).json({ message: 'Server error' });
+        }
+    });
+
     return router;
 };

@@ -147,21 +147,6 @@
       margin-top: 20px;
     }
     
-    .feature-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border-color);
-    }
-    
-    .feature-value.positive {
-      color: #4caf50;
-    }
-    
-    .feature-value.negative {
-      color: #f44336;
-    }
-    
     .explanation-box {
       background-color: rgba(var(--primary-rgb), 0.1);
       border-left: 4px solid var(--primary-color);
@@ -298,9 +283,9 @@
       </div>
       
       <div class="details-section">
-        <h3>Analysis Details</h3>
-        <div id="features-list">
-          <!-- Features will be populated here -->
+        <h3>Analysis Summary</h3>
+        <div id="analysis-summary">
+          <!-- Summary will be populated here -->
         </div>
       </div>
       
@@ -339,7 +324,7 @@
       const scoreFill = document.getElementById('score-fill');
       const riskScoreValue = document.getElementById('risk-score-value');
       const riskExplanation = document.getElementById('risk-explanation');
-      const featuresList = document.getElementById('features-list');
+      const analysisSummary = document.getElementById('analysis-summary');
       const newAnalysisButton = document.getElementById('new-analysis');
       
       // Hide results initially
@@ -460,56 +445,34 @@
         // Set explanation
         riskExplanation.textContent = result.risk_explanation || 'No detailed explanation available.';
         
-        // Clear previous features
-        featuresList.innerHTML = '';
+        // Replace detailed features list with a simplified summary
+        analysisSummary.innerHTML = '';
         
-        // Add features to list
-        if (result.features && Object.keys(result.features).length > 0) {
-          Object.entries(result.features).forEach(([key, value]) => {
-            // Format key for display
-            const displayKey = key
-              .replace(/_/g, ' ')
-              .replace(/\b\w/g, l => l.toUpperCase());
-            
-            // Create feature item
-            const featureItem = document.createElement('div');
-            featureItem.className = 'feature-item';
-            
-            // Create feature name
-            const featureName = document.createElement('div');
-            featureName.className = 'feature-name';
-            featureName.textContent = displayKey;
-            
-            // Create feature value
-            const featureValue = document.createElement('div');
-            featureValue.className = 'feature-value';
-            
-            // Format and colorize the value based on type
-            if (typeof value === 'boolean') {
-              featureValue.textContent = value ? 'Yes' : 'No';
-              if ((key.includes('suspicious') || key.includes('phish')) && value) {
-                featureValue.classList.add('negative');
-              } else if (key.includes('legitimate') && !value) {
-                featureValue.classList.add('negative');
-              }
-            } else if (typeof value === 'number') {
-              featureValue.textContent = value.toFixed(2);
-              // Determine if this numeric feature indicates risk
-              if ((key.includes('suspicious') || key.includes('risk')) && value > 0.5) {
-                featureValue.classList.add('negative');
-              }
-            } else {
-              featureValue.textContent = String(value);
-            }
-            
-            featureItem.appendChild(featureName);
-            featureItem.appendChild(featureValue);
-            featuresList.appendChild(featureItem);
-          });
+        // Create a simplified summary instead of showing all features
+        const summary = document.createElement('p');
+        
+        if (result.is_phishing) {
+          summary.innerHTML = `Our system has detected multiple risk signals in this URL. 
+                             The overall risk score of <strong>${displayScore}</strong> indicates 
+                             this is likely a phishing attempt.`;
+        } else if (isHighRisk) {
+          summary.innerHTML = `This URL has some suspicious characteristics with a risk score of 
+                             <strong>${displayScore}</strong>. While not definitively malicious, 
+                             proceed with caution.`;
         } else {
-          const noFeatures = document.createElement('p');
-          noFeatures.textContent = 'No detailed features available for this analysis.';
-          featuresList.appendChild(noFeatures);
+          summary.innerHTML = `This URL appears to be legitimate with a low risk score of 
+                             <strong>${displayScore}</strong>. No major phishing indicators detected.`;
+        }
+        
+        analysisSummary.appendChild(summary);
+        
+        // Add a few key insights if available
+        if (result.safe_browsing_result && result.safe_browsing_result.threats) {
+          const sbWarning = document.createElement('p');
+          sbWarning.innerHTML = '<strong>Important:</strong> This URL was flagged by Google Safe Browsing API.';
+          sbWarning.style.color = '#f44336';
+          sbWarning.style.marginTop = '10px';
+          analysisSummary.appendChild(sbWarning);
         }
         
         // Load educational content based on the analysis
