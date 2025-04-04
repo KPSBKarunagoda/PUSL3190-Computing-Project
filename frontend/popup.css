@@ -367,7 +367,15 @@ header h1::before {
     color: var(--danger-color) !important;
 }
 
+.warning-score {
+    color: var(--warning-color) !important;
+}
+
 .unsafe-status {
+    color: var(--warning-color) !important;
+}
+
+.warning-status {
     color: var(--warning-color) !important;
 }
 

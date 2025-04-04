@@ -216,22 +216,23 @@ class URLAnalyzer:
                 has_at_symbol = features.get('qty_at_url', 0) > 0
                 is_ip_based = bool(features.get('domain_in_ip', 0))
 
+                # Modified decision logic to reduce false positives
                 if is_ip_based:
-                    # IP-based URLs are almost always suspicious unless in whitelist
+                    # IP-based URLs are still high risk unless in whitelist
                     is_phishing = True
                     risk_explanation = "IP-based URL detected (rarely used for legitimate websites)"
                 elif risk_score > 80:  # Very high risk
-                    is_phishing = True
-                    risk_explanation = "Very high risk score detected"
+                    is_phishing = ml_prediction == 1
+                    risk_explanation = "Very high risk score and ML prediction indicates phishing"
                 elif risk_score > 60:  # High risk
-                    is_phishing = phishing_prob > self.threshold
+                    is_phishing = ml_prediction == 1 and ml_confidence > 0.7
                     risk_explanation = "High risk score combined with ML prediction"
-                elif has_at_symbol:  # Special case for @ symbol
-                    is_phishing = phishing_prob > 0.6
-                    risk_explanation = "URL contains @ symbol (often used in phishing)"
-                else:  # Lower risk
-                    is_phishing = phishing_prob > self.threshold and ml_confidence > 0.8
-                    risk_explanation = "ML model prediction with high confidence"
+                elif risk_score > 30:  # Medium risk
+                    is_phishing = ml_prediction == 1 and ml_confidence > 0.8
+                    risk_explanation = "Medium risk score with high confidence ML prediction"
+                else:  # Low risk
+                    is_phishing = False
+                    risk_explanation = "Low risk score - unlikely to be phishing"
                 
                 print(f"\n=== Final Decision ===", file=sys.stderr)
                 result = {

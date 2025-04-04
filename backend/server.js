@@ -133,7 +133,11 @@ async function initializeServer() {
               risk_score: result.risk_score || 0,
               is_phishing: result.is_phishing || false,
               risk_explanation: result.risk_explanation || result.message || 'No detailed explanation available',
-              features: result.features || {},
+              features: result.ml_result?.features || result.features || {},
+              ml_result: {
+                prediction: result.ml_result?.prediction || 0,
+                confidence: result.ml_result?.confidence || 0
+              },
               ml_confidence: result.ml_confidence || result.ml_result?.confidence || 0,
               timestamp: new Date().toISOString()
             };

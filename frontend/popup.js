@@ -244,7 +244,8 @@ function showResult(result) {
     is_phishing: Boolean(result.is_phishing),
     risk_explanation: result.risk_explanation || 'No detailed explanation available',
     features: result.features || {},
-    url: result.url || ''
+    url: result.url || '',
+    ml_prediction: result.ml_result?.prediction || 0
   };
 
   console.log('Display data:', displayData);
@@ -254,19 +255,35 @@ function showResult(result) {
   if (scoreElement) {
     // Just show the actual score in the score section
     scoreElement.textContent = `${displayData.risk_score}/100`;
-    scoreElement.className = displayData.is_phishing ? 'unsafe-score' : 'safe-score';
+    
+    // Update class based on new criteria
+    if (displayData.is_phishing) {
+      scoreElement.className = 'unsafe-score';
+    } else if (displayData.risk_score > 30 && displayData.ml_prediction === 1) {
+      scoreElement.className = 'warning-score';
+    } else {
+      scoreElement.className = 'safe-score';
+    }
   }
   
   // 2. Update the explanation in the Risk Explanation section
   const statusElement = document.getElementById('status');
   if (statusElement) {
-    // Just show the risk explanation in the status section
     statusElement.textContent = displayData.risk_explanation;
-    statusElement.className = displayData.is_phishing ? 'unsafe-status' : 'safe-status';
     
-    // Add a visual indicator of safe/unsafe
-    const indicator = displayData.is_phishing ? '⚠️ Warning: ' : '✅ Safe: ';
-    statusElement.textContent = indicator + statusElement.textContent;
+    // Add a visual indicator based on new criteria
+    let indicator;
+    if (displayData.is_phishing) {
+      indicator = '⚠️ Warning: ';
+      statusElement.className = 'unsafe-status';
+    } else if (displayData.risk_score > 30 && displayData.ml_prediction === 1) {
+      indicator = '⚠️ Caution: ';
+      statusElement.className = 'warning-status';
+    } else {
+      indicator = '✅ Safe: ';
+      statusElement.className = 'safe-status';
+    }
+    statusElement.textContent = indicator + displayData.risk_explanation;
   }
   
   // 3. Add colored backgrounds to the sections

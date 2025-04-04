@@ -434,12 +434,20 @@
         riskScoreValue.textContent = `${displayScore}/100`;
         scoreFill.style.width = `${score}%`;
         
-        // Set result icon and title based on result
+        // Set result icon and title based on updated risk criteria
+        const mlPrediction = result.ml_result?.prediction || 0;
+        const isHighRisk = score > 60;
+        const isMediumRisk = score > 30;
+        
         if (result.is_phishing) {
           resultIcon.className = 'fas fa-exclamation-triangle danger-icon';
           resultTitle.textContent = 'Phishing Detected!';
           scoreFill.className = 'score-fill score-danger';
-        } else if (score > 30) {
+        } else if (isHighRisk && mlPrediction === 1) {
+          resultIcon.className = 'fas fa-exclamation-circle warning-icon';
+          resultTitle.textContent = 'Suspicious - High Risk';
+          scoreFill.className = 'score-fill score-danger';
+        } else if (isMediumRisk && mlPrediction === 1) {
           resultIcon.className = 'fas fa-exclamation-circle warning-icon';
           resultTitle.textContent = 'Suspicious - Use Caution';
           scoreFill.className = 'score-fill score-medium';
