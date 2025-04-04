@@ -79,23 +79,6 @@
       margin-top: 25px;
     }
     
-    .notification-option {
-      display: flex;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-    
-    .notification-option input[type="checkbox"] {
-      margin-right: 10px;
-      width: 18px;
-      height: 18px;
-    }
-    
-    .notification-option label {
-      font-weight: normal;
-      margin-bottom: 0;
-    }
-    
     .input-hint {
       font-size: 0.8rem;
       color: var(--text-secondary);
@@ -281,33 +264,6 @@
       </form>
     </div>
     
-    <div id="notifications-success" class="success-message">Your notification preferences have been updated.</div>
-    <div id="notifications-error" class="error-message">There was an error updating your notification preferences.</div>
-    
-    <div class="settings-section">
-      <h2><i class="fas fa-bell"></i> Notification Preferences</h2>
-      <form id="notifications-form">
-        <div class="notification-option">
-          <input type="checkbox" id="email-alerts" name="email-alerts" checked>
-          <label for="email-alerts">Email me about security threats and alerts</label>
-        </div>
-        
-        <div class="notification-option">
-          <input type="checkbox" id="weekly-summary" name="weekly-summary" checked>
-          <label for="weekly-summary">Send me weekly security summary reports</label>
-        </div>
-        
-        <div class="notification-option">
-          <input type="checkbox" id="news-updates" name="news-updates">
-          <label for="news-updates">Receive product updates and security news</label>
-        </div>
-        
-        <div class="form-actions">
-          <button type="submit" class="btn-primary">Save Preferences</button>
-        </div>
-      </form>
-    </div>
-    
     <div class="settings-section danger-zone">
       <h2><i class="fas fa-exclamation-triangle"></i> Danger Zone</h2>
       <p>Once you delete your account, there is no going back. Please be certain.</p>
@@ -389,15 +345,16 @@
             body: JSON.stringify({ name, email })
           });
           
+          const data = await response.json();
+          
           if (!response.ok) {
-            throw new Error('Failed to update profile');
+            throw new Error(data.message || 'Failed to update profile');
           }
           
           // Update local storage with new user info
-          const result = await response.json();
           const updatedUser = {
             ...user,
-            username: result.username || name
+            username: data.username || name
           };
           
           localStorage.setItem('phishguardUser', JSON.stringify(updatedUser));
@@ -406,7 +363,7 @@
           showMessage('profile-success');
         } catch (error) {
           console.error('Profile update error:', error);
-          showMessage('profile-error');
+          showMessage('profile-error', error.message);
         } finally {
           // Restore button state
           submitBtn.disabled = false;
@@ -465,48 +422,6 @@
         } catch (error) {
           console.error('Password update error:', error);
           showMessage('password-error', error.message);
-        } finally {
-          // Restore button state
-          submitBtn.disabled = false;
-          submitBtn.textContent = originalText;
-        }
-      });
-      
-      // Notifications form submission
-      const notificationsForm = document.getElementById('notifications-form');
-      notificationsForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const emailAlerts = document.getElementById('email-alerts').checked;
-        const weeklySummary = document.getElementById('weekly-summary').checked;
-        const newsUpdates = document.getElementById('news-updates').checked;
-        
-        try {
-          // Show loading state
-          const submitBtn = notificationsForm.querySelector('button[type="submit"]');
-          const originalText = submitBtn.textContent;
-          submitBtn.disabled = true;
-          submitBtn.textContent = 'Saving...';
-          
-          // Make API call to update notification preferences
-          const response = await fetch('http://localhost:3000/api/user/notifications', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-auth-token': token
-            },
-            body: JSON.stringify({ emailAlerts, weeklySummary, newsUpdates })
-          });
-          
-          if (!response.ok) {
-            throw new Error('Failed to update notification preferences');
-          }
-          
-          // Show success message
-          showMessage('notifications-success');
-        } catch (error) {
-          console.error('Notifications update error:', error);
-          showMessage('notifications-error');
         } finally {
           // Restore button state
           submitBtn.disabled = false;
@@ -601,13 +516,6 @@
           // Populate profile form
           document.getElementById('name').value = userData.name || user.username || '';
           document.getElementById('email').value = userData.email || '';
-          
-          // Populate notification preferences if available
-          if (userData.notifications) {
-            document.getElementById('email-alerts').checked = userData.notifications.emailAlerts !== false;
-            document.getElementById('weekly-summary').checked = userData.notifications.weeklySummary !== false;
-            document.getElementById('news-updates').checked = userData.notifications.newsUpdates === true;
-          }
         } catch (error) {
           console.error('Error loading profile:', error);
           // Use stored user data as fallback

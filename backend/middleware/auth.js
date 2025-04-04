@@ -1,35 +1,40 @@
-const AuthService = require('../services/auth');
+const jwt = require('jsonwebtoken');
 
 module.exports = function(dbConnection) {
-    const authService = new AuthService(dbConnection);
-    
-    return function(req, res, next) {
+    return async function(req, res, next) {
         // Get token from header
         const token = req.header('x-auth-token');
         
-        // Check if no token
         if (!token) {
             return res.status(401).json({ message: 'No token, authorization denied' });
         }
         
         try {
             // Verify token
-            const decoded = authService.verifyToken(token);
-            req.user = decoded.user;
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'phishguard_jwt_secret');
             
-            // Admin route check - Only runs for admin-specific routes
-            if (req.baseUrl.includes('/admin') || req.path.includes('/admin')) {
-                console.log('Admin route accessed, checking role:', req.user.role);
-                if (req.user.role !== 'Admin') {
-                    console.log('Admin access denied for user role:', req.user.role);
-                    return res.status(403).json({ message: 'Access denied: Admin privileges required' });
-                }
+            // Get user from database to confirm they exist
+            const [users] = await dbConnection.execute(
+                'SELECT UserID, Username, Email, Role FROM User WHERE UserID = ?',
+                [decoded.user.id]
+            );
+            
+            if (users.length === 0) {
+                return res.status(401).json({ message: 'Invalid token - user not found' });
             }
+            
+            // Set user data in request object
+            req.user = {
+                id: users[0].UserID,
+                username: users[0].Username,
+                email: users[0].Email,
+                role: users[0].Role
+            };
             
             next();
         } catch (err) {
             console.error('Auth middleware error:', err);
-            res.status(401).json({ message: 'Authentication failed' });
+            res.status(401).json({ message: 'Token is not valid' });
         }
     };
 };
