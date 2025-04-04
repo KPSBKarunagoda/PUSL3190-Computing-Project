@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setPlaceholderStatistics();
   showPlaceholderHistory();
   initializeCarousel();
-  setupQuickActions();
+  // We removed the setupQuickActions() since we now use direct links
 });
 
 // Show placeholder statistics instead of loading from localStorage
@@ -90,84 +90,6 @@ function initializeCarousel() {
     if (nextIndex >= tips.length) nextIndex = 0;
     showTip(nextIndex);
   }, 10000);
-}
-
-// Set up quick action buttons
-function setupQuickActions() {
-  const passwordCheckerBtn = document.getElementById('password-checker');
-  
-  if (passwordCheckerBtn) {
-    passwordCheckerBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      showPasswordChecker();
-    });
-  }
-}
-
-// Helper function for password health checker
-function showPasswordChecker() {
-  // Create modal for password checking
-  const modal = document.createElement('div');
-  modal.className = 'modal-backdrop';
-  modal.style.display = 'flex';
-  
-  modal.innerHTML = `
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Password Health Checker</h3>
-      </div>
-      <div class="modal-body">
-        <p>Check if your password has been exposed in data breaches.</p>
-        <p class="small-text">Your password never leaves your device. We only check a small anonymized part of its hash.</p>
-        <div class="form-row">
-          <input type="password" id="check-password" placeholder="Enter password to check">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" id="cancel-check">Cancel</button>
-        <button class="btn-primary" id="check-btn">Check Password</button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  
-  // Handle close
-  document.getElementById('cancel-check').addEventListener('click', () => {
-    document.body.removeChild(modal);
-  });
-  
-  // Handle check
-  document.getElementById('check-btn').addEventListener('click', () => {
-    const password = document.getElementById('check-password').value;
-    
-    if (!password) {
-      alert('Please enter a password to check');
-      return;
-    }
-    
-    // Normally you'd use the "Have I Been Pwned" API here with k-anonymity
-    // For demo purposes, we'll just show a dummy result
-    
-    const modalBody = modal.querySelector('.modal-body');
-    modalBody.innerHTML = `
-      <p>Password check complete!</p>
-      <div class="password-result safe">
-        <i class="fas fa-check-circle"></i>
-        <span>Good news! This password hasn't been found in known data breaches.</span>
-      </div>
-      <p class="small-text">Remember to use unique, strong passwords for all your accounts.</p>
-    `;
-    
-    const modalFooter = modal.querySelector('.modal-footer');
-    modalFooter.innerHTML = `
-      <button class="btn-primary" id="close-result">Close</button>
-    `;
-    
-    document.getElementById('close-result').addEventListener('click', () => {
-      document.body.removeChild(modal);
-    });
-  });
 }
 
 // Helper function to truncate URLs
