@@ -20,26 +20,48 @@ const isLoggedIn = () => {
   return getToken() !== null;
 };
 
-// Login function
-const login = async (username, password) => {
+// Helper function to make authenticated API calls (reduces redundancy)
+const apiRequest = async (endpoint, options = {}) => {
   try {
-    console.log('Attempting admin login with:', username);
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-auth-token': getToken(),
+      ...options.headers
+    };
     
-    const response = await fetch(`${API_BASE_URL}/auth/admin-login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        email: username, // Use the username parameter as email
-        password 
-      })
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers
     });
     
     const data = await response.json();
     
     if (!response.ok) {
-      throw new Error(data.message || 'Login failed');
+      throw new Error(data.message || `API request to ${endpoint} failed`);
+    }
+    
+    return data;
+  } catch (err) {
+    console.error(`API error (${endpoint}):`, err);
+    handleResponseError(err);
+    throw err;
+  }
+};
+
+// Login function
+const login = async (username, password) => {
+  try {
+    console.log('Attempting admin login with:', username);
+    
+    const data = await apiRequest('/auth/admin-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, // Override auth header
+      body: JSON.stringify({ email: username, password })
+    });
+    
+    // Verify that the user has admin role before storing the token
+    if (data.user && data.user.role !== 'Admin') {
+      throw new Error('You do not have administrator privileges');
     }
     
     setToken(data.token);
@@ -52,162 +74,74 @@ const login = async (username, password) => {
 
 // Get user info
 const getUserInfo = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/user`, {
-      headers: {
-        'x-auth-token': getToken()
-      }
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to get user info');
-    }
-    
-    return data;
-  } catch (err) {
-    console.error('Get user info error:', err);
-    throw err;
+  const data = await apiRequest('/auth/user');
+  
+  // Verify that the user has admin role
+  if (data.role !== 'Admin') {
+    // Log out the user if they're not an admin
+    removeToken();
+    throw new Error('You do not have administrator privileges');
   }
+  
+  return data;
 };
 
 // Get whitelist
 const getWhitelist = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/lists/whitelist`, {
-      headers: {
-        'x-auth-token': getToken()
-      }
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to get whitelist');
-    }
-    
-    return data;
-  } catch (err) {
-    console.error('Get whitelist error:', err);
-    throw err;
-  }
+  return await apiRequest('/lists/whitelist');
 };
 
 // Add to whitelist
 const addToWhitelist = async (domain) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/lists/whitelist`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': getToken()
-      },
-      body: JSON.stringify({ domain })
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to add to whitelist');
-    }
-    
-    return data;
-  } catch (err) {
-    console.error('Add to whitelist error:', err);
-    throw err;
-  }
+  return await apiRequest('/lists/whitelist', {
+    method: 'POST',
+    body: JSON.stringify({ domain })
+  });
 };
 
 // Remove from whitelist
 const removeFromWhitelist = async (domain) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/lists/whitelist/${encodeURIComponent(domain)}`, {
-      method: 'DELETE',
-      headers: {
-        'x-auth-token': getToken()
-      }
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to remove from whitelist');
-    }
-    
-    return data;
-  } catch (err) {
-    console.error('Remove from whitelist error:', err);
-    throw err;
-  }
+  return await apiRequest(`/lists/whitelist/${encodeURIComponent(domain)}`, {
+    method: 'DELETE'
+  });
 };
 
 // Get blacklist
 const getBlacklist = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/lists/blacklist`, {
-      headers: {
-        'x-auth-token': getToken()
-      }
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to get blacklist');
-    }
-    
-    return data;
-  } catch (err) {
-    console.error('Get blacklist error:', err);
-    throw err;
-  }
+  return await apiRequest('/lists/blacklist');
 };
 
 // Add to blacklist
 const addToBlacklist = async (domain) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/lists/blacklist`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': getToken()
-      },
-      body: JSON.stringify({ domain })
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to add to blacklist');
-    }
-    
-    return data;
-  } catch (err) {
-    console.error('Add to blacklist error:', err);
-    throw err;
-  }
+  return await apiRequest('/lists/blacklist', {
+    method: 'POST',
+    body: JSON.stringify({ domain })
+  });
 };
 
 // Remove from blacklist
 const removeFromBlacklist = async (domain) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/lists/blacklist/${encodeURIComponent(domain)}`, {
-      method: 'DELETE',
-      headers: {
-        'x-auth-token': getToken()
-      }
-    });
+  return await apiRequest(`/lists/blacklist/${encodeURIComponent(domain)}`, {
+    method: 'DELETE'
+  });
+};
+
+// Helper function to handle common response errors
+const handleResponseError = (error, redirectOnAuth = true) => {
+  // Check if this is an authentication or authorization error
+  if (error.message && (
+      error.message.includes('Token is not valid') || 
+      error.message.includes('No token') ||
+      error.message.includes('Access denied') ||
+      error.message.includes('privileges'))) {
     
-    const data = await response.json();
+    // Clear token
+    removeToken();
     
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to remove from blacklist');
+    if (redirectOnAuth) {
+      // Redirect to login page with error message
+      window.location.href = '/admin/index.html?error=' + encodeURIComponent(error.message);
+      return; // Stop execution after redirect
     }
-    
-    return data;
-  } catch (err) {
-    console.error('Remove from blacklist error:', err);
-    throw err;
   }
 };

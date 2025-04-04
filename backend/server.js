@@ -4,6 +4,8 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { pool, testConnection } = require('./config/db');
 const rateLimit = require('express-rate-limit');
+// Import admin-auth middleware
+const adminAuth = require('./middleware/admin-auth');
 
 const app = express();
 
@@ -48,49 +50,39 @@ async function initializeServer() {
   const listService = new ListService(pool);
   await listService.createListTables().catch(console.error);
 
-  // Remove the automatic admin creation
-  // const AuthService = require('./services/auth');
-  // const authService = new AuthService(pool);
-  // await authService.createInitialAdmin().catch(console.error);
-
   // Set up routes - SIMPLIFIED to ensure proper registration
   console.log('Setting up API routes...');
-  const authRouter = require('./routes/auth')(pool);
-  const listRouter = require('./routes/lists')(pool);
-  const educationRouter = require('./routes/education')(pool);
-  const userRouter = require('./routes/user')(pool); // Make sure this exists
   
-  // Log routes before mounting
-  console.log('Auth routes stack:', authRouter.stack.length);
+  // Create routes
+  const routes = {
+    auth: require('./routes/auth')(pool),
+    lists: require('./routes/lists')(pool),
+    education: require('./routes/education')(pool),
+    user: require('./routes/user')(pool),
+    admin: require('./routes/admin')(pool)
+  };
   
   // Mount routes
-  app.use('/api/auth', authRouter);
-  app.use('/api/lists', listRouter);
-  app.use('/api/education', educationRouter);
-  app.use('/api/user', userRouter); // Make sure to mount this route
+  Object.entries(routes).forEach(([name, router]) => {
+    console.log(`Mounting /${name} routes`);
+    app.use(`/api/${name}`, router);
+  });
   
-  // Add test endpoint directly to app
-  app.get('/api/test', (req, res) => {
-    res.json({ message: 'API is working' });
-  });
+  // Create admin auth middleware instance
+  const adminAuthMiddleware = adminAuth(pool);
 
-  // Log all routes that were registered (for debugging)
-  console.log('Registered API routes:');
-  app._router.stack.forEach((r) => {
-    if (r.route && r.route.path) {
-      console.log(`${Object.keys(r.route.methods)} ${r.route.path}`);
-    } else if (r.name === 'router') {
-      r.handle.stack.forEach((layer) => {
-        if (layer.route) {
-          const methods = Object.keys(layer.route.methods).join(',');
-          console.log(`${methods.toUpperCase()} ${r.regexp.toString().replace('/^\\', '/').replace('\\/?(?=\\/|$)/i', '')}${layer.route.path}`);
-        }
-      });
+  // Serve static admin panel files with admin auth protection
+  app.use('/admin', (req, res, next) => {
+    // Allow access to admin login page without authentication
+    if (req.path === '/index.html' || req.path === '/' || 
+        req.path === '/css/styles.css' || req.path.includes('/js/api.js') || 
+        req.path.includes('/js/login.js')) {
+      return next();
     }
-  });
-
-  // Serve static admin panel files
-  app.use('/admin', express.static(path.join(__dirname, '../admin')));
+    
+    // For all other admin resources, require admin authentication
+    adminAuthMiddleware(req, res, next);
+  }, express.static(path.join(__dirname, '../admin')));
 
   // Serve admin panel
   app.get('/admin', (req, res) => {
