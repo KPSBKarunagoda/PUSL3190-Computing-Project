@@ -8,29 +8,8 @@ class AuthService {
     constructor(connection) {
         this.connection = connection;
         
-        // Use environment variable with fallback that's consistent across restarts
-        // Store a generated secret in a file if needed for persistence
-        const secretPath = path.join(__dirname, '../config/jwt-secret.txt');
-        
-        if (process.env.JWT_SECRET) {
-            this.jwtSecret = process.env.JWT_SECRET;
-        } else {
-            try {
-                // Try to read existing secret file
-                if (fs.existsSync(secretPath)) {
-                    this.jwtSecret = fs.readFileSync(secretPath, 'utf8');
-                } else {
-                    // Generate and save a new secret
-                    this.jwtSecret = crypto.randomBytes(64).toString('hex');
-                    fs.writeFileSync(secretPath, this.jwtSecret);
-                    console.log('Generated new JWT secret');
-                }
-            } catch (err) {
-                // Fallback to random secret if file operations fail
-                console.error('Error with JWT secret file, using random secret:', err);
-                this.jwtSecret = crypto.randomBytes(64).toString('hex');
-            }
-        }
+        // Use a consistent JWT secret
+        this.jwtSecret = 'phishguard_secure_jwt_secret_key';
         
         // Shorter expiry time for better security
         this.jwtExpiry = '1h'; 

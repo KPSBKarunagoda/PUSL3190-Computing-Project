@@ -58,6 +58,7 @@ async function initializeServer() {
   const authRouter = require('./routes/auth')(pool);
   const listRouter = require('./routes/lists')(pool);
   const educationRouter = require('./routes/education')(pool);
+  const userRouter = require('./routes/user')(pool); // Make sure this exists
   
   // Log routes before mounting
   console.log('Auth routes stack:', authRouter.stack.length);
@@ -66,6 +67,7 @@ async function initializeServer() {
   app.use('/api/auth', authRouter);
   app.use('/api/lists', listRouter);
   app.use('/api/education', educationRouter);
+  app.use('/api/user', userRouter); // Make sure to mount this route
   
   // Add test endpoint directly to app
   app.get('/api/test', (req, res) => {
@@ -129,11 +131,12 @@ async function initializeServer() {
             
             // Ensure consistent response structure
             const response = {
+              features: result.ml_result?.features || result.features || {},
               url: url,
               risk_score: result.risk_score || 0,
               is_phishing: result.is_phishing || false,
               risk_explanation: result.risk_explanation || result.message || 'No detailed explanation available',
-              features: result.ml_result?.features || result.features || {},
+              
               ml_result: {
                 prediction: result.ml_result?.prediction || 0,
                 confidence: result.ml_result?.confidence || 0

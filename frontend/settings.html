@@ -227,7 +227,8 @@
         
         <div class="form-row">
           <label for="email">Email Address</label>
-          <input type="email" id="email" name="email" placeholder="your.email@example.com" required>
+          <input type="email" id="email" name="email" placeholder="your.email@example.com" disabled readonly style="background-color: var(--card-hover); opacity: 0.7; cursor: not-allowed;">
+          <p class="input-hint">Email addresses cannot be changed to ensure account continuity.</p>
         </div>
         
         <div class="form-actions">
@@ -326,23 +327,24 @@
         e.preventDefault();
         
         const name = document.getElementById('name').value;
-        const email = document.getElementById('email').value;
+        
+        // Define submitBtn OUTSIDE the try block so it's accessible in catch/finally
+        const submitBtn = profileForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
         
         try {
           // Show loading state
-          const submitBtn = profileForm.querySelector('button[type="submit"]');
-          const originalText = submitBtn.textContent;
           submitBtn.disabled = true;
           submitBtn.textContent = 'Saving...';
           
-          // Make API call to update profile
+          // Make API call to update profile - modified to only send name
           const response = await fetch('http://localhost:3000/api/user/profile', {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
               'x-auth-token': token
             },
-            body: JSON.stringify({ name, email })
+            body: JSON.stringify({ name })
           });
           
           const data = await response.json();
@@ -365,7 +367,7 @@
           console.error('Profile update error:', error);
           showMessage('profile-error', error.message);
         } finally {
-          // Restore button state
+          // ALWAYS restore button state in finally block
           submitBtn.disabled = false;
           submitBtn.textContent = originalText;
         }
@@ -392,12 +394,16 @@
           return;
         }
         
+        // Define submitBtn OUTSIDE the try block so it's accessible in catch/finally
+        const submitBtn = passwordForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        
         try {
           // Show loading state
-          const submitBtn = passwordForm.querySelector('button[type="submit"]');
-          const originalText = submitBtn.textContent;
           submitBtn.disabled = true;
           submitBtn.textContent = 'Updating...';
+          
+          console.log('Sending password update request...');
           
           // Make API call to change password
           const response = await fetch('http://localhost:3000/api/user/password', {
@@ -409,8 +415,20 @@
             body: JSON.stringify({ currentPassword, newPassword })
           });
           
+          // Get response text for better debugging
+          const responseText = await response.text();
+          console.log('Password update response:', responseText);
+          
+          // Parse response if it's valid JSON
+          let data;
+          try {
+            data = JSON.parse(responseText);
+          } catch (e) {
+            console.error('Failed to parse response:', e);
+            throw new Error('Invalid server response: ' + responseText.substring(0, 100));
+          }
+          
           if (!response.ok) {
-            const data = await response.json();
             throw new Error(data.message || 'Failed to update password');
           }
           
@@ -423,7 +441,8 @@
           console.error('Password update error:', error);
           showMessage('password-error', error.message);
         } finally {
-          // Restore button state
+          // ALWAYS restore button state in finally block - this ensures it happens
+          // even if there's an error
           submitBtn.disabled = false;
           submitBtn.textContent = originalText;
         }
@@ -479,8 +498,8 @@
           localStorage.removeItem('phishguardToken');
           localStorage.removeItem('phishguardUser');
           
-          // Redirect to home page with message
-          window.location.href = 'index.html?accountDeleted=true';
+          // Redirect to the account deleted page instead of index.html
+          window.location.href = 'account-deleted.html';
         } catch (error) {
           console.error('Account deletion error:', error);
           deleteModal.style.display = 'none';
@@ -520,6 +539,11 @@
           console.error('Error loading profile:', error);
           // Use stored user data as fallback
           document.getElementById('name').value = user.username || '';
+          
+          // If we can get the email from stored user data, use it
+          if (user.email) {
+            document.getElementById('email').value = user.email;
+          }
         }
       }
       

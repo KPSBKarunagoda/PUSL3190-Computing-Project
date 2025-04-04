@@ -10,8 +10,11 @@ module.exports = function(dbConnection) {
         }
         
         try {
+            // Use the same secret as in the AuthService
+            const jwtSecret = 'phishguard_secure_jwt_secret_key';
+            
             // Verify token
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'phishguard_jwt_secret');
+            const decoded = jwt.verify(token, jwtSecret);
             
             // Get user from database to confirm they exist
             const [users] = await dbConnection.execute(
