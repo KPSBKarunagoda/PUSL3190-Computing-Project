@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard - Learn About Phishing</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body.dark-theme {
+      padding-top: 80px;
+      padding-bottom: 80px;
+    }
+    
+    .education-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .content-section {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 30px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .content-section h2 {
+      color: var(--primary-color);
+      margin-top: 0;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .content-section p {
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    
+    .content-section ul {
+      margin-bottom: 20px;
+      padding-left: 20px;
+    }
+    
+    .content-section li {
+      margin-bottom: 10px;
+      position: relative;
+    }
+    
+    .phishing-types {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+    
+    .phishing-card {
+      background-color: var(--card-hover);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      transition: transform 0.2s;
+    }
+    
+    .phishing-card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .phishing-card h3 {
+      color: var(--primary-color);
+      margin-top: 0;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .info-box {
+      background-color: rgba(var(--primary-rgb), 0.1);
+      border-left: 4px solid var(--primary-color);
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    
+    .warning-box {
+      background-color: rgba(248, 150, 30, 0.1);
+      border-left: 4px solid var(--warning-color);
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    
+    .btn-secondary {
+      background-color: var(--card-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .btn-secondary:hover {
+      background-color: var(--border-color);
+    }
+    
+    .resources-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .resource-item {
+      background-color: var(--card-hover);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 15px;
+      transition: all 0.2s;
+    }
+    
+    .resource-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .resource-item a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 500;
+      display: block;
+      margin-bottom: 8px;
+    }
+    
+    .resource-item p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 0;
+    }
+    
+    .img-example {
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <div class="education-container">
+    <div class="page-header">
+      <h1 style="margin-left: 20px;">Learning Center</h1>
+      <div class="user-info">
+        <a href="dashboard.html" class="btn-secondary">
+          <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+      </div>
+    </div>
+    
+    <div class="content-section">
+      <h2><i class="fas fa-shield-alt"></i> Understanding Phishing Attacks</h2>
+      <p>Phishing is a type of social engineering attack often used to steal user data, including login credentials and credit card numbers. It occurs when an attacker, masquerading as a trusted entity, dupes a victim into opening an email, instant message, or text message.</p>
+      
+      <div class="info-box">
+        <p><strong>PhishGuard helps you identify potential phishing attempts</strong> by analyzing URLs and websites for common indicators of phishing.</p>
+      </div>
+      
+      <p>Understanding phishing attacks is the first step toward protecting yourself online. Below are the main types of phishing attacks you should be aware of.</p>
+      
+      <div class="phishing-types">
+        <div class="phishing-card">
+          <h3><i class="fas fa-envelope"></i> Email Phishing</h3>
+          <p>The most common type of phishing attack involving emails that appear to come from trusted sources but contain malicious links or attachments.</p>
+          <ul>
+            <li>Impersonates legitimate companies</li>
+            <li>Often creates a sense of urgency</li>
+            <li>Contains suspicious links or attachments</li>
+          </ul>
+        </div>
+        
+        <div class="phishing-card">
+          <h3><i class="fas fa-copy"></i> Clone Phishing</h3>
+          <p>Attackers create nearly identical copies of legitimate messages but replace links or attachments with malicious versions.</p>
+          <ul>
+            <li>Looks identical to legitimate communications</li>
+            <li>Often claims to be a "resend" or "updated version"</li>
+            <li>May reference previous communications</li>
+          </ul>
+        </div>
+        
+        <div class="phishing-card">
+          <h3><i class="fas fa-user-tie"></i> Spear Phishing</h3>
+          <p>Targeted attacks directed at specific individuals or companies, typically more personalized and harder to detect.</p>
+          <ul>
+            <li>Contains personally relevant information</li>
+            <li>References colleagues, managers, or events</li>
+            <li>Highly customized and convincing</li>
+          </ul>
+        </div>
+        
+        <div class="phishing-card">
+          <h3><i class="fas fa-fish"></i> Whaling</h3>
+          <p>A type of spear phishing aimed specifically at senior executives and other high-profile targets.</p>
+          <ul>
+            <li>Highly sophisticated and well-researched</li>
+            <li>Often involves financial documents</li>
+            <li>May impersonate board members or partners</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <div class="content-section">
+      <h2><i class="fas fa-search"></i> How to Identify Phishing Attempts</h2>
+      
+      <p>Phishing attacks can be sophisticated, but there are several red flags to watch for:</p>
+      
+      <ul>
+        <li><strong>Suspicious sender email addresses</strong> - Check if the domain matches the company it claims to be from</li>
+        <li><strong>Poor spelling and grammar</strong> - Legitimate organizations typically have high standards for their communications</li>
+        <li><strong>Sense of urgency</strong> - Messages that push you to act quickly often aim to prevent you from thinking critically</li>
+        <li><strong>Suspicious links</strong> - Hover over links to see their true destination before clicking</li>
+        <li><strong>Unusual requests</strong> - Be wary of requests for sensitive information or unusual payment methods</li>
+        <li><strong>Generic greetings</strong> - Legitimate companies usually address you by name</li>
+      </ul>
+      
+      <div class="warning-box">
+        <p><strong>Always check the URL before entering sensitive information.</strong> Phishing URLs often look similar to legitimate ones but contain subtle differences or unusual characters.</p>
+      </div>
+      
+      <h3>URL Red Flags</h3>
+      <ul>
+        <li><strong>Misspelled domain names</strong> - Like "amaz0n.com" or "paypa1.com"</li>
+        <li><strong>Subdomains that try to trick you</strong> - "paypal.secure-payment.com" (where secure-payment.com is the actual domain)</li>
+        <li><strong>IP addresses instead of domain names</strong> - Like http://123.45.67.89/...</li>
+        <li><strong>URL shorteners</strong> - These can hide the true destination of a link</li>
+        <li><strong>HTTP instead of HTTPS</strong> - Legitimate sites use secure connections for sensitive information</li>
+      </ul>
+    </div>
+    
+    <div class="content-section">
+      <h2><i class="fas fa-lock"></i> How to Protect Yourself</h2>
+      
+      <p>Take these steps to protect yourself from phishing attacks:</p>
+      
+      <ol>
+        <li><strong>Always verify the sender</strong> - Check that emails come from legitimate domains</li>
+        <li><strong>Think before you click</strong> - Hover over links to see where they lead</li>
+        <li><strong>Keep software updated</strong> - This includes your operating system, browsers, and security software</li>
+        <li><strong>Use multi-factor authentication</strong> - This adds an extra layer of security even if your password is compromised</li>
+        <li><strong>Be suspicious of unexpected attachments</strong> - Even from people you know</li>
+        <li><strong>Visit websites directly</strong> - Type the URL into your browser instead of clicking links</li>
+        <li><strong>Check for HTTPS</strong> - Look for the padlock icon in your browser</li>
+        <li><strong>Use PhishGuard</strong> - Let our tools help identify suspicious URLs</li>
+      </ol>
+      
+      <div class="info-box">
+        <p><strong>PhishGuard Tip:</strong> If you're unsure about a link, use our URL analyzer first before visiting the site. It's better to be safe than sorry!</p>
+      </div>
+    </div>
+    
+    <div class="content-section">
+      <h2><i class="fas fa-book"></i> Additional Resources</h2>
+      
+      <p>For more information about phishing attacks and cybersecurity best practices, check out these resources:</p>
+      
+      <div class="resources-list">
+        <div class="resource-item">
+          <a href="https://www.consumer.ftc.gov/articles/how-recognize-and-avoid-phishing-scams" target="_blank">FTC: How to Recognize and Avoid Phishing Scams</a>
+          <p>Official guidelines from the Federal Trade Commission on identifying phishing attempts</p>
+        </div>
+        
+        <div class="resource-item">
+          <a href="https://www.phishing.org/what-is-phishing" target="_blank">Phishing.org: What is Phishing?</a>
+          <p>Comprehensive information about phishing techniques and prevention</p>
+        </div>
+        
+        <div class="resource-item">
+          <a href="https://www.us-cert.gov/ncas/tips/ST04-014" target="_blank">CISA: Avoiding Social Engineering and Phishing Attacks</a>
+          <p>Government resource on defending against social engineering attacks</p>
+        </div>
+        
+        <div class="resource-item">
+          <a href="https://haveibeenpwned.com/" target="_blank">Have I Been Pwned</a>
+          <p>Check if your email or phone has been compromised in a data breach</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check if user is logged in
+      const token = localStorage.getItem('phishguardToken');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+    });
+  </script>
+</body>
+</html>
