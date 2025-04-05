@@ -22,7 +22,7 @@ async function apiRequest(endpoint, options = {}) {
       ...options.headers || {}
     };
     
-    // Add authentication token if available - ADMIN-SPECIFIC TOKEN KEY
+    // Add authentication token if available - USING CONSISTENT TOKEN KEY
     const token = localStorage.getItem('phishguard_admin_token');
     if (token) {
       headers['x-auth-token'] = token;
@@ -31,7 +31,7 @@ async function apiRequest(endpoint, options = {}) {
     // Create request URL
     const url = `${API_BASE_URL}${endpoint}`;
     
-    // Make the request
+    // Log the request for debugging
     console.log(`API Request: ${options.method || 'GET'} ${url}`);
     
     const response = await fetch(url, {
@@ -75,14 +75,31 @@ const authAPI = {
   // Login with email and password
   login: async (email, password) => {
     try {
-      // CHANGED TO ADMIN-SPECIFIC ENDPOINT
-      const response = await fetch(`${API_BASE_URL}/admin/login`, {
+      console.log(`Attempting admin login for: ${email}`);
+      
+      // VERIFY THE ADMIN ENDPOINT
+      const loginUrl = `${API_BASE_URL}/admin/login`;
+      console.log(`Login URL: ${loginUrl}`);
+      
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
       
-      const data = await response.json();
+      console.log(`Login response status: ${response.status}`);
+      
+      // Get response text for detailed debugging
+      const responseText = await response.text();
+      console.log(`Login response text: ${responseText}`);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse login response as JSON:', parseError);
+        throw new Error('Invalid server response format');
+      }
       
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
@@ -93,7 +110,9 @@ const authAPI = {
         throw new Error('You do not have administrator privileges');
       }
       
-      // Store token and basic user info - CHANGED TOKEN KEYS
+      console.log('Login successful, user:', data.user);
+      
+      // Store token and basic user info - USING CONSISTENT TOKEN KEYS
       localStorage.setItem('phishguard_admin_token', data.token);
       localStorage.setItem('phishguard_admin', JSON.stringify({
         id: data.user.id,
@@ -120,7 +139,7 @@ const authAPI = {
   
   // Logout
   logout: () => {
-    // CHANGED TOKEN KEYS
+    // CHECKED: Already using correct admin keys
     localStorage.removeItem('phishguard_admin_token');
     localStorage.removeItem('phishguard_admin');
     window.location.href = '/admin/index.html?message=loggedOut';

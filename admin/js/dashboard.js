@@ -1,195 +1,159 @@
 /**
- * PhishGuard Admin Dashboard JavaScript
- * Handles dashboard functionality and data loading
+ * PhishGuard Admin Dashboard Controller
  */
-
 document.addEventListener('DOMContentLoaded', async () => {
-  // Skip dashboard code on non-dashboard pages
-  if (!document.querySelector('.content-header h1')?.textContent.includes('Dashboard')) {
-    return;
-  }
-  
-  // Check if admin is logged in - CHANGED TOKEN KEY
-  const token = localStorage.getItem('phishguard_admin_token');
-  if (!token) {
-    window.location.href = 'index.html'; // Redirect to admin login
-    return;
-  }
-  
-  // Get admin user info - CHANGED KEY
-  const adminUserJson = localStorage.getItem('phishguard_admin');
-  let adminUser;
-  
   try {
-    adminUser = JSON.parse(adminUserJson);
-    // Verify it's actually an admin
-    if (!adminUser || adminUser.role !== 'Admin') {
-      throw new Error('Not an admin user');
+    // Make sure Auth is defined - add fallback if not
+    if (typeof Auth === 'undefined') {
+      console.warn('Auth object not found, creating fallback');
+      
+      // Create fallback Auth object
+      window.Auth = {
+        isAuthenticated() {
+          return !!localStorage.getItem('phishguard_admin_token');
+        },
+        getUser() {
+          try {
+            const adminJson = localStorage.getItem('phishguard_admin');
+            return adminJson ? JSON.parse(adminJson) : null;
+          } catch (e) {
+            return null;
+          }
+        },
+        logout() {
+          localStorage.removeItem('phishguard_admin_token');
+          localStorage.removeItem('phishguard_admin');
+          window.location.href = 'index.html?action=logout';
+        }
+      };
     }
     
-    // Set admin name in UI if available
-    const currentUserElement = document.getElementById('current-user');
-    if (currentUserElement && adminUser.username) {
-      currentUserElement.textContent = adminUser.username;
-    }
-  } catch (error) {
-    console.error('Admin verification error:', error);
-    // Redirect to login if not a valid admin
-    localStorage.removeItem('phishguard_admin_token');
-    localStorage.removeItem('phishguard_admin');
-    window.location.href = 'index.html';
-    return;
-  }
-  
-  console.log('Initializing dashboard...');
-  
-  try {
-    // Load system statistics
-    await loadSystemStats();
-    
-    // Load recent activity
-    await loadRecentActivity();
-    
-    // Set up refresh buttons
-    DOM.get('refresh-activity')?.addEventListener('click', loadRecentActivity);
-    
-    // Set up maintenance button
-    const maintenanceBtn = DOM.get('run-maintenance');
-    if (maintenanceBtn) {
-      maintenanceBtn.addEventListener('click', runSystemMaintenance);
-    }
-    
-  } catch (error) {
-    console.error('Dashboard initialization error:', error);
-    DOM.showAlert('Failed to load dashboard data: ' + error.message, 'danger');
-  }
-});
-
-// Load system statistics
-async function loadSystemStats() {
-  console.log('Loading system statistics...');
-  
-  try {
-    // Show loading state
-    ['users-count', 'whitelist-count', 'blacklist-count', 'scans-count'].forEach(id => {
-      const el = DOM.get(id);
-      if (el) el.textContent = '...';
-    });
-    
-    // Fetch statistics data
-    const stats = await dashboardAPI.getStats();
-    console.log('System stats received:', stats);
-    
-    // Update UI
-    if (stats) {
-      DOM.get('users-count').textContent = stats.usersCount || 0;
-      DOM.get('whitelist-count').textContent = stats.whitelistCount || 0;
-      DOM.get('blacklist-count').textContent = stats.blacklistCount || 0;
-      DOM.get('scans-count').textContent = stats.totalScans || 0;
-    }
-  } catch (error) {
-    console.error('Error loading system statistics:', error);
-    // Set default values on error
-    ['users-count', 'whitelist-count', 'blacklist-count', 'scans-count'].forEach(id => {
-      const el = DOM.get(id);
-      if (el) el.textContent = '0';
-    });
-    throw error;
-  }
-}
-
-// Load recent activity
-async function loadRecentActivity() {
-  console.log('Loading recent activity...');
-  
-  try {
-    // Show loading state
-    const loader = DOM.get('activity-loader');
-    const table = DOM.get('activity-table');
-    const empty = DOM.get('no-activity');
-    
-    if (loader) loader.style.display = 'flex';
-    if (table) table.style.display = 'none';
-    if (empty) empty.style.display = 'none';
-    
-    // Fetch activity data
-    const data = await dashboardAPI.getActivity();
-    console.log('Activity data received:', data);
-    
-    // Update UI
-    const activityBody = DOM.get('activity-body');
-    if (!activityBody) return;
-    
-    if (loader) loader.style.display = 'none';
-    
-    // Check if we have activity data
-    if (!data.activities || data.activities.length === 0) {
-      if (table) table.style.display = 'none';
-      if (empty) empty.style.display = 'flex';
+    // Verify authentication
+    if (!Auth.isAuthenticated()) {
+      console.log('Not authenticated, redirecting to login page');
+      window.location.href = 'index.html';
       return;
     }
     
-    // Show table with data
-    if (table) table.style.display = 'table';
-    activityBody.innerHTML = '';
+    // Get admin info
+    const admin = Auth.getUser();
+    if (admin) {
+      // Update UI with admin name
+      const usernameElement = document.getElementById('admin-username');
+      if (usernameElement) {
+        usernameElement.textContent = admin.username || 'Admin';
+      }
+    }
     
-    // Render activity items
-    data.activities.forEach(activity => {
-      const row = document.createElement('tr');
-      
-      row.innerHTML = `
-        <td>${activity.action || 'Unknown action'}</td>
-        <td>${activity.user || 'System'}</td>
-        <td>${activity.details || '-'}</td>
-        <td>${DateTime.formatDateTime(activity.timestamp)}</td>
-      `;
-      
-      activityBody.appendChild(row);
-    });
+    // Initialize dashboard components
+    initSidebarToggle();
+    await loadSystemStats();
+    
+    // Add additional initializations here
   } catch (error) {
-    console.error('Error loading recent activity:', error);
-    throw error;
+    console.error('Dashboard initialization error:', error);
+    
+    // Try to continue with basic functionality even if there's an error
+    initSidebarToggle();
+    try {
+      await loadSystemStats();
+    } catch (e) {
+      console.error('Failed to load statistics:', e);
+    }
+  }
+});
+
+function initSidebarToggle() {
+  const toggleBtn = document.getElementById('sidebar-toggle');
+  const sidebar = document.querySelector('.sidebar');
+  
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      document.querySelector('main').classList.toggle('expanded');
+    });
   }
 }
 
-// Run system maintenance
-async function runSystemMaintenance() {
-  const confirmRun = confirm('Are you sure you want to run system maintenance? This may take a few moments.');
-  if (!confirmRun) return;
-  
-  const maintenanceBtn = DOM.get('run-maintenance');
-  
+async function loadSystemStats() {
   try {
-    // Show loading state
-    DOM.buttonState(maintenanceBtn, true, null, 'Running...');
-    DOM.showAlert('Maintenance task started. Please wait...', 'info');
+    // Find all stat value elements
+    const statElements = document.querySelectorAll('.stat-card .stat-value');
     
-    // Call API endpoint
-    const response = await fetch('/api/admin/maintenance', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': Auth.getToken()
+    // Show loading spinners
+    statElements.forEach(element => {
+      element.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    });
+    
+    // Fetch stats from API
+    const stats = await dashboardAPI.getStats();
+    console.log('Dashboard stats loaded:', stats);
+    
+    // Map stat type to data key
+    const statKeyMap = {
+      'users': 'usersCount',
+      'whitelist': 'whitelistCount',
+      'blacklist': 'blacklistCount',
+      'scans': 'totalScans'
+    };
+    
+    // Update each stat element based on its data attribute or id
+    statElements.forEach(element => {
+      // Try to determine which stat this element represents
+      let statType = null;
+      
+      // Try getting stat type from data attribute
+      if (element.dataset.statType) {
+        statType = element.dataset.statType;
+      }
+      // Try getting from parent card's id
+      else if (element.closest('.stat-card') && element.closest('.stat-card').id) {
+        const cardId = element.closest('.stat-card').id;
+        Object.keys(statKeyMap).forEach(key => {
+          if (cardId.includes(key)) {
+            statType = key;
+          }
+        });
+      }
+      // Try getting from the element's ID
+      else if (element.id) {
+        Object.keys(statKeyMap).forEach(key => {
+          if (element.id.includes(key)) {
+            statType = key;
+          }
+        });
+      }
+      
+      // Update element if we found its type and corresponding data exists
+      if (statType && statKeyMap[statType] && stats[statKeyMap[statType]] !== undefined) {
+        element.textContent = stats[statKeyMap[statType]].toLocaleString();
+      } else {
+        element.textContent = '0';
       }
     });
     
-    if (!response.ok) {
-      throw new Error('Maintenance task failed');
-    }
-    
-    const result = await response.json();
-    
-    // Show success message
-    DOM.showAlert('Maintenance completed successfully: ' + (result.message || 'System optimized'), 'success');
-    
-    // Refresh stats
-    await loadSystemStats();
-    await loadRecentActivity();
+    console.log('UI updated with stats');
   } catch (error) {
-    console.error('Maintenance error:', error);
-    DOM.showAlert('Maintenance error: ' + error.message, 'danger');
-  } finally {
-    // Restore button state
-    DOM.buttonState(maintenanceBtn, false);
+    console.error('Error loading system statistics:', error);
+    
+    // Show error in stats containers
+    const statElements = document.querySelectorAll('.stat-card .stat-value');
+    statElements.forEach(element => {
+      element.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error';
+    });
   }
 }
+
+// Add event listener for logout button (as a backup to the common.js handler)
+document.addEventListener('DOMContentLoaded', () => {
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      // Use direct logout implementation as fallback
+      localStorage.removeItem('phishguard_admin_token');
+      localStorage.removeItem('phishguard_admin');
+      window.location.href = 'index.html?action=logout';
+    });
+  }
+});

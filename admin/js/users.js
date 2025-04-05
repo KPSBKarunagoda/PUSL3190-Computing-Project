@@ -4,6 +4,31 @@
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Check if admin is logged in with CONSISTENT admin token keys
+  const token = localStorage.getItem('phishguard_admin_token');
+  const adminJson = localStorage.getItem('phishguard_admin');
+  
+  if (!token || !adminJson) {
+    window.location.href = 'index.html';
+    return;
+  }
+  
+  // Verify admin role
+  try {
+    const admin = JSON.parse(adminJson);
+    if (admin.role !== 'Admin') {
+      console.error('Non-admin access attempt');
+      window.location.href = 'index.html';
+      return;
+    }
+  } catch (e) {
+    console.error('Invalid admin data');
+    localStorage.removeItem('phishguard_admin_token');
+    localStorage.removeItem('phishguard_admin');
+    window.location.href = 'index.html';
+    return;
+  }
+  
   // Only initialize on users page
   if (!window.location.pathname.includes('users.html')) {
     return;

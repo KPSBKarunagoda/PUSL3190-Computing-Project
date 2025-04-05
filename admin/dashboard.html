@@ -38,9 +38,10 @@
       </ul>
       
       <div class="sidebar-footer">
-        <button id="logout-btn" class="btn btn-outline">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
+        <a href="#" id="logout-btn" class="nav-link">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
       </div>
     </nav>
     
@@ -162,9 +163,26 @@
     </main>
   </div>
 
+  <!-- Add this near the end of the body tag, before the other scripts -->
+  <script>
+    // Simple fallback Auth object in case common.js fails to load
+    if (typeof Auth === 'undefined') {
+      window.Auth = {
+        isAuthenticated() { return !!localStorage.getItem('phishguard_admin_token'); },
+        getUser() { 
+          try { return JSON.parse(localStorage.getItem('phishguard_admin')); } 
+          catch(e) { return null; } 
+        },
+        logout() {
+          localStorage.removeItem('phishguard_admin_token');
+          localStorage.removeItem('phishguard_admin');
+          window.location.href = 'index.html?action=logout';
+        }
+      };
+    }
+  </script>
   <script src="js/common.js"></script>
   <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
   <script src="js/dashboard.js"></script>
 </body>
 </html>

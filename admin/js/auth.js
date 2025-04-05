@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupLoginPage() {
+  console.log("Setting up login page...");
   // Get UI elements
   const loginForm = document.getElementById('login-form');
   const emailInput = document.getElementById('email');
@@ -62,6 +63,7 @@ function setupLoginPage() {
   // Handle login form submission
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    console.log("Login form submitted");
     
     // Clear previous alerts
     if (alertContainer) {
@@ -79,15 +81,23 @@ function setupLoginPage() {
     
     // Disable submit button & show loading state
     const submitBtn = loginForm.querySelector('button[type="submit"]');
-    DOM.buttonState(submitBtn, true, null, 'Signing in...');
+    if (window.DOM && DOM.buttonState) {
+      DOM.buttonState(submitBtn, true, null, 'Signing in...');
+    } else {
+      // Fallback if DOM utility isn't available
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+    }
     
     // Attempt login
     try {
+      console.log("Sending login request for:", email);
       const response = await authAPI.login(email, password);
+      console.log("Login response:", response);
       
-      // Save auth data and redirect
-      localStorage.setItem('phishguardToken', response.token);
-      localStorage.setItem('phishguardAdmin', JSON.stringify({
+      // Save auth data and redirect - FIXED: consistent admin token keys
+      localStorage.setItem('phishguard_admin_token', response.token);
+      localStorage.setItem('phishguard_admin', JSON.stringify({
         id: response.user.id,
         username: response.user.username,
         role: response.user.role
@@ -109,7 +119,13 @@ function setupLoginPage() {
       showAuthAlert(error.message || 'Login failed', 'danger');
       
       // Re-enable the button
-      DOM.buttonState(submitBtn, false);
+      if (window.DOM && DOM.buttonState) {
+        DOM.buttonState(submitBtn, false);
+      } else {
+        // Fallback
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Sign In';
+      }
     }
   });
 }
@@ -165,3 +181,28 @@ function showAuthAlert(message, type = 'info') {
     }, 5000);
   }
 }
+
+// Auth utility object with consistent token key usage
+const Auth = {
+  isAuthenticated() {
+    return !!localStorage.getItem('phishguard_admin_token');
+  },
+  
+  getToken() {
+    return localStorage.getItem('phishguard_admin_token');
+  },
+  
+  getUser() {
+    try {
+      return JSON.parse(localStorage.getItem('phishguard_admin'));
+    } catch (e) {
+      return null;
+    }
+  },
+  
+  logout() {
+    localStorage.removeItem('phishguard_admin_token');
+    localStorage.removeItem('phishguard_admin');
+    window.location.href = 'index.html';
+  }
+};

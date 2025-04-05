@@ -146,13 +146,19 @@
           
           console.log('Login successful, token received');
           
-          // Store only non-sensitive data in localStorage
+          // Ensure proper storage of user tokens
+          // Store user token (never mix with admin tokens)
           localStorage.setItem('phishguardToken', data.token);
           localStorage.setItem('phishguardUser', JSON.stringify({
             id: data.user.id,
             username: data.user.username,
+            email: data.user.email,
             role: data.user.role
           }));
+          
+          // Clear any admin tokens to prevent mixing
+          localStorage.removeItem('phishguard_admin_token');
+          localStorage.removeItem('phishguard_admin');
           
           // Redirect to dashboard page
           window.location.href = 'dashboard.html';
@@ -176,6 +182,22 @@
           alert('OAuth login will be implemented in the next phase.');
         });
       });
+      
+      // Add utility functions for token management
+      const UserAuth = {
+        logout() {
+          localStorage.removeItem('phishguardToken');
+          localStorage.removeItem('phishguardUser');
+          window.location.href = 'login.html?action=logout';
+        },
+        
+        isLoggedIn() {
+          return !!localStorage.getItem('phishguardToken');
+        }
+      };
+      
+      // Make UserAuth available globally
+      window.UserAuth = UserAuth;
     });
   </script>
 </body>

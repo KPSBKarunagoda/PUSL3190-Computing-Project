@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // CHECKED: Already using correct user token keys
   // Check if user is logged in - USING USER-SPECIFIC TOKEN
   const token = localStorage.getItem('phishguardToken');
   
