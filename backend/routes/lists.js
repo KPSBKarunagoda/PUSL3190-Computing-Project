@@ -13,6 +13,7 @@ module.exports = function(dbConnection) {
     router.get('/whitelist', async (req, res) => {
         try {
             const whitelist = await listService.getWhitelist();
+            console.log('Sending whitelist data:', whitelist);
             res.json(whitelist);
         } catch (error) {
             console.error('Get whitelist error:', error);
@@ -42,12 +43,17 @@ module.exports = function(dbConnection) {
         }
     });
     
-    // Remove from whitelist
+    // Remove from whitelist - make sure this works correctly
     router.delete('/whitelist/:domain', async (req, res) => {
         try {
             const domain = req.params.domain;
+            console.log(`Delete request for whitelist domain: ${domain}`);
+            
             await listService.removeFromWhitelist(domain);
-            res.json({ message: 'Domain removed from whitelist', domain });
+            res.json({ 
+                message: 'Domain removed from whitelist', 
+                domain 
+            });
         } catch (error) {
             console.error('Remove from whitelist error:', error);
             
@@ -63,6 +69,7 @@ module.exports = function(dbConnection) {
     router.get('/blacklist', async (req, res) => {
         try {
             const blacklist = await listService.getBlacklist();
+            console.log('Sending blacklist data:', blacklist);
             res.json(blacklist);
         } catch (error) {
             console.error('Get blacklist error:', error);
@@ -92,12 +99,17 @@ module.exports = function(dbConnection) {
         }
     });
     
-    // Remove from blacklist
+    // Remove from blacklist - make sure this works correctly
     router.delete('/blacklist/:domain', async (req, res) => {
         try {
             const domain = req.params.domain;
+            console.log(`Delete request for blacklist domain: ${domain}`);
+            
             await listService.removeFromBlacklist(domain);
-            res.json({ message: 'Domain removed from blacklist', domain });
+            res.json({ 
+                message: 'Domain removed from blacklist', 
+                domain 
+            });
         } catch (error) {
             console.error('Remove from blacklist error:', error);
             

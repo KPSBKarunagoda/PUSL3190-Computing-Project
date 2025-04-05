@@ -1,435 +1,265 @@
 /**
- * PhishGuard Admin - Blacklist Management
- * Handles blacklist functionality
+ * PhishGuard Admin Blacklist Controller
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Only initialize on blacklist page
-  if (!window.location.pathname.includes('blacklist.html')) {
+  try {
+    console.log('Initializing blacklist management...');
+    
+    // Verify admin authentication
+    if (!Auth.isAuthenticated()) {
+      window.location.href = 'index.html';
+      return;
+    }
+    
+    // Set up event handlers
+    setupAddForm();
+    setupRefreshButton();
+    
+    // Load blacklist data
+    await loadBlacklist();
+  } catch (error) {
+    console.error('Blacklist initialization error:', error);
+    showAlert('Failed to initialize blacklist page: ' + error.message, 'error');
+  }
+});
+
+async function loadBlacklist() {
+  try {
+    // Show loading state
+    const blacklistLoader = document.getElementById('blacklist-loader');
+    const blacklistTable = document.getElementById('blacklist-table');
+    const noBlacklist = document.getElementById('no-blacklist');
+    
+    if (blacklistLoader) {
+      blacklistLoader.style.display = 'flex';
+    }
+    
+    if (blacklistTable) {
+      blacklistTable.style.display = 'none';
+    }
+    
+    if (noBlacklist) {
+      noBlacklist.style.display = 'none';
+    }
+    
+    // Fetch blacklist
+    const blacklist = await listsAPI.getBlacklist();
+    console.log('Loaded blacklist data:', blacklist);
+    
+    // Hide loading indicator
+    if (blacklistLoader) {
+      blacklistLoader.style.display = 'none';
+    }
+    
+    // Check if empty
+    if (!blacklist || blacklist.length === 0) {
+      if (noBlacklist) {
+        noBlacklist.style.display = 'flex';
+      }
+      return;
+    }
+    
+    // Show table and populate
+    if (blacklistTable) {
+      blacklistTable.style.display = 'table';
+      
+      const tableBody = document.getElementById('blacklist-body');
+      if (!tableBody) {
+        console.error('blacklist-body element not found');
+        return;
+      }
+      
+      // Clear existing rows
+      tableBody.innerHTML = '';
+      
+      // Update pagination info
+      document.getElementById('blacklist-total').textContent = blacklist.length;
+      document.getElementById('blacklist-range').textContent = `1-${Math.min(blacklist.length, 10)}`;
+      
+      // Process each item
+      blacklist.forEach(item => {
+        const row = document.createElement('tr');
+        
+        // Check if item is a string or an object
+        if (typeof item === 'string') {
+          // Simple string format
+          row.innerHTML = `
+            <td>${item}</td>
+            <td>Unknown</td>
+            <td>Unknown</td>
+            <td>
+              <button class="btn btn-danger btn-sm delete-domain" data-domain="${item}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          `;
+        } else {
+          // Object format with full details
+          const domain = item.Domain || item.domain || '';
+          const date = item.AddedDate || item.addedDate || new Date().toISOString();
+          const addedBy = item.addedByUser || 'Unknown';
+          
+          row.innerHTML = `
+            <td>${domain}</td>
+            <td>${addedBy}</td>
+            <td>${new Date(date).toLocaleString()}</td>
+            <td>
+              <button class="btn btn-danger btn-sm delete-domain" data-domain="${domain}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          `;
+        }
+        
+        tableBody.appendChild(row);
+      });
+      
+      // Add event listeners for delete buttons
+      document.querySelectorAll('.delete-domain').forEach(button => {
+        button.addEventListener('click', handleDeleteDomain);
+      });
+    }
+  } catch (error) {
+    console.error('Error loading blacklist:', error);
+    
+    // Hide loader and table, show error
+    const blacklistLoader = document.getElementById('blacklist-loader');
+    if (blacklistLoader) {
+      blacklistLoader.style.display = 'none';
+    }
+    
+    // Show alert
+    showAlert('Failed to load blacklist: ' + error.message, 'error');
+  }
+}
+
+function setupAddForm() {
+  // UPDATED: Use correct form ID from HTML
+  const addForm = document.getElementById('add-blacklist-form');
+  
+  if (addForm) {
+    addForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // UPDATED: Use correct input ID from HTML
+      const domainInput = document.getElementById('domain-input');
+      if (!domainInput) {
+        console.error('domain-input element not found');
+        return;
+      }
+      
+      const domain = domainInput.value.trim();
+      
+      if (!domain) {
+        showAlert('Please enter a domain', 'warning');
+        return;
+      }
+      
+      // Disable form during submission
+      const submitButton = addForm.querySelector('button[type="submit"]');
+      
+      if (submitButton) {
+        submitButton.disabled = true;
+        // Use the proper structure for showing loading state
+        submitButton.querySelector('.btn-text').style.display = 'none';
+        submitButton.querySelector('.btn-loader').style.display = 'inline-block';
+      }
+      
+      try {
+        console.log('Adding domain to blacklist:', domain);
+        await listsAPI.addToBlacklist(domain);
+        
+        // Clear input and reload list
+        domainInput.value = '';
+        await loadBlacklist();
+        
+        // Show success message
+        showAlert(`Domain "${domain}" added to blacklist`, 'success');
+      } catch (error) {
+        console.error('Error adding to blacklist:', error);
+        showAlert('Failed to add domain: ' + error.message, 'error');
+      } finally {
+        // Re-enable form
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.querySelector('.btn-text').style.display = 'inline-block';
+          submitButton.querySelector('.btn-loader').style.display = 'none';
+        }
+      }
+    });
+  } else {
+    console.error('add-blacklist-form element not found');
+  }
+}
+
+function setupRefreshButton() {
+  const refreshButton = document.getElementById('refresh-blacklist');
+  if (refreshButton) {
+    refreshButton.addEventListener('click', async () => {
+      try {
+        refreshButton.classList.add('rotating');
+        await loadBlacklist();
+        setTimeout(() => {
+          refreshButton.classList.remove('rotating');
+        }, 500);
+      } catch (error) {
+        refreshButton.classList.remove('rotating');
+      }
+    });
+  }
+}
+
+async function handleDeleteDomain(e) {
+  const button = e.currentTarget;
+  const domain = button.dataset.domain;
+  
+  // Simple confirmation without modal
+  if (!confirm(`Are you sure you want to remove "${domain}" from the blacklist?`)) {
     return;
   }
   
-  console.log('Initializing blacklist management...');
+  // Disable button during request and show loading
+  button.disabled = true;
+  const originalContent = button.innerHTML;
+  button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
   
-  // State for pagination
-  const state = {
-    page: 1,
-    perPage: 10,
-    totalItems: 0,
-    searchQuery: '',
-    items: []
-  };
-  
-  // Initialize DOM elements
-  const elements = {
-    loader: DOM.get('blacklist-loader'),
-    table: DOM.get('blacklist-table'),
-    tableBody: DOM.get('blacklist-body'),
-    emptyState: DOM.get('no-blacklist'),
-    searchBox: DOM.get('blacklist-search'),
-    refreshBtn: DOM.get('refresh-blacklist'),
-    addForm: DOM.get('add-blacklist-form'),
-    domainInput: DOM.get('domain-input'),
-    prevButton: DOM.get('prev-page'),
-    nextButton: DOM.get('next-page'),
-    rangeInfo: DOM.get('blacklist-range'),
-    totalInfo: DOM.get('blacklist-total'),
-    exportButton: DOM.get('export-blacklist'),
-    importFile: DOM.get('import-file'),
-    modal: document.getElementById('confirmation-modal'),
-    modalTitle: DOM.get('modal-title'),
-    modalMessage: DOM.get('modal-message'),
-    modalConfirm: DOM.get('modal-confirm'),
-    modalCancel: DOM.get('modal-cancel'),
-    modalClose: document.querySelector('.modal-close')
-  };
-  
-  // Set up event handlers
-  elements.refreshBtn?.addEventListener('click', () => loadBlacklist());
-  elements.addForm?.addEventListener('submit', handleAddDomain);
-  elements.prevButton?.addEventListener('click', () => changePage(-1));
-  elements.nextButton?.addEventListener('click', () => changePage(1));
-  elements.searchBox?.addEventListener('input', handleSearch);
-  elements.exportButton?.addEventListener('click', exportBlacklist);
-  elements.importFile?.addEventListener('change', importBlacklist);
-  elements.modalClose?.addEventListener('click', () => closeModal());
-  elements.modalCancel?.addEventListener('click', () => closeModal());
-  
-  // Load initial data
   try {
+    console.log(`Removing domain from blacklist: ${domain}`);
+    
+    // Make API call with proper error handling
+    await listsAPI.removeFromBlacklist(domain);
+    console.log(`Successfully removed ${domain} from blacklist`);
+    
+    // Reload blacklist to reflect changes
     await loadBlacklist();
+    
+    // Show success message
+    showAlert(`Domain "${domain}" removed from blacklist`, 'success');
   } catch (error) {
-    console.error('Error initializing blacklist:', error);
-    DOM.showAlert('Failed to load blacklist: ' + error.message, 'danger');
+    console.error('Error removing domain from blacklist:', error);
+    
+    // Re-enable button
+    button.disabled = false;
+    button.innerHTML = originalContent;
+    
+    // Show error message
+    showAlert('Failed to remove domain: ' + (error.message || 'Unknown error'), 'error');
   }
+}
+
+function showAlert(message, type = 'info') {
+  const alertContainer = document.getElementById('system-alert');
+  if (!alertContainer) return;
   
-  // Load blacklist data from API
-  async function loadBlacklist() {
-    showLoading(true);
-    
-    try {
-      // Fetch blacklist
-      const blacklist = await listsAPI.getBlacklist();
-      console.log(`Loaded ${blacklist.length} blacklist entries`);
-      
-      // Store in state
-      state.items = blacklist;
-      state.totalItems = blacklist.length;
-      state.page = 1; // Reset to first page
-      
-      // Update UI
-      renderBlacklist();
-      updatePagination();
-    } catch (error) {
-      console.error('Error loading blacklist:', error);
-      showError('Failed to load blacklist data');
-    } finally {
-      showLoading(false);
-    }
-  }
+  alertContainer.textContent = message;
+  alertContainer.className = `alert alert-${type === 'error' ? 'danger' : type}`;
+  alertContainer.style.display = 'block';
   
-  // Render blacklist to table
-  function renderBlacklist() {
-    if (!elements.tableBody) return;
-    
-    elements.tableBody.innerHTML = '';
-    
-    // Apply search filter if any
-    let items = state.items;
-    if (state.searchQuery) {
-      const query = state.searchQuery.toLowerCase();
-      items = items.filter(item => 
-        (item.domain && item.domain.toLowerCase().includes(query)) || 
-        (item.addedBy && item.addedBy.toLowerCase().includes(query))
-      );
-    }
-    
-    // If no items, show empty state
-    if (items.length === 0) {
-      showEmpty(true);
-      return;
-    }
-    
-    // Calculate pagination
-    const startIndex = (state.page - 1) * state.perPage;
-    const endIndex = Math.min(startIndex + state.perPage, items.length);
-    const paginatedItems = items.slice(startIndex, endIndex);
-    
-    // Update pagination info
-    if (elements.rangeInfo) {
-      elements.rangeInfo.textContent = items.length > 0 
-        ? `${startIndex + 1}-${endIndex}` 
-        : '0-0';
-    }
-    
-    if (elements.totalInfo) {
-      elements.totalInfo.textContent = items.length;
-    }
-    
-    // Create table rows
-    paginatedItems.forEach(item => {
-      const row = document.createElement('tr');
-      
-      const domain = item.domain || item.url || 'unknown';
-      const addedBy = item.addedBy || 'System';
-      const dateAdded = item.added || item.date || new Date();
-      
-      row.innerHTML = `
-        <td title="${domain}">${Strings.truncate(domain, 30)}</td>
-        <td>${addedBy}</td>
-        <td>${DateTime.formatDate(dateAdded)}</td>
-        <td class="actions">
-          <button class="btn btn-sm btn-icon delete-domain" data-domain="${domain}" title="Remove from blacklist">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      `;
-      
-      // Add event listener to delete button
-      const deleteBtn = row.querySelector('.delete-domain');
-      if (deleteBtn) {
-        deleteBtn.addEventListener('click', () => confirmDeleteDomain(domain));
-      }
-      
-      elements.tableBody.appendChild(row);
-    });
-    
-    // Show table, hide empty state
-    showEmpty(false);
+  // Auto-dismiss after 5 seconds for non-error alerts
+  if (type !== 'error' && type !== 'danger') {
+    setTimeout(() => {
+      alertContainer.style.display = 'none';
+    }, 5000);
   }
-  
-  // Add new domain to blacklist
-  async function handleAddDomain(e) {
-    e.preventDefault();
-    
-    const domain = elements.domainInput?.value.trim();
-    if (!domain) {
-      DOM.showAlert('Please enter a domain to add', 'warning');
-      return;
-    }
-    
-    // Basic domain validation
-    if (!isValidDomain(domain)) {
-      DOM.showAlert('Please enter a valid domain', 'warning');
-      return;
-    }
-    
-    try {
-      // Show loading state
-      const submitButton = elements.addForm.querySelector('button[type="submit"]');
-      DOM.buttonState(submitButton, true);
-      
-      // Call API
-      await listsAPI.addToBlacklist(domain);
-      
-      // Success
-      DOM.showAlert(`Domain "${domain}" added to blacklist successfully`, 'success');
-      
-      // Clear input
-      if (elements.domainInput) elements.domainInput.value = '';
-      
-      // Reload data
-      await loadBlacklist();
-    } catch (error) {
-      console.error('Error adding to blacklist:', error);
-      DOM.showAlert('Failed to add domain: ' + error.message, 'danger');
-    } finally {
-      // Restore button
-      const submitButton = elements.addForm.querySelector('button[type="submit"]');
-      DOM.buttonState(submitButton, false);
-    }
-  }
-  
-  // Confirm domain deletion
-  function confirmDeleteDomain(domain) {
-    if (!elements.modal || !elements.modalMessage) return;
-    
-    // Set up modal
-    elements.modalTitle.textContent = 'Confirm Removal';
-    elements.modalMessage.textContent = `Are you sure you want to remove "${domain}" from the blacklist?`;
-    
-    // Set up confirm action
-    elements.modalConfirm.onclick = () => {
-      deleteDomain(domain);
-      closeModal();
-    };
-    
-    // Show modal
-    elements.modal.classList.add('show');
-  }
-  
-  // Delete domain from blacklist
-  async function deleteDomain(domain) {
-    try {
-      await listsAPI.removeFromBlacklist(domain);
-      
-      // Success
-      DOM.showAlert(`Domain "${domain}" removed from blacklist`, 'success');
-      
-      // Reload data
-      await loadBlacklist();
-    } catch (error) {
-      console.error('Error removing from blacklist:', error);
-      DOM.showAlert('Failed to remove domain: ' + error.message, 'danger');
-    }
-  }
-  
-  // Handle search input
-  function handleSearch(e) {
-    state.searchQuery = e.target.value.trim();
-    state.page = 1; // Reset to first page
-    renderBlacklist();
-    updatePagination();
-  }
-  
-  // Change pagination page
-  function changePage(delta) {
-    const newPage = state.page + delta;
-    
-    // Calculate max pages
-    const filteredItems = state.searchQuery
-      ? state.items.filter(item => 
-          (item.domain && item.domain.toLowerCase().includes(state.searchQuery.toLowerCase())) ||
-          (item.addedBy && item.addedBy.toLowerCase().includes(state.searchQuery.toLowerCase()))
-        )
-      : state.items;
-    
-    const maxPages = Math.ceil(filteredItems.length / state.perPage);
-    
-    // Validate page bounds
-    if (newPage < 1 || newPage > maxPages) return;
-    
-    state.page = newPage;
-    renderBlacklist();
-    updatePagination();
-  }
-  
-  // Update pagination buttons
-  function updatePagination() {
-    if (!elements.prevButton || !elements.nextButton) return;
-    
-    // Calculate max pages
-    const filteredItems = state.searchQuery
-      ? state.items.filter(item => 
-          (item.domain && item.domain.toLowerCase().includes(state.searchQuery.toLowerCase())) ||
-          (item.addedBy && item.addedBy.toLowerCase().includes(state.searchQuery.toLowerCase()))
-        )
-      : state.items;
-    
-    const maxPages = Math.ceil(filteredItems.length / state.perPage);
-    
-    // Update button states
-    elements.prevButton.disabled = state.page <= 1;
-    elements.nextButton.disabled = state.page >= maxPages;
-  }
-  
-  // Export blacklist to CSV
-  function exportBlacklist() {
-    // Prepare CSV content
-    let csvContent = 'Domain,Added By,Date Added\n';
-    
-    state.items.forEach(item => {
-      const domain = item.domain || item.url || '';
-      const addedBy = item.addedBy || 'System';
-      const dateAdded = item.added || item.date || new Date();
-      
-      csvContent += `"${domain}","${addedBy}","${new Date(dateAdded).toISOString()}"\n`;
-    });
-    
-    // Create download link
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    
-    link.href = url;
-    link.setAttribute('download', `phishguard-blacklist-${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    
-    // Trigger download and cleanup
-    link.click();
-    document.body.removeChild(link);
-    
-    DOM.showAlert('Blacklist exported successfully', 'success');
-  }
-  
-  // Import blacklist from file
-  async function importBlacklist(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    
-    reader.onload = async (event) => {
-      try {
-        const content = event.target.result;
-        const domains = parseImportFile(content);
-        
-        if (domains.length === 0) {
-          DOM.showAlert('No valid domains found in import file', 'warning');
-          return;
-        }
-        
-        // Confirm import
-        if (!confirm(`Import ${domains.length} domains to blacklist?`)) {
-          return;
-        }
-        
-        // Show loading state
-        DOM.showAlert(`Importing ${domains.length} domains...`, 'info');
-        
-        // Import domains one by one
-        let successCount = 0;
-        let errorCount = 0;
-        
-        for (const domain of domains) {
-          try {
-            await listsAPI.addToBlacklist(domain);
-            successCount++;
-          } catch (error) {
-            console.error(`Error importing domain ${domain}:`, error);
-            errorCount++;
-          }
-        }
-        
-        // Show results
-        DOM.showAlert(`Import complete: ${successCount} added, ${errorCount} failed`, successCount > 0 ? 'success' : 'warning');
-        
-        // Reset file input
-        e.target.value = '';
-        
-        // Reload blacklist
-        await loadBlacklist();
-      } catch (error) {
-        console.error('Import error:', error);
-        DOM.showAlert('Import failed: ' + error.message, 'danger');
-      }
-    };
-    
-    reader.onerror = () => {
-      DOM.showAlert('Failed to read file', 'danger');
-    };
-    
-    reader.readAsText(file);
-  }
-  
-  // Parse import file (CSV or TXT)
-  function parseImportFile(content) {
-    // Try CSV format first
-    if (content.includes(',')) {
-      try {
-        // Simple CSV parsing - split by lines then get first column
-        const lines = content.split('\n');
-        return lines
-          .slice(1) // Skip header row
-          .map(line => line.split(',')[0]?.trim()) // Get first column
-          .filter(domain => domain && isValidDomain(domain)); // Filter valid domains
-      } catch (e) {
-        console.error('CSV parsing failed, trying plain text', e);
-      }
-    }
-    
-    // Fall back to plain text format (one domain per line)
-    return content
-      .split('\n')
-      .map(line => line.trim())
-      .filter(domain => domain && isValidDomain(domain));
-  }
-  
-  // Close modal dialog
-  function closeModal() {
-    if (elements.modal) elements.modal.classList.remove('show');
-  }
-  
-  // UI state helpers
-  function showLoading(isLoading) {
-    if (elements.loader) elements.loader.style.display = isLoading ? 'flex' : 'none';
-    if (elements.table) elements.table.style.display = isLoading ? 'none' : 'table';
-    if (elements.emptyState) elements.emptyState.style.display = 'none';
-  }
-  
-  function showEmpty(isEmpty) {
-    if (elements.table) elements.table.style.display = isEmpty ? 'none' : 'table';
-    if (elements.emptyState) elements.emptyState.style.display = isEmpty ? 'flex' : 'none';
-  }
-  
-  function showError(message) {
-    showEmpty(true);
-    if (elements.emptyState) {
-      elements.emptyState.innerHTML = `
-        <i class="fas fa-exclamation-circle"></i>
-        <p>${message}</p>
-      `;
-    }
-  }
-  
-  // Basic domain validation
-  function isValidDomain(domain) {
-    // Simple basic check
-    return domain && 
-           domain.length > 1 && 
-           domain.includes('.') && 
-           !domain.startsWith('http') && 
-           !domain.includes('://') &&
-           !domain.includes(' ');
-  }
-});
+}

@@ -194,6 +194,7 @@ const listsAPI = {
   // Add domain to whitelist
   addToWhitelist: async (domain) => {
     try {
+      console.log('API: Adding to whitelist:', domain);
       return await apiRequest('/lists/whitelist', {
         method: 'POST',
         body: JSON.stringify({ domain })
@@ -229,6 +230,7 @@ const listsAPI = {
   // Add domain to blacklist
   addToBlacklist: async (domain) => {
     try {
+      console.log('API: Adding to blacklist:', domain);
       return await apiRequest('/lists/blacklist', {
         method: 'POST',
         body: JSON.stringify({ domain })
