@@ -2,22 +2,26 @@ import mysql.connector
 import pandas as pd
 import os
 import sys
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 def setup_whitelist_db():
     try:
-        # MySQL connection configuration
+        # MySQL connection configuration from environment variables
         config = {
-            'host': 'localhost',
-            'user': 'root',
-            'password': 'Sanuth123',  # Default XAMPP password
-            'database': 'phishing_detector'
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'user': os.getenv('DB_USER', 'root'),
+            'password': os.getenv('DB_PASSWORD', 'Sanuth123'),
+            'database': os.getenv('DB_NAME', 'phishing_detector')
         }
 
         # First create database if it doesn't exist
         temp_conn = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='Sanuth123'
+            host=os.getenv('DB_HOST', 'localhost'),
+            user=os.getenv('DB_USER', 'root'),
+            password=os.getenv('DB_PASSWORD', 'Sanuth123')
         )
         temp_cursor = temp_conn.cursor()
         temp_cursor.execute('CREATE DATABASE IF NOT EXISTS phishing_detection')

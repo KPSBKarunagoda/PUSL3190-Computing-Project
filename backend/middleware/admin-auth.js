@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 module.exports = function(dbConnection) {
     return async function(req, res, next) {
@@ -12,8 +13,8 @@ module.exports = function(dbConnection) {
         }
         
         try {
-            // Use the same secret as in the AuthService
-            const jwtSecret = 'phishguard_secure_jwt_secret_key';
+            // Use JWT secret from environment variables
+            const jwtSecret = process.env.JWT_SECRET || 'phishguard_secure_jwt_secret_key';
             
             // Verify token
             const decoded = jwt.verify(token, jwtSecret);

@@ -3,16 +3,22 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config();
 
 class AuthService {
     constructor(connection) {
         this.connection = connection;
         
-        // Use a consistent JWT secret
-        this.jwtSecret = 'phishguard_secure_jwt_secret_key';
+        // Use JWT secret from environment variables
+        this.jwtSecret = process.env.JWT_SECRET || 'phishguard_secure_jwt_secret_key';
         
-        // Shorter expiry time for better security
-        this.jwtExpiry = '1h'; 
+        // Check if using default secret and warn
+        if (!process.env.JWT_SECRET) {
+            console.warn('WARNING: Using default JWT secret. Set JWT_SECRET in .env file for production.');
+        }
+        
+        // Expiry from environment or default
+        this.jwtExpiry = process.env.JWT_EXPIRY || '1h'; 
     }
 
     async hashPassword(plainPassword) {

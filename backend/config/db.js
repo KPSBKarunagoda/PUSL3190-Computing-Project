@@ -1,13 +1,14 @@
 const mysql = require('mysql2/promise');
+require('dotenv').config();
 
 // Database configuration
 const dbConfig = {
-  host: 'localhost',
-  user: 'root',
-  password: 'Sanuth123', // Change this to your MySQL password
-  database: 'phishing_detector'
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'phishing_detector',
+  port: parseInt(process.env.DB_PORT || '3306')
 };
-
 
 // Create connection pool
 const pool = mysql.createPool(dbConfig);

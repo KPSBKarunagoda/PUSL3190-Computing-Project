@@ -1,11 +1,12 @@
 const mysql = require('mysql2/promise');
+require('dotenv').config();
 
 // Database configuration
 const dbConfig = {
-    host: 'localhost',
-    user: 'root',
-    password: 'Sanuth123',  // Your MySQL password
-    port: 3306,
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    port: parseInt(process.env.DB_PORT || '3306'),
     connectTimeout: 10000
 };
 

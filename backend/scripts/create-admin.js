@@ -1,14 +1,15 @@
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const readline = require('readline');
+require('dotenv').config();
 
-// Database configuration
+// Database configuration from environment variables
 const dbConfig = {
-    host: 'localhost',
-    user: 'root',
-    password: 'Sanuth123',
-    database: 'phishing_detector',
-    port: 3306
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'phishing_detector',
+    port: parseInt(process.env.DB_PORT || '3306')
 };
 
 // Create interface for user input

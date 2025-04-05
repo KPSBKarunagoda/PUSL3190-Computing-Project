@@ -4,13 +4,42 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { pool, testConnection } = require('./config/db');
 const rateLimit = require('express-rate-limit');
+require('dotenv').config();
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Configure secure CORS settings
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'] 
+    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+  credentials: true,
+  maxAge: 86400
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Add security headers
+app.use((req, res, next) => {
+  // Content Security Policy
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data:;"
+  );
+  
+  // Other security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.removeHeader('X-Powered-By');
+  
+  next();
+});
 
 // Debug endpoint - add this before any other routes
 app.get('/api/debug', (req, res) => {
@@ -101,9 +130,24 @@ async function initializeServer() {
     res.sendFile(path.join(__dirname, '../admin/index.html'));
   });
 
-  // URL analysis endpoint
+  // URL analysis endpoint with URL validation
   app.post('/analyze-url', async (req, res) => {
     const { url, useSafeBrowsing } = req.body;
+    
+    // Validate URL before processing
+    const isValidUrl = (urlString) => {
+      try {
+        const url = new URL(urlString);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+      } catch (e) {
+        return false;
+      }
+    };
+    
+    if (!url || !isValidUrl(url)) {
+      return res.status(400).json({ error: 'Invalid URL format' });
+    }
+    
     const safeBrowsingFlag = String(Boolean(useSafeBrowsing));
     console.log(`Analyzing URL: ${url}, Safe Browsing enabled: ${safeBrowsingFlag}`);
     
