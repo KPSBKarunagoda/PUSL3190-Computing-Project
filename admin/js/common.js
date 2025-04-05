@@ -70,51 +70,52 @@ const DOM = {
   }
 };
 
-// Admin Authentication Utilities
-const Auth = {
-  /**
-   * Check if admin is logged in
-   * @returns {boolean} - True if admin token exists
-   */
-  isAuthenticated() {
-    return !!localStorage.getItem('phishguard_admin_token');
-  },
-  
-  /**
-   * Get admin token
-   * @returns {string|null} - Admin token or null
-   */
-  getToken() {
-    return localStorage.getItem('phishguard_admin_token');
-  },
-  
-  /**
-   * Get admin user data
-   * @returns {object|null} - Admin user object or null
-   */
-  getUser() {
-    try {
-      const adminJson = localStorage.getItem('phishguard_admin');
-      return adminJson ? JSON.parse(adminJson) : null;
-    } catch (e) {
-      console.error('Error parsing admin data', e);
-      return null;
+// Admin Authentication Utilities - ensure Auth is only declared once globally
+if (typeof window.Auth === 'undefined') {
+  window.Auth = {
+    /**
+     * Check if admin is logged in
+     * @returns {boolean} - True if admin token exists
+     */
+    isAuthenticated() {
+      return !!localStorage.getItem('phishguard_admin_token');
+    },
+    
+    /**
+     * Get admin token
+     * @returns {string|null} - Admin token or null
+     */
+    getToken() {
+      return localStorage.getItem('phishguard_admin_token');
+    },
+    
+    /**
+     * Get admin user data
+     * @returns {object|null} - Admin user object or null
+     */
+    getUser() {
+      try {
+        const adminJson = localStorage.getItem('phishguard_admin');
+        return adminJson ? JSON.parse(adminJson) : null;
+      } catch (e) {
+        console.error('Error parsing admin data', e);
+        return null;
+      }
+    },
+    
+    /**
+     * Logout admin
+     */
+    logout() {
+      localStorage.removeItem('phishguard_admin_token');
+      localStorage.removeItem('phishguard_admin');
+      window.location.href = 'index.html?action=logout';
     }
-  },
-  
-  /**
-   * Logout admin
-   */
-  logout() {
-    localStorage.removeItem('phishguard_admin_token');
-    localStorage.removeItem('phishguard_admin');
-    window.location.href = 'index.html?action=logout';
-  }
-};
+  };
+}
 
 // Export utilities to global scope
-window.DOM = DOM;
-window.Auth = Auth;  // Make sure Auth is exported globally
+window.DOM = DOM; // Auth is already attached to window above
 
 // Run auth check on all admin pages except login page
 document.addEventListener('DOMContentLoaded', () => {

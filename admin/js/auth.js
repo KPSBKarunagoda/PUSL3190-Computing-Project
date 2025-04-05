@@ -89,18 +89,47 @@ function setupLoginPage() {
       submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
     }
     
-    // Attempt login
+    // Attempt login - DIRECT FETCH instead of using authAPI to avoid potential issues
     try {
-      console.log("Sending login request for:", email);
-      const response = await authAPI.login(email, password);
-      console.log("Login response:", response);
+      console.log("Sending direct login request for:", email);
+      const response = await fetch('http://localhost:3000/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
       
-      // Save auth data and redirect - FIXED: consistent admin token keys
-      localStorage.setItem('phishguard_admin_token', response.token);
+      // Get response text for detailed debugging
+      const responseText = await response.text();
+      console.log(`Login response status: ${response.status}`);
+      console.log(`Login response text: ${responseText}`);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse login response as JSON:', parseError);
+        throw new Error('Invalid server response format');
+      }
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+      
+      // Validate admin role
+      if (!data.user || data.user.role !== 'Admin') {
+        throw new Error('You do not have administrator privileges');
+      }
+      
+      console.log('Login successful, user:', data.user);
+      
+      // Store token with CONSISTENT admin token keys
+      localStorage.setItem('phishguard_admin_token', data.token);
       localStorage.setItem('phishguard_admin', JSON.stringify({
-        id: response.user.id,
-        username: response.user.username,
-        role: response.user.role
+        id: data.user.id,
+        username: data.user.username,
+        role: data.user.role
       }));
       
       // Clear password field
@@ -109,11 +138,10 @@ function setupLoginPage() {
       // Show success message briefly before redirect
       showAuthAlert('Login successful, redirecting...', 'success');
       
-      // Redirect to dashboard
+      // Redirect to dashboard after a short delay
       setTimeout(() => {
-        window.location.replace('dashboard.html');
-      }, 500);
-      
+        window.location.href = 'dashboard.html';
+      }, 1000);
     } catch (error) {
       console.error('Login error:', error);
       showAuthAlert(error.message || 'Login failed', 'danger');
@@ -182,27 +210,30 @@ function showAuthAlert(message, type = 'info') {
   }
 }
 
-// Auth utility object with consistent token key usage
-const Auth = {
-  isAuthenticated() {
-    return !!localStorage.getItem('phishguard_admin_token');
-  },
-  
-  getToken() {
-    return localStorage.getItem('phishguard_admin_token');
-  },
-  
-  getUser() {
-    try {
-      return JSON.parse(localStorage.getItem('phishguard_admin'));
-    } catch (e) {
-      return null;
+// Ensure Auth functions are still available if not already declared
+if (typeof Auth === 'undefined') {
+  console.warn('Auth object not found in global scope. Creating fallback.');
+  window.Auth = {
+    isAuthenticated() {
+      return !!localStorage.getItem('phishguard_admin_token');
+    },
+    
+    getToken() {
+      return localStorage.getItem('phishguard_admin_token');
+    },
+    
+    getUser() {
+      try {
+        return JSON.parse(localStorage.getItem('phishguard_admin'));
+      } catch (e) {
+        return null;
+      }
+    },
+    
+    logout() {
+      localStorage.removeItem('phishguard_admin_token');
+      localStorage.removeItem('phishguard_admin');
+      window.location.href = 'index.html';
     }
-  },
-  
-  logout() {
-    localStorage.removeItem('phishguard_admin_token');
-    localStorage.removeItem('phishguard_admin');
-    window.location.href = 'index.html';
-  }
-};
+  };
+}

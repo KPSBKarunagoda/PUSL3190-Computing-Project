@@ -52,7 +52,8 @@
       
       <div id="auth-alert" class="alert" role="alert"></div>
       
-      <form id="login-form" class="auth-form">
+      <!-- Add novalidate to prevent default browser validation -->
+      <form id="login-form" class="auth-form" novalidate>
         <div class="form-group">
           <label for="email">Email</label>
           <div class="input-group">
@@ -74,8 +75,17 @@
         
         <button type="submit" class="btn btn-primary btn-block">
           <span class="btn-text">Sign In</span>
-          <span class="btn-loader"><i class="fas fa-circle-notch fa-spin"></i></span>
+          <span class="btn-loader" style="display:none"><i class="fas fa-circle-notch fa-spin"></i></span>
         </button>
+        
+        <div class="debug-info" style="margin-top:20px; font-size:12px; color:#666;">
+          <p>If you're having trouble logging in:</p>
+          <ul>
+            <li>Ensure your email and password are correct</li>
+            <li>Check the browser console for any errors</li>
+            <li>Ensure you have admin privileges</li>
+          </ul>
+        </div>
       </form>
       
       <div class="auth-footer">
@@ -85,11 +95,23 @@
     </div>
   </div>
 
-  <!-- Ensure script tags are loading in the proper order -->
-  <!-- Make sure common.js loads before api.js and auth.js -->
+  <!-- Add this script for debugging -->
+  <script>
+    // Debug helper
+    window.onerror = function(message, source, lineno, colno, error) {
+      console.error('Global error:', message, 'at', source, lineno, colno);
+      const alertEl = document.getElementById('auth-alert');
+      if (alertEl) {
+        alertEl.textContent = 'JavaScript error: ' + message;
+        alertEl.className = 'alert alert-danger show';
+      }
+      return false;
+    };
+  </script>
+  
+  <!-- Make sure common.js loads first so Auth is defined before auth.js uses it -->
   <script src="js/common.js"></script>
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
-  <!-- Any other script tags as needed -->
 </body>
 </html>

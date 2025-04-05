@@ -21,17 +21,20 @@ module.exports = function(dbConnection) {
         try {
             const { email, password } = req.body;
             
+            console.log(`Admin login attempt for email: ${email}`);
+            
             if (!email || !password) {
+                console.log('Admin login failed: Email or password missing');
                 return res.status(400).json({ message: 'Email and password required' });
             }
-            
-            console.log(`Admin login attempt for email: ${email}`);
             
             // Get user with matching email
             const [users] = await dbConnection.execute(
                 'SELECT UserID, Username, Email, PasswordHash, Role FROM User WHERE Email = ?',
                 [email]
             );
+            
+            console.log(`Found ${users.length} users matching email`);
             
             if (users.length === 0) {
                 console.log('Admin auth failed: Email not found');
@@ -40,8 +43,24 @@ module.exports = function(dbConnection) {
             
             const user = users[0];
             
+            console.log(`User found: ${user.Username}, Role: ${user.Role}`);
+            console.log('Password hash exists:', !!user.PasswordHash);
+            
             // Verify password
-            const isMatch = await bcrypt.compare(password, user.PasswordHash);
+            let isMatch = false;
+            try {
+                // Add extra protection against null hash
+                if (!user.PasswordHash) {
+                    console.log('Password hash is null/empty');
+                    return res.status(401).json({ message: 'Invalid email or password' });
+                }
+                
+                isMatch = await bcrypt.compare(password, user.PasswordHash);
+                console.log('Password verification result:', isMatch ? 'match' : 'no match');
+            } catch (err) {
+                console.error('Password comparison error:', err);
+                return res.status(500).json({ message: 'Authentication error' });
+            }
             
             if (!isMatch) {
                 console.log('Admin auth failed: Password incorrect');
@@ -50,9 +69,11 @@ module.exports = function(dbConnection) {
             
             // Check if user has Admin role
             if (user.Role !== 'Admin') {
-                console.log('Admin auth failed: User is not an admin');
+                console.log('Admin access denied: User role is', user.Role);
                 return res.status(403).json({ message: 'Access denied - Admin privileges required' });
             }
+            
+            console.log('Admin authentication successful');
             
             // Generate JWT token
             const token = authService.generateToken(user);
@@ -71,7 +92,7 @@ module.exports = function(dbConnection) {
             console.log('Admin login successful for user:', user.Username);
         } catch (error) {
             console.error('Admin login error:', error);
-            res.status(500).json({ message: 'Server error' });
+            res.status(500).json({ message: 'Server error during login' });
         }
     });
     

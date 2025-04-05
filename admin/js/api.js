@@ -4,7 +4,7 @@
  * Handles all API communication with the backend
  */
 
-// Base API URL
+// Base API URL with explicit protocol, host and port
 const API_BASE_URL = 'http://localhost:3000/api';
 
 /**
@@ -22,7 +22,7 @@ async function apiRequest(endpoint, options = {}) {
       ...options.headers || {}
     };
     
-    // Add authentication token if available - USING CONSISTENT TOKEN KEY
+    // Add authentication token if available
     const token = localStorage.getItem('phishguard_admin_token');
     if (token) {
       headers['x-auth-token'] = token;
@@ -39,29 +39,38 @@ async function apiRequest(endpoint, options = {}) {
       headers
     });
     
+    // Log response status for debugging
+    console.log(`API Response status: ${response.status} for ${url}`);
+    
+    // Get response text first for debugging
+    const responseText = await response.text();
+    console.log(`API Response text: ${responseText.substring(0, 200)}${responseText.length > 200 ? '...' : ''}`);
+    
+    // Parse response as JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('JSON parse error:', e);
+      throw new Error('Invalid response format from server');
+    }
+    
     // Handle HTTP errors
     if (!response.ok) {
-      // Try to parse error message from response
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        errorData = { message: `HTTP Error: ${response.status}` };
-      }
-      
       // Handle authentication errors
       if (response.status === 401 || response.status === 403) {
-        // Clear token and redirect to login
+        console.log('Auth error detected, logging out');
         localStorage.removeItem('phishguard_admin_token');
-        window.location.href = '/admin/index.html?error=' + encodeURIComponent(errorData.message || 'Authentication failed');
+        localStorage.removeItem('phishguard_admin');
+        window.location.href = '/admin/index.html?error=' + encodeURIComponent(data.message || 'Authentication failed');
         throw new Error('Session expired. Please log in again.');
       }
       
-      throw new Error(errorData.message || `Request failed with status ${response.status}`);
+      throw new Error(data.message || `Request failed with status ${response.status}`);
     }
     
-    // Return JSON response
-    return await response.json();
+    // Return parsed JSON response
+    return data;
   } catch (error) {
     console.error('API Request Error:', error);
     throw error;
@@ -75,13 +84,10 @@ const authAPI = {
   // Login with email and password
   login: async (email, password) => {
     try {
-      console.log(`Attempting admin login for: ${email}`);
+      console.log(`Attempting admin login for email: ${email}`);
       
-      // VERIFY THE ADMIN ENDPOINT
-      const loginUrl = `${API_BASE_URL}/admin/login`;
-      console.log(`Login URL: ${loginUrl}`);
-      
-      const response = await fetch(loginUrl, {
+      // Use direct fetch for login to bypass any potential issues with apiRequest
+      const response = await fetch(`${API_BASE_URL}/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -89,18 +95,20 @@ const authAPI = {
       
       console.log(`Login response status: ${response.status}`);
       
-      // Get response text for detailed debugging
+      // Get response text for debugging
       const responseText = await response.text();
       console.log(`Login response text: ${responseText}`);
       
+      // Parse the response
       let data;
       try {
         data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('Failed to parse login response as JSON:', parseError);
-        throw new Error('Invalid server response format');
+      } catch (e) {
+        console.error('JSON parse error:', e);
+        throw new Error('Invalid response format from server');
       }
       
+      // Check for errors
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
       }
@@ -112,7 +120,7 @@ const authAPI = {
       
       console.log('Login successful, user:', data.user);
       
-      // Store token and basic user info - USING CONSISTENT TOKEN KEYS
+      // Store token and basic user info
       localStorage.setItem('phishguard_admin_token', data.token);
       localStorage.setItem('phishguard_admin', JSON.stringify({
         id: data.user.id,
@@ -132,14 +140,12 @@ const authAPI = {
     try {
       return await apiRequest('/admin/status');
     } catch (error) {
-      // Will be caught by apiRequest if unauthorized
       throw error;
     }
   },
   
   // Logout
   logout: () => {
-    // CHECKED: Already using correct admin keys
     localStorage.removeItem('phishguard_admin_token');
     localStorage.removeItem('phishguard_admin');
     window.location.href = '/admin/index.html?message=loggedOut';
@@ -166,7 +172,6 @@ const dashboardAPI = {
       return await apiRequest(`/admin/activity?limit=${limit}`);
     } catch (error) {
       console.error('Error fetching activity:', error);
-      // Return empty array on failure
       return { activities: [] };
     }
   }
