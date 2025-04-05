@@ -7,43 +7,44 @@ module.exports = function(dbConnection) {
     const authService = new AuthService(dbConnection);
     const authMiddleware = require('../middleware/auth')(dbConnection);
     
-    // Login route
+    // POST /api/auth/login - User login endpoint
     router.post('/login', async (req, res) => {
         try {
-            // Get email/username and password
             const { email, password } = req.body;
             
-            console.log('Login attempt with email:', email ? email.substring(0, 2) + '***' : 'null');
-            
+            // Validate input
             if (!email || !password) {
-                return res.status(400).json({ message: 'Email and password are required' });
+                return res.status(400).json({ message: 'Please enter all fields' });
             }
-            
-            // Authenticate user using email
+
+            console.log(`Login attempt for email: ${email}`);
+
+            // Authenticate user
             const user = await authService.authenticateByEmail(email, password);
-            
+
             if (!user) {
-                console.log('Authentication failed for user');
+                console.log('Authentication failed: Invalid credentials');
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
-            
-            console.log('User authenticated successfully, role:', user.Role);
-            
-            // Generate token
+
+            console.log(`User authenticated: ${user.Username} (${user.Role})`);
+
+            // Generate JWT token
             const token = authService.generateToken(user);
-            
-            // Return user info (excluding sensitive data) and token
+
+            // Return success with token and user info
             res.json({
                 token,
                 user: {
                     id: user.UserID,
                     username: user.Username,
+                    email: user.Email,
                     role: user.Role
                 }
             });
-        } catch (error) {
-            console.error('Login error details:', error);
-            res.status(500).json({ message: 'Server error during login' });
+        } catch (err) {
+            console.error('Login error:', err);
+            res.status(500).json({ message: 'Server error' });
         }
     });
     

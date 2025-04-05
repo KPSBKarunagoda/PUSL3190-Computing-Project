@@ -1,118 +1,195 @@
-// Function to load dashboard data
-async function loadDashboardData() {
-  try {
-    // Load whitelist
-    const whitelist = await getWhitelist();
-    displayList(whitelist, 'whitelist', removeFromWhitelist);
-    
-    // Load blacklist
-    const blacklist = await getBlacklist();
-    displayList(blacklist, 'blacklist', removeFromBlacklist);
-  } catch (err) {
-    console.error('Error loading dashboard data:', err);
-    if (err.message.includes('Token')) {
-      // Handle expired token
-      removeToken();
-      window.location.reload();
-    } else {
-      alert(`Error loading data: ${err.message}`);
-    }
-  }
-}
+/**
+ * PhishGuard Admin Dashboard JavaScript
+ * Handles dashboard functionality and data loading
+ */
 
-// Function to display a list (whitelist or blacklist)
-function displayList(list, listId, removeCallback) {
-  const listElement = document.getElementById(listId);
-  listElement.innerHTML = '';
-  
-  if (list.length === 0) {
-    const emptyItem = document.createElement('li');
-    emptyItem.textContent = 'No domains in this list';
-    emptyItem.className = 'empty-list';
-    listElement.appendChild(emptyItem);
+document.addEventListener('DOMContentLoaded', async () => {
+  // Skip dashboard code on non-dashboard pages
+  if (!document.querySelector('.content-header h1')?.textContent.includes('Dashboard')) {
     return;
   }
   
-  list.forEach(domain => {
-    const listItem = document.createElement('li');
+  // Check if admin is logged in - CHANGED TOKEN KEY
+  const token = localStorage.getItem('phishguard_admin_token');
+  if (!token) {
+    window.location.href = 'index.html'; // Redirect to admin login
+    return;
+  }
+  
+  // Get admin user info - CHANGED KEY
+  const adminUserJson = localStorage.getItem('phishguard_admin');
+  let adminUser;
+  
+  try {
+    adminUser = JSON.parse(adminUserJson);
+    // Verify it's actually an admin
+    if (!adminUser || adminUser.role !== 'Admin') {
+      throw new Error('Not an admin user');
+    }
     
-    const domainText = document.createElement('span');
-    domainText.textContent = domain;
-    listItem.appendChild(domainText);
+    // Set admin name in UI if available
+    const currentUserElement = document.getElementById('current-user');
+    if (currentUserElement && adminUser.username) {
+      currentUserElement.textContent = adminUser.username;
+    }
+  } catch (error) {
+    console.error('Admin verification error:', error);
+    // Redirect to login if not a valid admin
+    localStorage.removeItem('phishguard_admin_token');
+    localStorage.removeItem('phishguard_admin');
+    window.location.href = 'index.html';
+    return;
+  }
+  
+  console.log('Initializing dashboard...');
+  
+  try {
+    // Load system statistics
+    await loadSystemStats();
     
-    const removeButton = document.createElement('button');
-    removeButton.textContent = 'Remove';
-    removeButton.className = 'remove-btn';
-    removeButton.addEventListener('click', async () => {
-      try {
-        await removeCallback(domain);
-        // Reload the list
-        const newList = listId === 'whitelist' ? await getWhitelist() : await getBlacklist();
-        displayList(newList, listId, removeCallback);
-      } catch (err) {
-        alert(`Failed to remove domain: ${err.message}`);
+    // Load recent activity
+    await loadRecentActivity();
+    
+    // Set up refresh buttons
+    DOM.get('refresh-activity')?.addEventListener('click', loadRecentActivity);
+    
+    // Set up maintenance button
+    const maintenanceBtn = DOM.get('run-maintenance');
+    if (maintenanceBtn) {
+      maintenanceBtn.addEventListener('click', runSystemMaintenance);
+    }
+    
+  } catch (error) {
+    console.error('Dashboard initialization error:', error);
+    DOM.showAlert('Failed to load dashboard data: ' + error.message, 'danger');
+  }
+});
+
+// Load system statistics
+async function loadSystemStats() {
+  console.log('Loading system statistics...');
+  
+  try {
+    // Show loading state
+    ['users-count', 'whitelist-count', 'blacklist-count', 'scans-count'].forEach(id => {
+      const el = DOM.get(id);
+      if (el) el.textContent = '...';
+    });
+    
+    // Fetch statistics data
+    const stats = await dashboardAPI.getStats();
+    console.log('System stats received:', stats);
+    
+    // Update UI
+    if (stats) {
+      DOM.get('users-count').textContent = stats.usersCount || 0;
+      DOM.get('whitelist-count').textContent = stats.whitelistCount || 0;
+      DOM.get('blacklist-count').textContent = stats.blacklistCount || 0;
+      DOM.get('scans-count').textContent = stats.totalScans || 0;
+    }
+  } catch (error) {
+    console.error('Error loading system statistics:', error);
+    // Set default values on error
+    ['users-count', 'whitelist-count', 'blacklist-count', 'scans-count'].forEach(id => {
+      const el = DOM.get(id);
+      if (el) el.textContent = '0';
+    });
+    throw error;
+  }
+}
+
+// Load recent activity
+async function loadRecentActivity() {
+  console.log('Loading recent activity...');
+  
+  try {
+    // Show loading state
+    const loader = DOM.get('activity-loader');
+    const table = DOM.get('activity-table');
+    const empty = DOM.get('no-activity');
+    
+    if (loader) loader.style.display = 'flex';
+    if (table) table.style.display = 'none';
+    if (empty) empty.style.display = 'none';
+    
+    // Fetch activity data
+    const data = await dashboardAPI.getActivity();
+    console.log('Activity data received:', data);
+    
+    // Update UI
+    const activityBody = DOM.get('activity-body');
+    if (!activityBody) return;
+    
+    if (loader) loader.style.display = 'none';
+    
+    // Check if we have activity data
+    if (!data.activities || data.activities.length === 0) {
+      if (table) table.style.display = 'none';
+      if (empty) empty.style.display = 'flex';
+      return;
+    }
+    
+    // Show table with data
+    if (table) table.style.display = 'table';
+    activityBody.innerHTML = '';
+    
+    // Render activity items
+    data.activities.forEach(activity => {
+      const row = document.createElement('tr');
+      
+      row.innerHTML = `
+        <td>${activity.action || 'Unknown action'}</td>
+        <td>${activity.user || 'System'}</td>
+        <td>${activity.details || '-'}</td>
+        <td>${DateTime.formatDateTime(activity.timestamp)}</td>
+      `;
+      
+      activityBody.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Error loading recent activity:', error);
+    throw error;
+  }
+}
+
+// Run system maintenance
+async function runSystemMaintenance() {
+  const confirmRun = confirm('Are you sure you want to run system maintenance? This may take a few moments.');
+  if (!confirmRun) return;
+  
+  const maintenanceBtn = DOM.get('run-maintenance');
+  
+  try {
+    // Show loading state
+    DOM.buttonState(maintenanceBtn, true, null, 'Running...');
+    DOM.showAlert('Maintenance task started. Please wait...', 'info');
+    
+    // Call API endpoint
+    const response = await fetch('/api/admin/maintenance', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': Auth.getToken()
       }
     });
     
-    listItem.appendChild(removeButton);
-    listElement.appendChild(listItem);
-  });
+    if (!response.ok) {
+      throw new Error('Maintenance task failed');
+    }
+    
+    const result = await response.json();
+    
+    // Show success message
+    DOM.showAlert('Maintenance completed successfully: ' + (result.message || 'System optimized'), 'success');
+    
+    // Refresh stats
+    await loadSystemStats();
+    await loadRecentActivity();
+  } catch (error) {
+    console.error('Maintenance error:', error);
+    DOM.showAlert('Maintenance error: ' + error.message, 'danger');
+  } finally {
+    // Restore button state
+    DOM.buttonState(maintenanceBtn, false);
+  }
 }
-
-// Set up event listeners for adding domains
-document.addEventListener('DOMContentLoaded', () => {
-  // Add to whitelist
-  document.getElementById('add-whitelist').addEventListener('click', async () => {
-    const domainInput = document.getElementById('whitelist-domain');
-    const domain = domainInput.value.trim();
-    
-    if (!domain) {
-      alert('Please enter a domain');
-      return;
-    }
-    
-    try {
-      await addToWhitelist(domain);
-      domainInput.value = '';
-      // Reload whitelist
-      const whitelist = await getWhitelist();
-      displayList(whitelist, 'whitelist', removeFromWhitelist);
-    } catch (err) {
-      alert(`Failed to add domain: ${err.message}`);
-    }
-  });
-  
-  // Add to blacklist
-  document.getElementById('add-blacklist').addEventListener('click', async () => {
-    const domainInput = document.getElementById('blacklist-domain');
-    const domain = domainInput.value.trim();
-    
-    if (!domain) {
-      alert('Please enter a domain');
-      return;
-    }
-    
-    try {
-      await addToBlacklist(domain);
-      domainInput.value = '';
-      // Reload blacklist
-      const blacklist = await getBlacklist();
-      displayList(blacklist, 'blacklist', removeFromBlacklist);
-    } catch (err) {
-      alert(`Failed to add domain: ${err.message}`);
-    }
-  });
-  
-  // Add enter key support
-  document.getElementById('whitelist-domain').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      document.getElementById('add-whitelist').click();
-    }
-  });
-  
-  document.getElementById('blacklist-domain').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      document.getElementById('add-blacklist').click();
-    }
-  });
-});

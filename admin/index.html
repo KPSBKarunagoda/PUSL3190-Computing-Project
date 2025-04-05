@@ -1,81 +1,92 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PhishGuard Admin</title>
+  <title>PhishGuard Admin | Login</title>
   <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-  <div class="container">
-    <div id="login-container" class="card">
-      <h1>PhishGuard Admin</h1>
-      <div id="login-error" class="error-message"></div>
-      <form id="login-form">
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" name="username" required>
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Login</button>
-      </form>
-    </div>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta name="description" content="PhishGuard Admin Panel Login">
+  <style>
+    /* Additional styles for alert animation */
+    .alert {
+      transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+    }
     
-    <div id="dashboard-container" class="dashboard" style="display: none;">
-      <header class="dashboard-header">
-        <h1>PhishGuard Admin Panel</h1>
-        <div class="user-info">
-          <span id="current-user">admin</span>
-          <button id="logout-btn" class="btn btn-outline">Logout</button>
-        </div>
-      </header>
+    .alert.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    
+    /* Enhanced alert styles */
+    .alert-danger {
+      background-color: rgba(247, 37, 133, 0.1);
+      border-color: rgba(247, 37, 133, 0.3);
+      color: #f72585;
+    }
+    
+    .alert-success {
+      background-color: rgba(76, 175, 80, 0.1);
+      border-color: rgba(76, 175, 80, 0.3);
+      color: #4CAF50;
+    }
+    
+    .alert-info {
+      background-color: rgba(33, 150, 243, 0.1);
+      border-color: rgba(33, 150, 243, 0.3);
+      color: #2196F3;
+    }
+  </style>
+</head>
+<body class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1><i class="fas fa-shield-alt"></i> PhishGuard</h1>
+        <p>Admin Panel</p>
+      </div>
       
-      <div class="dashboard-content">
-        <div class="card">
-          <h2>Whitelist Management</h2>
-          <p>Safe domains that should never be flagged as <br> phishing.</p>
-          <div class="form-group">
-            <input type="text" id="whitelist-domain" placeholder="Enter domain to whitelist (e.g., google.com)">
-            <button id="add-whitelist" class="btn btn-primary">Add to Whitelist</button>
-          </div>
-          <div class="list-container">
-            <div class="list-header">
-              <span>Domain</span>
-              <span>Actions</span>
-            </div>
-            <ul id="whitelist" class="domain-list">
-              <li class="loading">Loading whitelist...</li>
-            </ul>
+      <div id="auth-alert" class="alert" role="alert"></div>
+      
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <div class="input-group">
+            <span class="input-icon"><i class="fas fa-envelope"></i></span>
+            <input type="email" id="email" name="email" placeholder="Enter your email" required autofocus>
           </div>
         </div>
         
-        <div class="card">
-          <h2>Blacklist Management</h2>
-          <p>Known malicious domains that should always be flagged as phishing.</p>
-          <div class="form-group">
-            <input type="text" id="blacklist-domain" placeholder="Enter domain to blacklist (e.g., malicious-site.com)">
-            <button id="add-blacklist" class="btn btn-primary">Add to Blacklist</button>
-          </div>
-          <div class="list-container">
-            <div class="list-header">
-              <span>Domain</span>
-              <span>Actions</span>
-            </div>
-            <ul id="blacklist" class="domain-list">
-              <li class="loading">Loading blacklist...</li>
-            </ul>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-group">
+            <span class="input-icon"><i class="fas fa-lock"></i></span>
+            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            <button type="button" class="toggle-password" aria-label="Toggle password visibility">
+              <i class="fas fa-eye"></i>
+            </button>
           </div>
         </div>
+        
+        <button type="submit" class="btn btn-primary btn-block">
+          <span class="btn-text">Sign In</span>
+          <span class="btn-loader"><i class="fas fa-circle-notch fa-spin"></i></span>
+        </button>
+      </form>
+      
+      <div class="auth-footer">
+        <p>Protected Admin Area</p>
+        <p class="version">PhishGuard v1.0</p>
       </div>
     </div>
   </div>
-  
+
+  <script src="js/common.js"></script>
   <script src="js/api.js"></script>
   <script src="js/login.js"></script>
-  <script src="js/dashboard.js"></script>
 </body>
 </html>

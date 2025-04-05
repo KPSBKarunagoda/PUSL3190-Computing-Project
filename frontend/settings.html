@@ -519,6 +519,8 @@
       // Function to fetch and display user profile
       async function loadUserProfile() {
         try {
+          console.log('Fetching user profile...');
+          
           // Make API call to get user profile
           const response = await fetch('http://localhost:3000/api/user/profile', {
             headers: {
@@ -527,20 +529,32 @@
           });
           
           if (!response.ok) {
-            throw new Error('Failed to fetch profile');
+            // Handle non-2xx responses
+            const errorText = await response.text();
+            console.error(`Server returned ${response.status}:`, errorText);
+            
+            try {
+              // Try to parse as JSON if possible
+              const errorData = JSON.parse(errorText);
+              throw new Error(errorData.message || `Server error: ${response.status}`);
+            } catch (e) {
+              // If not JSON, use status text
+              throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            }
           }
           
           const userData = await response.json();
+          console.log('Profile data received:', userData);
           
           // Populate profile form
           document.getElementById('name').value = userData.name || user.username || '';
           document.getElementById('email').value = userData.email || '';
         } catch (error) {
           console.error('Error loading profile:', error);
+          showMessage('profile-error', `Failed to load profile: ${error.message}`);
+          
           // Use stored user data as fallback
           document.getElementById('name').value = user.username || '';
-          
-          // If we can get the email from stored user data, use it
           if (user.email) {
             document.getElementById('email').value = user.email;
           }

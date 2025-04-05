@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard Admin | Blacklist</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta name="description" content="PhishGuard Admin Blacklist Management">
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <h3><i class="fas fa-shield-alt"></i> PhishGuard</h3>
+        <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle Sidebar">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li>
+          <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        </li>
+        <li>
+          <a href="users.html"><i class="fas fa-users"></i> Users</a>
+        </li>
+        <li>
+          <a href="whitelist.html"><i class="fas fa-check-circle"></i> Whitelist</a>
+        </li>
+        <li class="active">
+          <a href="blacklist.html"><i class="fas fa-ban"></i> Blacklist</a>
+        </li>
+        <li>
+          <a href="settings.html"><i class="fas fa-cogs"></i> Settings</a>
+        </li>
+      </ul>
+      
+      <div class="sidebar-footer">
+        <button id="logout-btn" class="btn btn-outline">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main id="content" class="content">
+      <header class="content-header">
+        <h1>Blacklist Management</h1>
+        <div class="user-info">
+          <span id="current-user">Admin</span>
+          <div class="avatar">
+            <i class="fas fa-user-shield"></i>
+          </div>
+        </div>
+      </header>
+      
+      <div id="system-alert" class="alert" role="alert"></div>
+      
+      <!-- Add to Blacklist Card -->
+      <section class="card">
+        <div class="card-header">
+          <h2>Add Domain to Blacklist</h2>
+        </div>
+        
+        <div class="card-body">
+          <form id="add-blacklist-form" class="form-inline">
+            <div class="input-group input-group-lg flex-grow">
+              <span class="input-icon"><i class="fas fa-globe"></i></span>
+              <input type="text" id="domain-input" name="domain" placeholder="Enter domain (e.g., malicious-site.com)" required>
+            </div>
+            
+            <button type="submit" class="btn btn-danger">
+              <span class="btn-text"><i class="fas fa-plus"></i> Add Domain</span>
+              <span class="btn-loader"><i class="fas fa-circle-notch fa-spin"></i></span>
+            </button>
+          </form>
+          
+          <p class="form-help">
+            <i class="fas fa-info-circle"></i> 
+            Blacklisted domains will always be flagged as phishing attempts.
+          </p>
+        </div>
+      </section>
+      
+      <!-- Blacklist Table -->
+      <section class="card">
+        <div class="card-header">
+          <h2>Blacklisted Domains</h2>
+          <div class="card-actions">
+            <div class="search-box">
+              <input type="text" id="blacklist-search" placeholder="Search domains..." aria-label="Search domains">
+              <i class="fas fa-search"></i>
+            </div>
+            <button id="refresh-blacklist" class="btn btn-sm btn-icon" aria-label="Refresh">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <div id="blacklist-loader" class="loader">
+            <i class="fas fa-circle-notch fa-spin"></i>
+            <span>Loading blacklist...</span>
+          </div>
+          
+          <table id="blacklist-table" class="data-table">
+            <thead>
+              <tr>
+                <th>Domain</th>
+                <th>Added By</th>
+                <th>Date Added</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="blacklist-body">
+              <!-- Blacklist data will be loaded here -->
+            </tbody>
+          </table>
+          
+          <div id="no-blacklist" class="empty-state">
+            <i class="fas fa-ban"></i>
+            <p>No domains in the blacklist</p>
+          </div>
+          
+          <div class="table-pagination">
+            <div class="pagination-info">
+              <span id="blacklist-range">0-0</span> of <span id="blacklist-total">0</span> domains
+            </div>
+            <div class="pagination-controls">
+              <button id="prev-page" class="btn btn-sm btn-icon" disabled aria-label="Previous page">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button id="next-page" class="btn btn-sm btn-icon" disabled aria-label="Next page">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Bulk Actions -->
+      <section class="card">
+        <div class="card-header">
+          <h2>Bulk Actions</h2>
+        </div>
+        
+        <div class="card-body">
+          <div class="action-buttons">
+            <button id="export-blacklist" class="btn btn-outline">
+              <i class="fas fa-download"></i> Export Blacklist
+            </button>
+            <label for="import-file" class="btn btn-outline">
+              <i class="fas fa-upload"></i> Import Blacklist
+            </label>
+            <input type="file" id="import-file" class="hidden" accept=".csv,.txt">
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  
+  <!-- Confirmation Modal -->
+  <div id="confirmation-modal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="modal-title">Confirm Action</h3>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="modal-message">Are you sure you want to proceed?</p>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-cancel" class="btn btn-outline">Cancel</button>
+        <button id="modal-confirm" class="btn btn-danger">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/blacklist.js"></script>
+</body>
+</html>

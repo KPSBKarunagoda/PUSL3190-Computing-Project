@@ -4,8 +4,6 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { pool, testConnection } = require('./config/db');
 const rateLimit = require('express-rate-limit');
-// Import admin-auth middleware
-const adminAuth = require('./middleware/admin-auth');
 
 const app = express();
 
@@ -50,39 +48,53 @@ async function initializeServer() {
   const listService = new ListService(pool);
   await listService.createListTables().catch(console.error);
 
-  // Set up routes - SIMPLIFIED to ensure proper registration
+  // Remove the automatic admin creation
+  // const AuthService = require('./services/auth');
+  // const authService = new AuthService(pool);
+  // await authService.createInitialAdmin().catch(console.error);
+
+  // Set up routes - WELL-ORGANIZED AND SEPARATED
   console.log('Setting up API routes...');
+  const authRouter = require('./routes/auth')(pool);
+  const listRouter = require('./routes/lists')(pool);
+  const educationRouter = require('./routes/education')(pool);
+  const adminRouter = require('./routes/admin')(pool);
+  const userRouter = require('./routes/user')(pool); // Add this line to import user router
   
-  // Create routes
-  const routes = {
-    auth: require('./routes/auth')(pool),
-    lists: require('./routes/lists')(pool),
-    education: require('./routes/education')(pool),
-    user: require('./routes/user')(pool),
-    admin: require('./routes/admin')(pool)
-  };
+  // Log routes before mounting
+  console.log('Auth routes stack:', authRouter.stack.length);
+  console.log('Admin routes stack:', adminRouter.stack.length);
+  console.log('User routes stack:', userRouter.stack.length); // Add this line
   
   // Mount routes
-  Object.entries(routes).forEach(([name, router]) => {
-    console.log(`Mounting /${name} routes`);
-    app.use(`/api/${name}`, router);
-  });
+  app.use('/api/auth', authRouter);
+  app.use('/api/lists', listRouter);
+  app.use('/api/education', educationRouter);
+  app.use('/api/admin', adminRouter);
+  app.use('/api/user', userRouter); // Add this line to mount user router
   
-  // Create admin auth middleware instance
-  const adminAuthMiddleware = adminAuth(pool);
+  // Add test endpoint directly to app
+  app.get('/api/test', (req, res) => {
+    res.json({ message: 'API is working' });
+  });
 
-  // Serve static admin panel files with admin auth protection
-  app.use('/admin', (req, res, next) => {
-    // Allow access to admin login page without authentication
-    if (req.path === '/index.html' || req.path === '/' || 
-        req.path === '/css/styles.css' || req.path.includes('/js/api.js') || 
-        req.path.includes('/js/login.js')) {
-      return next();
+  // Log all routes that were registered (for debugging)
+  console.log('Registered API routes:');
+  app._router.stack.forEach((r) => {
+    if (r.route && r.route.path) {
+      console.log(`${Object.keys(r.route.methods)} ${r.route.path}`);
+    } else if (r.name === 'router') {
+      r.handle.stack.forEach((layer) => {
+        if (layer.route) {
+          const methods = Object.keys(layer.route.methods).join(',');
+          console.log(`${methods.toUpperCase()} ${r.regexp.toString().replace('/^\\', '/').replace('\\/?(?=\\/|$)/i', '')}${layer.route.path}`);
+        }
+      });
     }
-    
-    // For all other admin resources, require admin authentication
-    adminAuthMiddleware(req, res, next);
-  }, express.static(path.join(__dirname, '../admin')));
+  });
+
+  // Serve static admin panel files
+  app.use('/admin', express.static(path.join(__dirname, '../admin')));
 
   // Serve admin panel
   app.get('/admin', (req, res) => {
@@ -123,16 +135,11 @@ async function initializeServer() {
             
             // Ensure consistent response structure
             const response = {
-              features: result.ml_result?.features || result.features || {},
               url: url,
               risk_score: result.risk_score || 0,
               is_phishing: result.is_phishing || false,
               risk_explanation: result.risk_explanation || result.message || 'No detailed explanation available',
-              
-              ml_result: {
-                prediction: result.ml_result?.prediction || 0,
-                confidence: result.ml_result?.confidence || 0
-              },
+              features: result.features || {},
               ml_confidence: result.ml_confidence || result.ml_result?.confidence || 0,
               timestamp: new Date().toISOString()
             };

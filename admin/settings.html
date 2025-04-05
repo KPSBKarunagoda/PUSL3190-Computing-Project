@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard Admin | System Settings</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta name="description" content="PhishGuard Admin System Settings">
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <h3><i class="fas fa-shield-alt"></i> PhishGuard</h3>
+        <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle Sidebar">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li>
+          <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        </li>
+        <li>
+          <a href="users.html"><i class="fas fa-users"></i> Users</a>
+        </li>
+        <li>
+          <a href="whitelist.html"><i class="fas fa-check-circle"></i> Whitelist</a>
+        </li>
+        <li>
+          <a href="blacklist.html"><i class="fas fa-ban"></i> Blacklist</a>
+        </li>
+        <li class="active">
+          <a href="settings.html"><i class="fas fa-cogs"></i> Settings</a>
+        </li>
+      </ul>
+      
+      <div class="sidebar-footer">
+        <button id="logout-btn" class="btn btn-outline">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main id="content" class="content">
+      <header class="content-header">
+        <h1>System Settings</h1>
+        <div class="user-info">
+          <span id="current-user">Admin</span>
+          <div class="avatar">
+            <i class="fas fa-user-shield"></i>
+          </div>
+        </div>
+      </header>
+      
+      <div id="system-alert" class="alert" role="alert"></div>
+      
+      <!-- ML Settings -->
+      <section class="card">
+        <div class="card-header">
+          <h2>ML Detection Settings</h2>
+        </div>
+        
+        <div class="card-body">
+          <form id="settings-form">
+            <div class="form-group">
+              <label for="scan-threshold">Phishing Detection Threshold</label>
+              <div class="range-container">
+                <input type="range" id="scan-threshold" name="scanThreshold" min="30" max="95" step="5" value="70">
+                <span id="threshold-value">70</span>
+              </div>
+              <p class="help-text">Higher values increase precision but may miss some phishing sites. Lower values increase detection rate but may produce more false positives.</p>
+            </div>
+            
+            <div class="form-group">
+              <label>Safe Browsing API</label>
+              <div class="toggle-switch">
+                <input type="checkbox" id="safe-browsing-toggle" name="safeBrowsingEnabled" checked>
+                <label for="safe-browsing-toggle"></label>
+                <span>Enable Google Safe Browsing integration</span>
+              </div>
+              <p class="help-text">Uses Google's Safe Browsing API to enhance phishing detection with known malicious sites.</p>
+            </div>
+            
+            <div class="form-group">
+              <label>Automatic Updates</label>
+              <div class="toggle-switch">
+                <input type="checkbox" id="auto-update-toggle" name="autoUpdate" checked>
+                <label for="auto-update-toggle"></label>
+                <span>Enable automatic ML model updates</span>
+              </div>
+              <p class="help-text">When enabled, the system will automatically update ML models when new versions are available.</p>
+            </div>
+            
+            <div class="form-group">
+              <label for="logging-level">Logging Level</label>
+              <select id="logging-level" name="loggingLevel">
+                <option value="error">Error only</option>
+                <option value="warn">Warning</option>
+                <option value="info" selected>Info</option>
+                <option value="debug">Debug</option>
+                <option value="verbose">Verbose</option>
+              </select>
+              <p class="help-text">Determines how much information is recorded in the system logs.</p>
+            </div>
+            
+            <div class="form-actions">
+              <button type="button" id="reset-settings-btn" class="btn btn-outline">Reset to Defaults</button>
+              <button type="submit" id="save-settings-btn" class="btn btn-primary">Save Settings</button>
+            </div>
+          </form>
+        </div>
+      </section>
+      
+      <!-- System Maintenance -->
+      <section class="card">
+        <div class="card-header">
+          <h2>System Maintenance</h2>
+        </div>
+        
+        <div class="card-body">
+          <div class="maintenance-options">
+            <div class="maintenance-option">
+              <div class="option-info">
+                <h3>Run System Maintenance</h3>
+                <p>Optimizes the database, cleans up temporary files, and performs system health checks.</p>
+              </div>
+              <button id="run-maintenance-btn" class="btn btn-primary">Run Maintenance</button>
+            </div>
+            
+            <div class="maintenance-option">
+              <div class="option-info">
+                <h3>Export System Logs</h3>
+                <p>Download system logs for analysis or troubleshooting.</p>
+              </div>
+              <button id="export-logs-btn" class="btn btn-outline">Export Logs</button>
+            </div>
+            
+            <div class="maintenance-option">
+              <div class="option-info">
+                <h3>Refresh ML Model Cache</h3>
+                <p>Clear and rebuild the machine learning model cache to ensure optimal performance.</p>
+              </div>
+              <button id="refresh-cache-btn" class="btn btn-outline">Refresh Cache</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- System Information -->
+      <section class="card">
+        <div class="card-header">
+          <h2>System Information</h2>
+        </div>
+        
+        <div class="card-body">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">PhishGuard Version</span>
+              <span class="info-value">1.0.0</span>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">ML Model Version</span>
+              <span class="info-value">v5.2</span>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Database Type</span>
+              <span class="info-value">MySQL 8.0</span>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Last Updated</span>
+              <span class="info-value">Jun 15, 2023</span>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Server Environment</span>
+              <span class="info-value">Node.js v16.14.2</span>
+            </div>
+            
+            <div class="info-item">
+              <span class="info-label">Python Version</span>
+              <span class="info-value">Python 3.9.7</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/settings.js"></script>
+</body>
+</html>

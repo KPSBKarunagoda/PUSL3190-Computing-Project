@@ -1,100 +1,160 @@
+/**
+ * PhishGuard Admin - Login Page
+ * Handles admin authentication flow
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Check if already authenticated - ADMIN-SPECIFIC TOKEN KEY
+  const token = localStorage.getItem('phishguard_admin_token');
+  if (token) {
+    // Verify token validity before redirecting
+    verifyToken(token)
+      .then(isValid => {
+        if (isValid) {
+          window.location.replace('dashboard.html');
+        }
+      })
+      .catch(console.error);
+  }
+
+  // Get login form elements
   const loginForm = document.getElementById('login-form');
-  const loginError = document.getElementById('login-error');
-  const loginContainer = document.getElementById('login-container');
-  const dashboardContainer = document.getElementById('dashboard-container');
-  const currentUserEl = document.getElementById('current-user');
-  
-  // Check for error parameter in URL (for redirects from other pages)
-  const urlParams = new URLSearchParams(window.location.search);
-  const errorMsg = urlParams.get('error');
-  if (errorMsg) {
-    loginError.textContent = errorMsg;
-    loginError.style.display = 'block';
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const alertContainer = document.getElementById('auth-alert');
+  const submitButton = loginForm.querySelector('button[type="submit"]');
+
+  // Add toggle password functionality
+  const togglePassword = document.querySelector('.toggle-password');
+  if (togglePassword) {
+    togglePassword.addEventListener('click', function() {
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+      
+      const icon = this.querySelector('i');
+      if (icon) {
+        icon.className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+      }
+    });
   }
-  
-  // Check if already logged in
-  if (isLoggedIn()) {
-    showDashboard();
-  }
-  
-  // Handle login form submission
+
+  // Handle form submission
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    
+
+    // Hide any existing alerts
+    hideAlert();
+
+    // Get form values
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    // Basic validation
+    if (!email || !password) {
+      showAlert('Please enter both email and password', 'danger');
+      return;
+    }
+
     try {
-      loginError.textContent = '';
-      loginError.style.display = 'none';
-      await login(username, password);
+      // Show loading state
+      const btnText = submitButton.querySelector('.btn-text');
+      const btnLoader = submitButton.querySelector('.btn-loader');
       
-      // After successful login, verify admin status
-      try {
-        const userInfo = await getUserInfo();
-        if (userInfo.role !== 'Admin') {
-          throw new Error('You do not have administrator privileges');
-        }
-        showDashboard();
-      } catch (adminErr) {
-        // If verification fails, log out and show error
-        removeToken();
-        loginError.textContent = adminErr.message;
-        loginError.style.display = 'block';
+      submitButton.disabled = true;
+      if (btnText) btnText.style.display = 'none';
+      if (btnLoader) btnLoader.style.display = 'inline-block';
+
+      // Call the login API - ADDED ADMIN-SPECIFIC ENDPOINT
+      const response = await fetch('http://localhost:3000/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+      
+      // Parse the response
+      const data = await response.json();
+      
+      // Check for error response
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
       }
-    } catch (err) {
-      loginError.textContent = err.message || 'Login failed. Please check your credentials.';
-      loginError.style.display = 'block';
+      
+      // Success - save token with ADMIN-SPECIFIC KEYS
+      localStorage.setItem('phishguard_admin_token', data.token);
+      localStorage.setItem('phishguard_admin', JSON.stringify({
+        id: data.user.id,
+        username: data.user.username,
+        role: data.user.role
+      }));
+      
+      // Show success message
+      showAlert('Login successful! Redirecting...', 'success');
+      
+      // Redirect to dashboard
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Login failed:', error);
+      
+      // Show error message
+      showAlert(error.message || 'Login failed. Please check your credentials.', 'danger');
+      
+      // Clear password field for security
+      passwordInput.value = '';
+    } finally {
+      // Restore button state
+      submitButton.disabled = false;
+      const btnText = submitButton.querySelector('.btn-text');
+      const btnLoader = submitButton.querySelector('.btn-loader');
+      
+      if (btnText) btnText.style.display = 'inline-block';
+      if (btnLoader) btnLoader.style.display = 'none';
     }
   });
-  
-  // Handle logout
-  document.getElementById('logout-btn').addEventListener('click', () => {
-    removeToken();
-    showLogin();
-  });
-  
-  // Show dashboard
-  async function showDashboard() {
-    try {
-      // Get user info and update display
-      const userInfo = await getUserInfo();
-      
-      // Double-check that we have admin role
-      if (userInfo.role !== 'Admin') {
-        throw new Error('You do not have administrator privileges');
-      }
-      
-      currentUserEl.textContent = userInfo.username;
-      
-      // Show dashboard container, hide login
-      loginContainer.style.display = 'none';
-      dashboardContainer.style.display = 'block';
-      
-      // Load dashboard data
-      loadDashboardData();
-    } catch (err) {
-      console.error('Error showing dashboard:', err);
-      
-      // Always show login in case of errors
-      showLogin();
-      
-      if (err.message && (err.message.includes('Token') || err.message.includes('privileges'))) {
-        loginError.textContent = err.message;
-      } else {
-        loginError.textContent = err.message || 'An error occurred';
-      }
-      
-      loginError.style.display = 'block';
-    }
-  }
-  
-  // Show login
-  function showLogin() {
-    dashboardContainer.style.display = 'none';
-    loginContainer.style.display = 'block';
-    document.getElementById('username').value = '';
-    document.getElementById('password').value = '';
+
+  // Check URL parameters for messages
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('error')) {
+    showAlert(decodeURIComponent(urlParams.get('error')), 'danger');
+  } else if (urlParams.has('message') && urlParams.get('message') === 'loggedOut') {
+    showAlert('You have been logged out successfully.', 'info');
   }
 });
+
+// Show alert message
+function showAlert(message, type = 'info') {
+  const alertContainer = document.getElementById('auth-alert');
+  if (!alertContainer) return;
+  
+  alertContainer.textContent = message;
+  alertContainer.className = `alert alert-${type} show`;
+}
+
+// Hide alert message
+function hideAlert() {
+  const alertContainer = document.getElementById('auth-alert');
+  if (!alertContainer) return;
+  
+  alertContainer.classList.remove('show');
+}
+
+// Verify if token is still valid
+async function verifyToken(token) {
+  try {
+    // Send request to check token validity - ADMIN SPECIFIC ENDPOINT
+    const response = await fetch('http://localhost:3000/api/admin/status', {
+      headers: {
+        'x-auth-token': token
+      }
+    });
+    
+    return response.ok;
+  } catch (error) {
+    console.error('Token verification failed:', error);
+    return false;
+  }
+}

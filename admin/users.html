@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard Admin | User Management</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta name="description" content="PhishGuard Admin User Management">
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <h3><i class="fas fa-shield-alt"></i> PhishGuard</h3>
+        <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle Sidebar">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li>
+          <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        </li>
+        <li class="active">
+          <a href="users.html"><i class="fas fa-users"></i> Users</a>
+        </li>
+        <li>
+          <a href="whitelist.html"><i class="fas fa-check-circle"></i> Whitelist</a>
+        </li>
+        <li>
+          <a href="blacklist.html"><i class="fas fa-ban"></i> Blacklist</a>
+        </li>
+        <li>
+          <a href="settings.html"><i class="fas fa-cogs"></i> Settings</a>
+        </li>
+      </ul>
+      
+      <div class="sidebar-footer">
+        <button id="logout-btn" class="btn btn-outline">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main id="content" class="content">
+      <header class="content-header">
+        <h1>User Management</h1>
+        <div class="user-info">
+          <span id="current-user">Admin</span>
+          <div class="avatar">
+            <i class="fas fa-user-shield"></i>
+          </div>
+        </div>
+      </header>
+      
+      <div id="system-alert" class="alert" role="alert"></div>
+      
+      <!-- User Statistics -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-icon bg-primary">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-card-info">
+            <h3>Total Users</h3>
+            <p id="total-users" class="stat-value">0</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-card-icon bg-success">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <div class="stat-card-info">
+            <h3>Active Users</h3>
+            <p id="active-users" class="stat-value">0</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-card-icon bg-info">
+            <i class="fas fa-user-shield"></i>
+          </div>
+          <div class="stat-card-info">
+            <h3>Admin Users</h3>
+            <p id="admin-users" class="stat-value">0</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-card-icon bg-warning">
+            <i class="fas fa-user-clock"></i>
+          </div>
+          <div class="stat-card-info">
+            <h3>New Users (30d)</h3>
+            <p id="new-users" class="stat-value">0</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Users Table -->
+      <section class="card">
+        <div class="card-header">
+          <h2>User Directory</h2>
+          <div class="card-actions">
+            <button id="add-user-btn" class="btn btn-primary btn-sm">
+              <i class="fas fa-plus"></i> Add User
+            </button>
+            <div class="search-box">
+              <input type="text" id="user-search" placeholder="Search users..." aria-label="Search users">
+              <i class="fas fa-search"></i>
+            </div>
+            <button id="refresh-users" class="btn btn-sm btn-icon" aria-label="Refresh">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <div id="users-loader" class="loader">
+            <i class="fas fa-circle-notch fa-spin"></i>
+            <span>Loading users...</span>
+          </div>
+          
+          <div class="table-responsive">
+            <table id="users-table" class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-body">
+                <!-- Users will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+          
+          <div id="no-users" class="empty-state">
+            <i class="fas fa-users"></i>
+            <p>No users found</p>
+          </div>
+          
+          <div class="table-pagination">
+            <div class="pagination-info">
+              <span id="users-range">0-0</span> of <span id="users-total">0</span> users
+            </div>
+            <div class="pagination-controls">
+              <button id="prev-page" class="btn btn-sm btn-icon" disabled aria-label="Previous page">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button id="next-page" class="btn btn-sm btn-icon" disabled aria-label="Next page">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Export/Report Section -->
+      <section class="card">
+        <div class="card-header">
+          <h2>User Reports</h2>
+        </div>
+        
+        <div class="card-body">
+          <div class="action-buttons">
+            <button id="export-users" class="btn btn-outline">
+              <i class="fas fa-download"></i> Export User List
+            </button>
+            <button id="user-report" class="btn btn-outline">
+              <i class="fas fa-chart-bar"></i> Generate Activity Report
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  
+  <!-- User Modal for Add/Edit -->
+  <div id="user-modal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="user-modal-title">Add New User</h3>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="user-form">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <div class="input-group">
+              <span class="input-icon"><i class="fas fa-user"></i></span>
+              <input type="text" id="username" name="username" placeholder="Enter username" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="email">Email</label>
+            <div class="input-group">
+              <span class="input-icon"><i class="fas fa-envelope"></i></span>
+              <input type="email" id="email" name="email" placeholder="Enter email" required>
+            </div>
+          </div>
+          
+          <div id="password-fields">
+            <div class="form-group">
+              <label for="password">Password</label>
+              <div class="input-group">
+                <span class="input-icon"><i class="fas fa-lock"></i></span>
+                <input type="password" id="password" name="password" placeholder="Enter password">
+                <button type="button" class="toggle-password" aria-label="Toggle password visibility">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+              <p class="help-text">Leave empty to keep current password (when editing)</p>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="role">Role</label>
+            <div class="input-group">
+              <span class="input-icon"><i class="fas fa-user-tag"></i></span>
+              <select id="role" name="role">
+                <option value="User">Regular User</option>
+                <option value="Admin">Administrator</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="status">Status</label>
+            <div class="input-group">
+              <span class="input-icon"><i class="fas fa-toggle-on"></i></span>
+              <select id="status" name="status">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="delete-user-btn" class="btn btn-danger">Delete User</button>
+        <div>
+          <button id="cancel-user-btn" class="btn btn-outline">Cancel</button>
+          <button id="save-user-btn" class="btn btn-primary">Save User</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Confirmation Modal -->
+  <div id="confirmation-modal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="modal-title">Confirm Action</h3>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="modal-message">Are you sure you want to proceed?</p>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-cancel" class="btn btn-outline">Cancel</button>
+        <button id="modal-confirm" class="btn btn-danger">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/users.js"></script>
+</body>
+</html>

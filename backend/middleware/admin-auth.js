@@ -16,7 +16,7 @@ module.exports = function(dbConnection) {
             // Verify token
             const decoded = jwt.verify(token, jwtSecret);
             
-            // Get user from database to confirm they exist and is an admin
+            // Get user from database to confirm they exist
             const [users] = await dbConnection.execute(
                 'SELECT UserID, Username, Email, Role FROM User WHERE UserID = ?',
                 [decoded.user.id]
@@ -26,7 +26,7 @@ module.exports = function(dbConnection) {
                 return res.status(401).json({ message: 'Invalid token - user not found' });
             }
             
-            // Check if the user has Admin role
+            // STRICT CHECK: Verify admin role - reject if not admin
             if (users[0].Role !== 'Admin') {
                 return res.status(403).json({ message: 'Access denied - Admin privileges required' });
             }

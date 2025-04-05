@@ -1,84 +1,74 @@
 const express = require('express');
 const router = express.Router();
-const EducationService = require('../services/education-service');
 
 module.exports = function(dbConnection) {
-  const educationService = new EducationService();
-  
-  // Generate educational content based on analysis results
-  router.post('/generate', async (req, res) => {
-    try {
-      const { analysisResult, contentType = 'explain' } = req.body;
-      
-      if (!analysisResult) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Analysis result is required' 
-        });
-      }
-      
-      // Log incoming request data to help debug
-      console.log('Generating educational content for:', {
-        url: analysisResult.url,
-        is_phishing: analysisResult.is_phishing,
-        risk_score: analysisResult.risk_score,
-        features: analysisResult.features ? Object.keys(analysisResult.features).length : 0
-      });
-      
-      const result = educationService.generateContent(analysisResult, contentType);
-      
-      res.json(result);
-    } catch (error) {
-      console.error('Error generating educational content:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Error generating educational content' 
-      });
-    }
-  });
-  
-  // Generate HTML feature explanations
-  router.post('/features', async (req, res) => {
-    try {
-      const { analysisResult } = req.body;
-      
-      if (!analysisResult || !analysisResult.features) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Analysis result with features is required' 
-        });
-      }
-      
-      // Log feature data for debugging
-      console.log('Generating feature explanations for URL:', analysisResult.url);
-      console.log('Features available:', Object.keys(analysisResult.features));
-      
-      // Check if the URL is an IP address
-      const isIpAddress = educationService.isIpAddress(analysisResult.url);
-      if (isIpAddress) {
-        console.log(`IP address detected in URL: ${analysisResult.url}`);
-        // Ensure domain_in_ip feature is set
-        analysisResult.features.domain_in_ip = 1;
-      }
-      
-      const html = educationService.generateFeatureExplanationsHtml(
-        analysisResult.features,
-        analysisResult.url
-      );
-      
-      res.json({
-        success: true,
-        html,
-        is_ip_address: isIpAddress
-      });
-    } catch (error) {
-      console.error('Error generating feature explanations:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Error generating feature explanations' 
-      });
-    }
-  });
-  
-  return router;
+    // POST /api/education/generate - Generate educational content
+    router.post('/generate', async (req, res) => {
+        try {
+            const { analysisResult, contentType = 'explain' } = req.body;
+            
+            if (!analysisResult) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Analysis result required' 
+                });
+            }
+
+            // Generate appropriate content based on the analysis and contentType
+            let content = '';
+            const isPhishing = analysisResult.is_phishing;
+            const riskScore = analysisResult.risk_score || 0;
+            const features = analysisResult.features || {};
+            
+            // Different content types
+            if (contentType === 'explain') {
+                if (isPhishing) {
+                    content = `# Phishing Alert: This URL Shows Multiple Danger Signs\n\n`;
+                    content += `Our analysis detected multiple indicators of a phishing attempt with a risk score of ${riskScore}/100.\n\n`;
+                    
+                    // Add specific warnings based on features
+                    if (features.domain_in_ip) {
+                        content += `## IP Address Used Instead of Domain\n`;
+                        content += `This site uses a numeric IP address rather than a proper domain name. Legitimate websites almost always use domain names (like example.com).\n\n`;
+                    }
+                    
+                    if (features.tls_ssl_certificate === 0) {
+                        content += `## Missing Secure Connection\n`;
+                        content += `This site doesn't use HTTPS, which means your connection is not encrypted. Sensitive information should never be sent over unencrypted connections.\n\n`;
+                    }
+                    
+                    content += `## Stay Safe\n`;
+                    content += `We recommend avoiding this website and not entering any personal information.`;
+                } else {
+                    content = `# URL Analysis Results\n\n`;
+                    content += `This URL appears to be legitimate with a risk score of ${riskScore}/100.\n\n`;
+                    content += `## Good Practices\n`;
+                    content += `While this URL appears safe, always remain cautious when entering personal information online.`;
+                }
+            } else if (contentType === 'tips') {
+                content = `# Phishing Protection Tips\n\n`;
+                content += `* Always check the URL in your address bar before entering sensitive information\n`;
+                content += `* Be wary of emails asking for personal information\n`;
+                content += `* Look for HTTPS and a padlock icon in your browser\n`;
+                content += `* Use unique, strong passwords for each website\n`;
+                content += `* Enable two-factor authentication when available`;
+            }
+            
+            // Return the generated content
+            res.json({
+                success: true,
+                content,
+                contentType
+            });
+            
+        } catch (error) {
+            console.error('Error generating educational content:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Failed to generate educational content' 
+            });
+        }
+    });
+
+    return router;
 };

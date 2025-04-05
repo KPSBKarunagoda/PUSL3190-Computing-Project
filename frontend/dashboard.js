@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Check if user is logged in
+  // Check if user is logged in - USING USER-SPECIFIC TOKEN
   const token = localStorage.getItem('phishguardToken');
   
   if (!token) {
@@ -13,6 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
   
   try {
     user = JSON.parse(userJson);
+    
+    // ADDED: Ensure user is not an admin on the regular dashboard
+    if (user && user.role === 'Admin') {
+      console.warn('Admin user detected on regular dashboard');
+      // Redirect to admin dashboard if needed
+      // window.location.href = '/admin/dashboard.html';
+      // return;
+    }
+    
     // Welcome message
     document.getElementById('welcome-message').textContent = user.username || 'User';
   } catch (e) {
