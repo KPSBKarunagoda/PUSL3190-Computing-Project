@@ -110,9 +110,11 @@
             <button id="add-user-btn" class="btn btn-primary btn-sm">
               <i class="fas fa-plus"></i> Add User
             </button>
-            <div class="search-box">
-              <input type="text" id="user-search" placeholder="Search users..." aria-label="Search users">
-              <i class="fas fa-search"></i>
+            <div class="search-container">
+              <input type="text" id="user-search" class="search-input" placeholder="Search users..." aria-label="Search users">
+              <button class="search-button" aria-label="Search">
+                <i class="fas fa-search"></i>
+              </button>
             </div>
             <button id="refresh-users" class="btn btn-sm btn-icon" aria-label="Refresh">
               <i class="fas fa-sync-alt"></i>
@@ -121,47 +123,44 @@
         </div>
         
         <div class="card-body">
-          <div id="users-loader" class="loader">
-            <i class="fas fa-circle-notch fa-spin"></i>
-            <span>Loading users...</span>
+          <table id="user-table" class="data-table" style="display:none;">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="user-table-body">
+              <!-- User rows will be inserted here -->
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="5">
+                  <div class="table-info">
+                    Showing <span id="users-range">0-0</span> of <span id="users-total">0</span> users
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <div id="user-loader" class="loader-container">
+            <div class="loader"></div>
+            <p>Loading users...</p>
           </div>
-          
-          <div class="table-responsive">
-            <table id="users-table" class="data-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Username</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="users-body">
-                <!-- Users will be loaded here -->
-              </tbody>
-            </table>
-          </div>
-          
-          <div id="no-users" class="empty-state">
-            <i class="fas fa-users"></i>
-            <p>No users found</p>
-          </div>
-          
-          <div class="table-pagination">
-            <div class="pagination-info">
-              <span id="users-range">0-0</span> of <span id="users-total">0</span> users
+
+          <div id="no-users" class="empty-state" style="display:none;">
+            <div class="empty-state-icon">
+              <i class="fas fa-users-slash"></i>
             </div>
-            <div class="pagination-controls">
-              <button id="prev-page" class="btn btn-sm btn-icon" disabled aria-label="Previous page">
-                <i class="fas fa-chevron-left"></i>
-              </button>
-              <button id="next-page" class="btn btn-sm btn-icon" disabled aria-label="Next page">
-                <i class="fas fa-chevron-right"></i>
-              </button>
-            </div>
+            <h3>No Users Found</h3>
+            <p>There are no users in the system yet.</p>
+            <button id="add-first-user" class="btn btn-primary">
+              <i class="fas fa-plus"></i> Add Your First User
+            </button>
           </div>
         </div>
       </section>

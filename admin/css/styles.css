@@ -955,6 +955,31 @@ textarea:focus {
   font-size: var(--font-size);
 }
 
+/* Admin specific styling */
+.badge-admin {
+  background-color: rgba(33, 150, 243, 0.2);
+  color: #2196F3;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  padding: 4px 12px;
+  font-weight: 500;
+  border-radius: 15px;
+}
+
+/* Subtle highlight for admin rows */
+.admin-row {
+  background-color: rgba(33, 150, 243, 0.03);
+}
+
+.admin-row:hover {
+  background-color: rgba(33, 150, 243, 0.05) !important;
+}
+
+.avatar-admin {
+  background-color: rgba(33, 150, 243, 0.2);
+  color: #2196F3;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
 /* Modal */
 .modal {
   position: fixed;
