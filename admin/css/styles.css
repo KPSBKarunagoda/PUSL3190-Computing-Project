@@ -178,7 +178,7 @@ body.sidebar-collapsed .content {
   border-bottom: 1px solid var(--border);
 }
 
-.content-header h1 {
+content-header h1 {
   margin-bottom: 0;
   font-size: var(--font-size-xl);
 }
@@ -825,6 +825,15 @@ textarea:focus {
   gap: var(--spacer-sm);
 }
 
+/* Table information footer - updated with smaller font and proper spacing */
+.table-info {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-align: right;
+  margin-top: 8px;
+  opacity: 0.8;
+}
+
 /* Alerts and Notifications */
 .alert {
   padding: 1rem;
@@ -1387,4 +1396,77 @@ textarea:focus {
 
 .toast-icon {
   margin-right: 10px;
+}
+
+/* Enhanced Select Dropdown Styling */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 100%;
+  padding: var(--spacer) var(--spacer) var(--spacer) calc(var(--spacer) * 3);
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius);
+  font-size: var(--font-size);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'><path d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 12px) center;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+select:hover {
+  border-color: var(--input-hover);
+  background-color: var(--dark-lighter);
+}
+
+select:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(61, 133, 198, 0.2);
+}
+
+/* Role-specific select styling */
+select#role {
+  border-left: 3px solid var(--primary);
+}
+
+/* Status-specific select styling */
+select#status {
+  border-left: 3px solid var(--success);
+}
+
+/* Style for option elements */
+select option {
+  background-color: var(--dark-light);
+  color: var(--text-primary);
+  padding: 10px;
+}
+
+/* Custom Role and Status Field Container - Fixed alignment */
+.form-group-role,
+.form-group-status {
+  position: relative;
+  margin-bottom: var(--spacer-lg);
+}
+
+/* Replace the ::before pseudo-element with an actual icon element for better control */
+.form-group-role .select-icon,
+.form-group-status .select-icon {
+  position: absolute;
+  left: 12px;
+  top: 38px; /* Position below label */
+  color: var(--text-secondary);
+  z-index: 2;
+  pointer-events: none; /* Make sure clicks pass through to the select */
+}
+
+.form-group-role .select-icon {
+  color: var(--primary);
+}
+
+.form-group-status .select-icon {
+  color: var(--success);
 }
