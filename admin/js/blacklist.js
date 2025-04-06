@@ -135,14 +135,12 @@ async function loadBlacklist() {
 }
 
 function setupAddForm() {
-  // UPDATED: Use correct form ID from HTML
   const addForm = document.getElementById('add-blacklist-form');
   
   if (addForm) {
     addForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      // UPDATED: Use correct input ID from HTML
       const domainInput = document.getElementById('domain-input');
       if (!domainInput) {
         console.error('domain-input element not found');
@@ -161,24 +159,27 @@ function setupAddForm() {
       
       if (submitButton) {
         submitButton.disabled = true;
-        // Use the proper structure for showing loading state
         submitButton.querySelector('.btn-text').style.display = 'none';
         submitButton.querySelector('.btn-loader').style.display = 'inline-block';
       }
       
       try {
         console.log('Adding domain to blacklist:', domain);
-        await listsAPI.addToBlacklist(domain);
+        const response = await listsAPI.addToBlacklist(domain);
         
         // Clear input and reload list
         domainInput.value = '';
         await loadBlacklist();
         
         // Show success message
-        showAlert(`Domain "${domain}" added to blacklist`, 'success');
+        showAlert(`Domain "${domain}" added to blacklist successfully`, 'success');
+        
+        // Add notification toast that fades out
+        showToast(`"${domain}" has been added to the blacklist`, 'success');
       } catch (error) {
         console.error('Error adding to blacklist:', error);
         showAlert('Failed to add domain: ' + error.message, 'error');
+        showToast(`Failed to add "${domain}" to blacklist`, 'error');
       } finally {
         // Re-enable form
         if (submitButton) {
@@ -214,7 +215,7 @@ async function handleDeleteDomain(e) {
   const button = e.currentTarget;
   const domain = button.dataset.domain;
   
-  // Simple confirmation without modal
+  // Simple confirmation
   if (!confirm(`Are you sure you want to remove "${domain}" from the blacklist?`)) {
     return;
   }
@@ -228,7 +229,7 @@ async function handleDeleteDomain(e) {
     console.log(`Removing domain from blacklist: ${domain}`);
     
     // Make API call with proper error handling
-    await listsAPI.removeFromBlacklist(domain);
+    const response = await listsAPI.removeFromBlacklist(domain);
     console.log(`Successfully removed ${domain} from blacklist`);
     
     // Reload blacklist to reflect changes
@@ -236,6 +237,9 @@ async function handleDeleteDomain(e) {
     
     // Show success message
     showAlert(`Domain "${domain}" removed from blacklist`, 'success');
+    
+    // Add toast notification
+    showToast(`"${domain}" has been removed from the blacklist`, 'info');
   } catch (error) {
     console.error('Error removing domain from blacklist:', error);
     
@@ -245,6 +249,7 @@ async function handleDeleteDomain(e) {
     
     // Show error message
     showAlert('Failed to remove domain: ' + (error.message || 'Unknown error'), 'error');
+    showToast(`Failed to remove "${domain}"`, 'error');
   }
 }
 
@@ -262,4 +267,62 @@ function showAlert(message, type = 'info') {
       alertContainer.style.display = 'none';
     }, 5000);
   }
+}
+
+// Add a toast notification function (identical to whitelist.js)
+function showToast(message, type = 'info') {
+  // Create toast container if it doesn't exist
+  let toastContainer = document.getElementById('toast-container');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'toast-container';
+    toastContainer.style.position = 'fixed';
+    toastContainer.style.bottom = '20px';
+    toastContainer.style.right = '20px';
+    toastContainer.style.zIndex = '9999';
+    document.body.appendChild(toastContainer);
+  }
+  
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <div class="toast-icon">
+      <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+    </div>
+    <div class="toast-content">${message}</div>
+  `;
+  
+  // Style the toast
+  toast.style.backgroundColor = type === 'success' ? '#4CAF50' : 
+                               type === 'error' ? '#F44336' : 
+                               type === 'warning' ? '#FF9800' : '#2196F3';
+  toast.style.color = 'white';
+  toast.style.padding = '12px 20px';
+  toast.style.borderRadius = '4px';
+  toast.style.marginTop = '10px';
+  toast.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+  toast.style.display = 'flex';
+  toast.style.alignItems = 'center';
+  toast.style.minWidth = '250px';
+  toast.style.opacity = '0';
+  toast.style.transition = 'opacity 0.3s ease';
+  
+  toast.querySelector('.toast-icon').style.marginRight = '10px';
+  
+  // Add to container
+  toastContainer.appendChild(toast);
+  
+  // Trigger animation
+  setTimeout(() => {
+    toast.style.opacity = '1';
+  }, 10);
+  
+  // Remove after delay
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 3000);
 }

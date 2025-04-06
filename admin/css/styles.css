@@ -1267,3 +1267,44 @@ textarea:focus {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+/* Toast notifications */
+#toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  min-width: 250px;
+  margin-top: 10px;
+  padding: 12px 20px;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  color: white;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.toast-success {
+  background-color: #4CAF50;
+}
+
+.toast-error {
+  background-color: #F44336;
+}
+
+.toast-warning {
+  background-color: #FF9800;
+}
+
+.toast-info {
+  background-color: #2196F3;
+}
+
+.toast-icon {
+  margin-right: 10px;
+}
