@@ -654,6 +654,61 @@ textarea:focus {
   color: var(--text-secondary);
 }
 
+/* Enhanced Search Bar Styles */
+.search-container {
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-secondary);
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  width: 250px;
+  margin-right: 10px;
+  transition: all 0.3s ease;
+}
+
+.search-container:focus-within {
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+  border-color: var(--primary);
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  width: 100%;
+}
+
+.search-input:focus {
+  outline: none;
+}
+
+.search-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.search-button:hover {
+  color: var(--primary);
+}
+
+@media (max-width: 768px) {
+  .search-container {
+    width: 150px;
+  }
+  
+  .card-actions {
+    flex-wrap: wrap;
+  }
+}
+
 /* Stats Cards */
 .stats-grid {
   display: grid;

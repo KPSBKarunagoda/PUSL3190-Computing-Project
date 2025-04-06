@@ -89,9 +89,12 @@
         <div class="card-header">
           <h2>Blacklisted Domains</h2>
           <div class="card-actions">
-            <div class="search-box">
-              <input type="text" id="blacklist-search" placeholder="Search domains..." aria-label="Search domains">
-              <i class="fas fa-search"></i>
+            <!-- Add styled search bar -->
+            <div class="search-container">
+              <input type="text" id="search-input" class="search-input" placeholder="Search domains..." aria-label="Search domains">
+              <button class="search-button" aria-label="Search">
+                <i class="fas fa-search"></i>
+              </button>
             </div>
             <button id="refresh-blacklist" class="btn btn-sm btn-icon" aria-label="Refresh">
               <i class="fas fa-sync-alt"></i>

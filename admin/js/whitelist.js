@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Set up event handlers
     setupAddForm();
     setupRefreshButton();
+    setupSearchFunctionality(); // Add this line
     
     // Load whitelist data
     await loadWhitelist();
@@ -208,6 +209,82 @@ function setupRefreshButton() {
         refreshButton.classList.remove('rotating');
       }
     });
+  }
+}
+
+// Add this new function for search functionality
+function setupSearchFunctionality() {
+  const searchInput = document.getElementById('search-input');
+  const searchButton = document.querySelector('.search-button');
+  
+  if (searchInput && searchButton) {
+    // Search on input change (keyup)
+    searchInput.addEventListener('keyup', () => {
+      filterDomains(searchInput.value.trim().toLowerCase());
+    });
+    
+    // Search on button click
+    searchButton.addEventListener('click', () => {
+      filterDomains(searchInput.value.trim().toLowerCase());
+    });
+    
+    // Clear search with Escape key
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        filterDomains('');
+      }
+    });
+  }
+}
+
+// Add this function to filter domains
+function filterDomains(searchTerm) {
+  const tableBody = document.getElementById('whitelist-body');
+  if (!tableBody) return;
+  
+  const rows = tableBody.getElementsByTagName('tr');
+  let visibleCount = 0;
+  
+  // Loop through all table rows
+  for (let i = 0; i < rows.length; i++) {
+    const domainCell = rows[i].cells[0]; // Assuming domain is in first column
+    
+    if (domainCell) {
+      const domain = domainCell.textContent.toLowerCase();
+      
+      // Show/hide row based on search term
+      if (domain.includes(searchTerm)) {
+        rows[i].style.display = '';
+        visibleCount++;
+      } else {
+        rows[i].style.display = 'none';
+      }
+    }
+  }
+  
+  // Update counts display
+  const totalElement = document.getElementById('whitelist-total');
+  const rangeElement = document.getElementById('whitelist-range');
+  
+  if (totalElement) {
+    // Keep showing the total count but note filtered results
+    if (searchTerm) {
+      totalElement.textContent = `${visibleCount} of ${rows.length}`;
+    } else {
+      totalElement.textContent = rows.length;
+    }
+  }
+  
+  if (rangeElement && searchTerm) {
+    rangeElement.textContent = `filtered`;
+  } else if (rangeElement) {
+    rangeElement.textContent = `1-${Math.min(rows.length, 10)}`;
+  }
+  
+  // Show explanatory message if no results
+  if (visibleCount === 0 && searchTerm && rows.length > 0) {
+    showToast(`No domains match "${searchTerm}"`, 'info');
   }
 }
 
