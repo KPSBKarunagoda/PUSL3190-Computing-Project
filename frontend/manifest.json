@@ -20,5 +20,11 @@
   "action": {
     "default_popup": "popup.html"
   },
-  "content_scripts": []
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3000/*"],
+      "js": ["auth-content.js"],
+      "run_at": "document_start"
+    }
+  ]
 }

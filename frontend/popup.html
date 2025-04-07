@@ -5,21 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="popup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <title>Phishing Detector</title>
+    <title>PhishGuard</title>
 </head>
 <body>
     <div class="container">
-        <!-- Extension Name Header -->
+        <!-- Fix header structure for proper dropdown positioning -->
         <header>
-            <h1>Phishing Detector</h1>
-            <div class="settings-dropdown">
-                <button id="settings-btn" class="settings-icon"><i class="fas fa-cog"></i></button>
-                <div class="dropdown-content" id="settings-dropdown">
-                    <a href="login.html" target="_blank">Login</a>
-                    <a href="#" id="report-link">Report Site</a>
+            <h1>PhishGuard</h1>
+            <div class="settings-container">
+                <button id="settings-btn" class="settings-btn">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <div id="settings-dropdown" class="settings-dropdown">
+                    <!-- Login/logout buttons -->
+                    <a href="#" id="login-btn" class="menu-item">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                    <a href="#" id="dashboard-btn" class="menu-item" style="display:none">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="#" id="report-link" class="menu-item">
+                        <i class="fas fa-flag"></i> Report Site
+                    </a>
+                    <a href="#" id="logout-btn" class="menu-item" style="display:none">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
                 </div>
             </div>
         </header>
+        
+        <!-- More subtle user info section (initially hidden) -->
+        <div id="user-info" class="user-info" style="display:none">
+            <div class="user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="user-details">
+                <span id="user-name" class="user-name">User</span>
+                <span id="user-role" class="user-role">Member</span>
+            </div>
+        </div>
 
         <!-- Current Site Information -->
         <section class="site-info">
@@ -38,8 +62,6 @@
             <h3>Risk Explanation</h3>
             <p id="status">Analysis in Progress</p>
         </section>
-
-        
 
         <!-- Manual Link Entry -->
         <section class="manual-entry">
@@ -71,10 +93,11 @@
             </div>
             <p class="diagnostic-note">Toggle off to use ML analysis only</p>
         </section>
+
+        <!-- Add refresh button if needed -->
+        <button id="refreshAnalysis" class="refresh-button">Refresh Analysis</button>
     </div>
 
-    <!-- Add the ML Feature Explainer script -->
-    <script src="js/ml-feature-explainer.js"></script>
     <script src="popup.js"></script>
 </body>
 </html>

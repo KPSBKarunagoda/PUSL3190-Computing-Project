@@ -181,3 +181,54 @@ setInterval(cleanupCache, 60 * 60 * 1000);
 
 // Also clean on startup
 cleanupCache();
+
+// Add message listeners for auth-related operations
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Handle URL analysis requests (keep existing functionality)
+  if (message.type === 'analyzeNow') {
+    analyzeAndCacheURL(message.url)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({error: error.message}));
+    return true; // Keep message channel open for async response
+  }
+  
+  // Handle authenticated API requests
+  if (message.action === 'makeAuthenticatedRequest') {
+    chrome.storage.local.get(['authToken'], async (data) => {
+      if (!data.authToken) {
+        sendResponse({ error: 'Not authenticated' });
+        return;
+      }
+      
+      try {
+        const response = await fetch(message.url, {
+          method: message.method || 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': data.authToken,
+            ...message.headers
+          },
+          body: message.body ? JSON.stringify(message.body) : undefined
+        });
+        
+        const result = await response.json();
+        sendResponse(result);
+      } catch (error) {
+        sendResponse({ error: error.message });
+      }
+    });
+    return true; // Keep message channel open for async response
+  }
+  
+  // Handle auth state requests
+  if (message.action === 'getAuthState') {
+    chrome.storage.local.get(['isLoggedIn', 'authToken', 'userData'], (data) => {
+      sendResponse({
+        isLoggedIn: !!data.isLoggedIn && !!data.authToken,
+        token: data.authToken || null,
+        userData: data.userData || null
+      });
+    });
+    return true; // Keep message channel open for async response
+  }
+});
