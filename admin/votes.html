@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard Admin | User Votes</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta name="description" content="PhishGuard Admin User Votes Management">
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <h3><i class="fas fa-shield-alt"></i> PhishGuard</h3>
+        <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle Sidebar">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li>
+          <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        </li>
+        <li>
+          <a href="users.html"><i class="fas fa-users"></i> Users</a>
+        </li>
+        <li>
+          <a href="whitelist.html"><i class="fas fa-check-circle"></i> Whitelist</a>
+        </li>
+        <li>
+          <a href="blacklist.html"><i class="fas fa-ban"></i> Blacklist</a>
+        </li>
+        <li>
+          <a href="reports.html"><i class="fas fa-flag"></i> Reports</a>
+        </li>
+        <li class="active">
+          <a href="votes.html"><i class="fas fa-vote-yea"></i> Votes</a>
+        </li>
+        <li>
+          <a href="settings.html"><i class="fas fa-cogs"></i> Settings</a>
+        </li>
+      </ul>
+      
+      <div class="sidebar-footer">
+        <button id="logout-btn" class="btn btn-outline">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main id="content" class="content">
+      <header class="content-header">
+        <h1>User Votes</h1>
+        <div class="user-info">
+          <span id="current-user">Admin</span>
+          <div class="avatar">
+            <i class="fas fa-user-shield"></i>
+          </div>
+        </div>
+      </header>
+      
+      <div id="system-alert" class="alert" role="alert"></div>
+      
+      <!-- Votes Statistics -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-icon bg-primary">
+            <i class="fas fa-vote-yea"></i>
+          </div>
+          <div class="stat-card-info">
+            <h3>Total Votes</h3>
+            <p id="total-votes" class="stat-value">0</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-card-icon bg-success">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <div class="stat-card-info">
+            <h3>Safe Votes</h3>
+            <p id="safe-votes" class="stat-value">0</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-card-icon bg-danger">
+            <i class="fas fa-skull-crossbones"></i>
+          </div>
+          <div class="stat-card-info">
+            <h3>Phishing Votes</h3>
+            <p id="phishing-votes" class="stat-value">0</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-card-icon bg-info">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="stat-card-info">
+            <h3>Votes Today</h3>
+            <p id="today-votes" class="stat-value">0</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Votes Filter and List -->
+      <section class="card">
+        <div class="card-header">
+          <h2>Vote Summary</h2>
+          <div class="card-actions">
+            <div class="search-container">
+              <input type="text" id="vote-search" class="search-input" placeholder="Search URLs..." aria-label="Search votes">
+              <button class="search-button" aria-label="Search">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+            
+            <select id="vote-filter" class="vote-filter">
+              <option value="all">All Votes</option>
+              <option value="safe-majority">Safe Majority</option>
+              <option value="phishing-majority">Phishing Majority</option>
+              <option value="contested">Contested</option>
+            </select>
+            
+            <button id="refresh-votes" class="btn btn-sm btn-icon" aria-label="Refresh">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <div id="votes-loader" class="loader">
+            <i class="fas fa-circle-notch fa-spin"></i>
+            <span>Loading vote data...</span>
+          </div>
+          
+          <div class="table-responsive">
+            <table id="votes-table" class="data-table">
+              <thead>
+                <tr>
+                  <th>URL</th>
+                  <th>Safe Votes</th>
+                  <th>Phishing Votes</th>
+                  <th>Vote Ratio</th>
+                  <th>Last Vote</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="votes-table-body">
+                <!-- Vote data will be inserted here -->
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="6">
+                    <div class="table-info">
+                      Showing <span id="votes-range">0-0</span> of <span id="votes-total">0</span> URLs
+                    </div>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div id="no-votes" class="empty-state" style="display:none;">
+            <div class="empty-state-icon">
+              <i class="fas fa-poll-h"></i>
+            </div>
+            <h3>No Votes Found</h3>
+            <p>No user votes have been submitted yet.</p>
+          </div>
+        </div>
+      </section>
+      
+      <!-- URL Vote Details Card -->
+      <section class="card">
+        <div class="card-header">
+          <h2>Vote Analytics</h2>
+        </div>
+        
+        <div class="card-body">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Most Voted URL</span>
+              <span id="most-voted-url" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Most Contested URL</span>
+              <span id="most-contested-url" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Most Reported as Phishing</span>
+              <span id="most-phishing-url" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Most Reported as Safe</span>
+              <span id="most-safe-url" class="info-value">-</span>
+            </div>
+          </div>
+          
+          <div class="action-buttons mt-4">
+            <button id="export-votes" class="btn btn-outline">
+              <i class="fas fa-download"></i> Export Vote Data
+            </button>
+            <button id="view-vote-trends" class="btn btn-outline">
+              <i class="fas fa-chart-line"></i> View Voting Trends
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  
+  <!-- Vote Details Modal -->
+  <div id="vote-modal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="vote-modal-title">Vote Details</h3>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="vote-details">
+          <div class="vote-url-container">
+            <h4>URL</h4>
+            <p id="vote-url" class="vote-url"></p>
+          </div>
+          
+          <div class="vote-summary">
+            <div class="vote-chart-container">
+              <div class="vote-chart">
+                <div id="safe-bar" class="safe-bar"></div>
+                <div id="phishing-bar" class="phishing-bar"></div>
+              </div>
+              <div class="vote-labels">
+                <span class="safe-label"><i class="fas fa-shield-alt"></i> Safe <span id="safe-percent">0%</span></span>
+                <span class="phishing-label"><span id="phishing-percent">0%</span> Phishing <i class="fas fa-skull-crossbones"></i></span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="vote-stats-grid">
+            <div class="vote-stat-item">
+              <span class="info-label">Total Votes:</span>
+              <span id="detail-total-votes" class="info-value">0</span>
+            </div>
+            <div class="vote-stat-item">
+              <span class="info-label">Safe Votes:</span>
+              <span id="detail-safe-votes" class="info-value">0</span>
+            </div>
+            <div class="vote-stat-item">
+              <span class="info-label">Phishing Votes:</span>
+              <span id="detail-phishing-votes" class="info-value">0</span>
+            </div>
+            <div class="vote-stat-item">
+              <span class="info-label">First Vote:</span>
+              <span id="detail-first-vote" class="info-value">-</span>
+            </div>
+            <div class="vote-stat-item">
+              <span class="info-label">Last Vote:</span>
+              <span id="detail-last-vote" class="info-value">-</span>
+            </div>
+          </div>
+          
+          <div class="action-container">
+            <h4>Actions</h4>
+            <div class="action-buttons">
+              <button id="whitelist-url" class="btn btn-success">
+                <i class="fas fa-check-circle"></i> Add to Whitelist
+              </button>
+              <button id="blacklist-voted-url" class="btn btn-danger">
+                <i class="fas fa-ban"></i> Add to Blacklist
+              </button>
+              <button id="view-vote-history" class="btn btn-outline">
+                <i class="fas fa-history"></i> View Vote History
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/votes.js"></script>
+</body>
+</html>
