@@ -10,9 +10,7 @@
     body.dark-theme {
       padding-top: 80px;
       padding-bottom: 40px;
-      background-color: var(--dark-bg);
-      background-image: linear-gradient(to bottom right, rgba(61, 133, 198, 0.05), rgba(30, 77, 115, 0.05));
-      background-attachment: fixed;
+      background-color: var(--dark-bg); /* Ensure consistent background color */
     }
     
     /* Header Navigation Styles */
@@ -180,11 +178,11 @@
     
     .dashboard-section {
       background-color: var(--card-bg);
-      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
       padding: 25px;
       margin-bottom: 30px;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
       transition: transform 0.2s, box-shadow 0.2s;
     }
     
