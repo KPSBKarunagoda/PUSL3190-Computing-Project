@@ -234,5 +234,66 @@ module.exports = function(dbConnection) {
         }
     });
 
+    // GET /api/user/statistics - Get user statistics
+    router.get('/statistics', auth, async (req, res) => {
+        try {
+            const userId = req.user.id;
+            
+            // Query the database for user's scan statistics
+            const [userStats] = await dbConnection.execute(`
+                SELECT 
+                    COUNT(*) as totalScans,
+                    SUM(CASE WHEN is_phishing = 1 THEN 1 ELSE 0 END) as threatsDetected,
+                    SUM(CASE WHEN is_phishing = 0 THEN 1 ELSE 0 END) as safeSites
+                FROM URL_Scans
+                WHERE user_id = ?
+            `, [userId]);
+            
+            // If no results, return default values
+            if (!userStats || userStats.length === 0) {
+                return res.json({
+                    totalScans: 0,
+                    threatsDetected: 0,
+                    safeSites: 0
+                });
+            }
+            
+            res.json({
+                totalScans: userStats[0].totalScans || 0,
+                threatsDetected: userStats[0].threatsDetected || 0,
+                safeSites: userStats[0].safeSites || 0
+            });
+        } catch (error) {
+            console.error('Error fetching user statistics:', error);
+            res.status(500).json({ error: 'Server error fetching statistics' });
+        }
+    });
+
+    // GET /api/user/scan-history - Get user scan history
+    router.get('/scan-history', auth, async (req, res) => {
+        try {
+            const userId = req.user.id;
+            const limit = req.query.limit || 10; // Default to 10 items
+            
+            // Query the database for user's recent scans
+            const [scanHistory] = await dbConnection.execute(`
+                SELECT 
+                    url,
+                    scan_date as scanDate,
+                    risk_score as riskScore,
+                    is_phishing as isPhishing
+                FROM URL_Scans
+                WHERE user_id = ?
+                ORDER BY scan_date DESC
+                LIMIT ?
+            `, [userId, parseInt(limit)]);
+            
+            res.json(scanHistory || []);
+        } catch (error) {
+            console.error('Error fetching scan history:', error);
+            res.status(500).json({ error: 'Server error fetching scan history' });
+        }
+    });
+
     return router;
 };

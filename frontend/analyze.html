@@ -12,6 +12,90 @@
       padding-bottom: 80px;
     }
     
+    /* Header Navigation Styles */
+    .top-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      padding: 0 30px;
+      height: 60px;
+    }
+    
+    .top-header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    
+    .logo i {
+      font-size: 1.4rem;
+    }
+    
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .header-nav-item {
+      color: var(--text-primary);
+      text-decoration: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .header-nav-item:hover {
+      background-color: rgba(61, 133, 198, 0.1);
+      color: var(--primary-color);
+    }
+    
+    .header-nav-item.active {
+      color: var(--primary-color);
+      background-color: rgba(61, 133, 198, 0.1);
+    }
+    
+    @media (max-width: 768px) {
+      .top-header {
+        padding: 0 15px;
+      }
+      
+      .header-nav-item {
+        padding: 6px 10px;
+      }
+      
+      .logo span {
+        display: none; /* Hide text logo on small screens */
+      }
+    }
+    
     .analysis-container {
       max-width: 1000px;
       margin: 0 auto;
@@ -233,6 +317,29 @@
   </style>
 </head>
 <body class="dark-theme">
+  <!-- Add header navigation -->
+  <header class="top-header">
+    <div class="top-header-content">
+      <div class="logo-container">
+        <a href="index.html" class="logo">
+          <i class="fas fa-shield-alt"></i>
+          <span>PhishGuard</span>
+        </a>
+      </div>
+      <nav class="header-nav">
+        <a href="dashboard.html" class="header-nav-item">
+          <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="analyze.html" class="header-nav-item active">
+          <i class="fas fa-search"></i> Analyze
+        </a>
+        <a href="settings.html" class="header-nav-item">
+          <i class="fas fa-cog"></i> Settings
+        </a>
+      </nav>
+    </div>
+  </header>
+
   <div class="analysis-container">
     <div class="page-header">
         <h1 style="margin-left: 20px;">URL Analysis</h1>
