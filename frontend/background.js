@@ -1,6 +1,6 @@
 // Enhanced caching system for background.js
 const analyzedURLs = {}; // In-memory cache
-const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes cache lifetime
+const CACHE_EXPIRY = 15 * 60 * 1000; // 15 minutes cache lifetime
 
 // Track tab history to avoid reanalyzing the same URL
 const tabURLHistory = {};
@@ -237,15 +237,41 @@ async function analyzeAndCacheURL(url) {
     // Analyze the URL
     const result = await analyzeURL(url, useSafeBrowsing);
     
-    // Cache the result
+    // Add timestamp to the result for time tracking
+    const resultWithTimestamp = {
+      ...result,
+      timestamp: Date.now()
+    };
+    
+    // Cache the result in memory
     const cacheKey = url;
     analyzedURLs[cacheKey] = {
-      result: result,
+      result: resultWithTimestamp,
       timestamp: Date.now()
     };
     
     // Also save to chrome.storage for persistence across browser sessions
-    // Group results by domain to avoid storage limits
+    // Store in shared cache that popup can access
+    chrome.storage.local.get(['analysisCache'], (data) => {
+      const cache = data.analysisCache || {};
+      cache[url] = resultWithTimestamp;
+      
+      // Limit cache size (keep only most recent 20 entries)
+      const urls = Object.keys(cache);
+      if (urls.length > 20) {
+        // Sort by timestamp (oldest first)
+        urls.sort((a, b) => cache[a].timestamp - cache[b].timestamp);
+        
+        // Remove oldest entries to keep size under limit
+        for (let i = 0; i < urls.length - 20; i++) {
+          delete cache[urls[i]];
+        }
+      }
+      
+      chrome.storage.local.set({ analysisCache: cache });
+    });
+    
+    // Group results by domain to avoid storage limits - as before
     const domain = new URL(url).hostname;
     const storageKey = `analysis_${domain}`;
     
@@ -261,7 +287,7 @@ async function analyzeAndCacheURL(url) {
     });
     
     console.log('Analysis complete and cached:', result);
-    return result;
+    return resultWithTimestamp;
   } catch (error) {
     console.error('Analysis error:', error);
     throw error;
@@ -342,6 +368,13 @@ cleanupCache();
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Handle URL analysis requests (keep existing functionality)
   if (message.type === 'analyzeNow') {
+    // Check if we should force refresh or use cache
+    if (message.forceRefresh) {
+      console.log('Forcing fresh analysis for:', message.url);
+      // Remove from memory cache to force refresh
+      delete analyzedURLs[message.url];
+    }
+    
     analyzeAndCacheURL(message.url)
       .then(result => sendResponse(result))
       .catch(error => sendResponse({error: error.message}));
@@ -598,6 +631,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
       });
     });
+  }
+
+  // New handler for fetching cached analysis directly
+  if (message.action === 'getCachedAnalysis') {
+    const url = message.url;
+    const cachedData = analyzedURLs[url];
+    
+    console.log('Cache request for:', url);
+    console.log('Cache available:', !!cachedData);
+    
+    if (cachedData && (Date.now() - cachedData.timestamp < CACHE_EXPIRY)) {
+      console.log('Returning cached analysis for:', url);
+      sendResponse({ 
+        cached: true, 
+        result: cachedData.result 
+      });
+    } else {
+      sendResponse({ cached: false });
+    }
+    return true;  // Keep channel open for async response
   }
 });
 

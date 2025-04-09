@@ -154,6 +154,30 @@ async function processTab(tab, elements) {
     elements.currentSiteLink.href = tab.url;
   }
   
+  // Setup refresh button once, outside of the conditional logic
+  setupRefreshButton(tab, elements);
+  
+  // Check for ANY cached analysis (background or local storage)
+  const cachedResult = await getBestCachedAnalysis(tab.url);
+  
+  if (cachedResult) {
+    console.log('Using cached analysis result');
+    showResult(cachedResult, elements);
+    
+    // Show cache indicator if we have UI element for it
+    if (elements.cacheStatus) {
+      elements.cacheStatus.style.display = 'block';
+      
+      // Calculate how long ago the analysis was cached - removed cache duration text
+      const timeAgo = getTimeAgo(cachedResult.timestamp);
+      if (elements.cacheText) {
+        elements.cacheText.textContent = `Analysis from ${timeAgo}`;
+      }
+    }
+    return;
+  }
+  
+  // No cached result, show loading and request analysis
   showLoading(elements);
   console.log('Analyzing URL:', tab.url);
   
@@ -183,32 +207,219 @@ async function processTab(tab, elements) {
       throw new Error(result.error);
     }
     
-    showResult(result, elements);
+    // Cache the successful result with timestamp
+    await cacheAnalysisResult(tab.url, result);
     
-    // Add refresh button functionality
-    const refreshButton = elements.refreshBtn;
-    if (refreshButton) {
-      refreshButton.addEventListener('click', async () => {
-        showLoading(elements);
-        try {
-          const freshResult = await sendMessageWithTimeout(
-            { 
-              type: 'analyzeNow', 
-              url: tab.url,
-              useSafeBrowsing: useSafeBrowsing,
-              forceRefresh: true // Force reanalysis
-            },
-            10000
-          );
-          showResult(freshResult, elements);
-        } catch (error) {
-          showError(error.message, elements);
-        }
-      });
-    }
+    showResult(result, elements);
   } catch (error) {
     showError(error.message, elements);
   }
+}
+
+/**
+ * Setup refresh button with proper event handling
+ * @param {object} tab - Current tab object
+ * @param {object} elements - DOM elements
+ */
+function setupRefreshButton(tab, elements) {
+  const refreshButton = elements.refreshBtn;
+  if (!refreshButton) return;
+  
+  // Remove any existing click listeners to prevent duplicates
+  const newButton = refreshButton.cloneNode(true);
+  refreshButton.parentNode.replaceChild(newButton, refreshButton);
+  elements.refreshBtn = newButton;
+  
+  // Add fresh click listener
+  newButton.addEventListener('click', async () => {
+    console.log('Refreshing analysis for:', tab.url);
+    showLoading(elements);
+    
+    // Hide cache indicator during refresh
+    if (elements.cacheStatus) {
+      elements.cacheStatus.style.display = 'none';
+    }
+    
+    try {
+      // Get user preferences for analysis
+      const preferences = await chrome.storage.sync.get(['safeSearchEnabled']);
+      const useSafeBrowsing = preferences.safeSearchEnabled !== false;
+      
+      // Request fresh analysis with forceRefresh flag
+      const freshResult = await sendMessageWithTimeout(
+        { 
+          type: 'analyzeNow', 
+          url: tab.url,
+          useSafeBrowsing: useSafeBrowsing,
+          forceRefresh: true // Force reanalysis
+        },
+        10000
+      );
+      
+      // Validate result
+      if (!freshResult) {
+        throw new Error('Empty response received');
+      }
+      
+      if (freshResult.error) {
+        throw new Error(freshResult.error);
+      }
+      
+      // Update cache with fresh result
+      await cacheAnalysisResult(tab.url, freshResult);
+      
+      // Show the fresh result
+      showResult(freshResult, elements);
+      
+      // Flash a brief "refreshed" message
+      showMessage("Analysis refreshed", elements);
+      
+    } catch (error) {
+      console.error('Refresh error:', error);
+      showError(`Refresh failed: ${error.message}`, elements);
+    }
+  });
+}
+
+/**
+ * Get the best available cached analysis from all sources
+ * @param {string} url The URL to check
+ * @returns {Promise<Object|null>} The cached result or null if not found/expired
+ */
+async function getBestCachedAnalysis(url) {
+  // First check the background script's memory cache (most up-to-date)
+  try {
+    const backgroundCache = await new Promise(resolve => {
+      chrome.runtime.sendMessage(
+        { action: 'getCachedAnalysis', url: url },
+        response => {
+          if (response && response.cached && response.result) {
+            resolve(response.result);
+          } else {
+            resolve(null);
+          }
+        }
+      );
+    });
+    
+    if (backgroundCache) {
+      console.log('Using background script cached result');
+      return backgroundCache;
+    }
+  } catch (error) {
+    console.log('Error checking background cache:', error);
+  }
+  
+  // Then check local storage cache
+  const localCache = await getCachedAnalysis(url);
+  if (localCache) {
+    console.log('Using local storage cached result');
+    return localCache;
+  }
+  
+  return null;
+}
+
+/**
+ * Check if we have a valid cached analysis result
+ * @param {string} url The URL to check
+ * @returns {Promise<Object|null>} The cached result or null if not found/expired
+ */
+async function getCachedAnalysis(url) {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['analysisCache'], (data) => {
+      const cache = data.analysisCache || {};
+      const cachedItem = cache[url];
+      
+      if (!cachedItem) {
+        resolve(null);
+        return;
+      }
+      
+      // Check if the cache is still valid (less than 15 minutes old)
+      const now = Date.now();
+      const cacheAge = now - cachedItem.timestamp;
+      const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+      
+      if (cacheAge > CACHE_TTL) {
+        // Cache expired
+        resolve(null);
+        return;
+      }
+      
+      resolve(cachedItem);
+    });
+  });
+}
+
+/**
+ * Cache an analysis result with timestamp
+ * @param {string} url The URL being analyzed
+ * @param {Object} result The analysis result to cache
+ */
+async function cacheAnalysisResult(url, result) {
+  if (!result) return;
+  
+  // Add timestamp to the result
+  const resultWithTimestamp = {
+    ...result,
+    timestamp: Date.now()
+  };
+  
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['analysisCache'], (data) => {
+      const cache = data.analysisCache || {};
+      
+      // Store in cache
+      cache[url] = resultWithTimestamp;
+      
+      // Limit cache size (keep only most recent 20 entries)
+      const urls = Object.keys(cache);
+      if (urls.length > 20) {
+        // Sort by timestamp (oldest first)
+        urls.sort((a, b) => cache[a].timestamp - cache[b].timestamp);
+        
+        // Remove oldest entries to keep size under limit
+        for (let i = 0; i < urls.length - 20; i++) {
+          delete cache[urls[i]];
+        }
+      }
+      
+      chrome.storage.local.set({ analysisCache: cache }, resolve);
+    });
+  });
+}
+
+/**
+ * Convert timestamp to a human-readable time ago string
+ * @param {number} timestamp The timestamp to convert
+ * @returns {string} Human readable time ago
+ */
+function getTimeAgo(timestamp) {
+  if (!timestamp) return 'unknown time';
+  
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  
+  // Less than a minute
+  if (seconds < 60) {
+    return 'just now';
+  }
+  
+  // Less than an hour
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
+  }
+  
+  // Less than a day
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+  }
+  
+  // More than a day
+  const days = Math.floor(hours / 24);
+  return days === 1 ? '1 day ago' : `${days} days ago`;
 }
 
 // Special function for login-required message with action button
@@ -718,6 +929,25 @@ document.head.insertAdjacentHTML('beforeend', `
     
     .login-btn-icon {
       font-size: 0.8rem;
+    }
+    
+    /* Cache indicator styling */
+    .cache-indicator {
+      display: none;
+      padding: 6px 10px;
+      background-color: rgba(0, 0, 0, 0.05);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: #666;
+      margin-bottom: 10px;
+      text-align: center;
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      transition: all 0.2s ease;
+    }
+    
+    .cache-indicator i {
+      margin-right: 6px;
+      color: #1976D2;
     }
   </style>
 `);
