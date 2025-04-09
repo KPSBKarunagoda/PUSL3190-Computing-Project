@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     resultContainer: document.getElementById('result-container'),
     currentSiteLink: document.getElementById('currentSiteLink'),
     scoreElement: document.getElementById('score'),
+    circleFill: document.querySelector('.circle-fill'),
     statusElement: document.getElementById('status'),
     scoreSection: document.querySelector('.score-section'),
     riskExplanation: document.querySelector('.risk-explanation'),
@@ -16,7 +17,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     userInfo: document.getElementById('user-info'),
     userName: document.getElementById('user-name'),
     refreshBtn: document.getElementById('refreshAnalysis'),
-    reportLink: document.getElementById('report-link')
+    reportLink: document.getElementById('report-link'),
+    
+    // NEW: Vote and report elements
+    voteUp: document.getElementById('vote-up'),
+    voteDown: document.getElementById('vote-down'),
+    upvotes: document.getElementById('upvotes'),
+    downvotes: document.getElementById('downvotes'),
+    reportButton: document.getElementById('report-button'),
+    reportForm: document.getElementById('report-form'),
+    reportReason: document.getElementById('report-reason'),
+    reportComments: document.getElementById('report-comments'),
+    submitReport: document.getElementById('submit-report'),
+    
+    // Added for caching UI
+    cacheStatus: document.getElementById('cache-status'),
+    cacheText: document.getElementById('cache-text'),
+
+    // User avatar and role elements
+    userAvatar: document.querySelector('.user-avatar'),
+    userRole: document.getElementById('user-role')
   };
 
   // First check authentication state
@@ -91,6 +111,93 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
     }
+  }
+  
+  // Add event listeners for new vote buttons
+  if (elements.voteUp) {
+    elements.voteUp.addEventListener('click', () => {
+      // Add active class for UI feedback
+      elements.voteUp.classList.add('active');
+      elements.voteDown.classList.remove('active');
+      
+      // Increment count for visual feedback (no backend integration yet)
+      const currentCount = parseInt(elements.upvotes.textContent || '0');
+      elements.upvotes.textContent = currentCount + 1;
+      
+      // Show thank you message
+      showMessage('Thank you for your feedback!', elements);
+    });
+  }
+  
+  if (elements.voteDown) {
+    elements.voteDown.addEventListener('click', () => {
+      // Add active class for UI feedback
+      elements.voteDown.classList.add('active');
+      elements.voteUp.classList.remove('active');
+      
+      // Increment count for visual feedback (no backend integration yet)
+      const currentCount = parseInt(elements.downvotes.textContent || '0');
+      elements.downvotes.textContent = currentCount + 1;
+      
+      // Show thank you message
+      showMessage('Thank you for your feedback!', elements);
+    });
+  }
+  
+  // Add event listener for report button
+  if (elements.reportButton) {
+    elements.reportButton.addEventListener('click', () => {
+      // Toggle report form visibility
+      if (elements.reportForm.style.display === 'none' || !elements.reportForm.style.display) {
+        elements.reportForm.style.display = 'flex';
+        elements.reportButton.textContent = 'Cancel Report';
+        elements.reportButton.style.borderColor = '#808080';
+        elements.reportButton.style.color = '#808080';
+      } else {
+        elements.reportForm.style.display = 'none';
+        elements.reportButton.innerHTML = '<i class="fas fa-flag"></i> Report this website';
+        elements.reportButton.style.borderColor = '';
+        elements.reportButton.style.color = '';
+      }
+    });
+  }
+  
+  // Add event listener for report submission
+  if (elements.submitReport) {
+    elements.submitReport.addEventListener('click', () => {
+      const reason = elements.reportReason.value;
+      
+      if (!reason) {
+        // Show error if no reason selected
+        alert('Please select a reason for your report');
+        return;
+      }
+      
+      // Visual feedback for form submission (no backend integration)
+      elements.submitReport.disabled = true;
+      elements.submitReport.textContent = 'Submitting...';
+      
+      // Simulate submission delay
+      setTimeout(() => {
+        // Reset form
+        elements.reportForm.style.display = 'none';
+        elements.reportButton.innerHTML = '<i class="fas fa-flag"></i> Report this website';
+        elements.reportButton.style.borderColor = '';
+        elements.reportButton.style.color = '';
+        elements.reportReason.value = '';
+        
+        if (elements.reportComments) {
+          elements.reportComments.value = '';
+        }
+        
+        // Re-enable submit button
+        elements.submitReport.disabled = false;
+        elements.submitReport.textContent = 'Submit Report';
+        
+        // Show thank you message
+        showMessage('Thank you! Your report has been submitted.', elements);
+      }, 1000);
+    });
   }
   
   try {
@@ -183,7 +290,7 @@ async function processTab(tab, elements) {
   }
 }
 
-// Check authentication state and update UI
+// Check authentication state and update UI - reverted to original implementation
 async function checkAuthState(elements) {
   try {
     // Get auth state directly from storage
@@ -198,38 +305,25 @@ async function checkAuthState(elements) {
     if (elements.dashboardBtn) elements.dashboardBtn.style.display = isLoggedIn ? 'block' : 'none';
     if (elements.logoutBtn) elements.logoutBtn.style.display = isLoggedIn ? 'block' : 'none';
     
-    // Show user info if available
+    // Show user info if available - original implementation
     if (elements.userInfo && isLoggedIn && data.userData) {
       elements.userInfo.style.display = 'flex';
       
       if (elements.userName) {
         const displayName = data.userData.username || data.userData.email || 'User';
         elements.userName.textContent = displayName;
-        
-        // If we have a user-avatar element and initials can be extracted
-        const userAvatar = document.querySelector('.user-avatar');
-        if (userAvatar) {
-          // Try to create initials from username or email
-          if (data.userData.username) {
-            // Get initials from name (first letter of first and last name)
-            const nameParts = data.userData.username.trim().split(' ');
-            if (nameParts.length > 1) {
-              userAvatar.textContent = (nameParts[0][0] + nameParts[nameParts.length-1][0]).toUpperCase();
-            } else {
-              // Just first letter if single name
-              userAvatar.textContent = nameParts[0][0].toUpperCase();
-            }
-          } else if (data.userData.email) {
-            // Use first letter of email
-            userAvatar.textContent = data.userData.email[0].toUpperCase();
-          }
-        }
+      }
+      
+      if (elements.userAvatar) {
+        // Reset to default icon
+        elements.userAvatar.innerHTML = '<i class="fas fa-user"></i>';
       }
       
       // Set user role if available
-      const userRole = document.getElementById('user-role');
-      if (userRole && data.userData.role) {
-        userRole.textContent = data.userData.role;
+      if (elements.userRole && data.userData.role) {
+        elements.userRole.textContent = data.userData.role;
+      } else if (elements.userRole) {
+        elements.userRole.textContent = 'Member';
       }
     } else if (elements.userInfo) {
       elements.userInfo.style.display = 'none';
@@ -278,7 +372,7 @@ function makeAuthenticatedRequest(endpoint, method = 'GET', body = null) {
 
 // The rest of your functions should be updated to accept elements parameter
 function showLoading(elements) {
-  const { scoreElement, statusElement, resultContainer, scoreSection, riskExplanation } = elements;
+  const { scoreElement, statusElement, resultContainer, scoreSection, riskExplanation, circleFill } = elements;
 
   if (scoreElement) {
     scoreElement.textContent = '...';
@@ -288,6 +382,11 @@ function showLoading(elements) {
   if (statusElement) {
     statusElement.textContent = '';
     statusElement.className = '';
+  }
+
+  if (circleFill) {
+    circleFill.style.strokeDashoffset = '339.3'; // Reset to empty
+    circleFill.classList.remove('safe', 'warning', 'danger');
   }
 
   if (resultContainer) {
@@ -308,7 +407,7 @@ function showLoading(elements) {
 }
 
 function showResult(result, elements) {
-  const { scoreElement, statusElement, resultContainer, scoreSection, riskExplanation, currentSiteLink } = elements;
+  const { scoreElement, statusElement, resultContainer, scoreSection, riskExplanation, currentSiteLink, upvotes, downvotes, circleFill } = elements;
 
   console.log('Processing result:', result);
 
@@ -323,16 +422,46 @@ function showResult(result, elements) {
 
   console.log('Display data:', displayData);
 
+  // Update the score text
   if (scoreElement) {
-    scoreElement.textContent = `${displayData.risk_score}/100`;
-
-    if (displayData.is_phishing) {
-      scoreElement.className = 'unsafe-score';
-    } else if (displayData.risk_score > 30 && displayData.ml_prediction === 1) {
-      scoreElement.className = 'warning-score';
+    scoreElement.textContent = Math.round(displayData.risk_score);
+    
+    // Remove any existing classes
+    scoreElement.className = '';
+    
+    // Add the appropriate class based on the risk level
+    if (displayData.is_phishing || displayData.risk_score >= 60) {
+      scoreElement.classList.add('danger-score');
+    } else if (displayData.risk_score >= 30) {
+      scoreElement.classList.add('warning-score');
     } else {
-      scoreElement.className = 'safe-score';
+      scoreElement.classList.add('safe-score');
     }
+  }
+  
+  // Update the circular progress bar
+  if (circleFill) {
+    // Calculate the circumference of the circle
+    const circumference = 2 * Math.PI * 54; // 54 is the radius of the circle
+    
+    // Calculate how much of the circle should be filled (percentage of the circumference)
+    const fillPercentage = displayData.risk_score / 100;
+    const fillOffset = circumference - (circumference * fillPercentage);
+    
+    // Remove any existing classes
+    circleFill.classList.remove('safe', 'warning', 'danger');
+    
+    // Add the appropriate class based on the risk level
+    if (displayData.is_phishing || displayData.risk_score >= 60) {
+      circleFill.classList.add('danger');
+    } else if (displayData.risk_score >= 30) {
+      circleFill.classList.add('warning');
+    } else {
+      circleFill.classList.add('safe');
+    }
+    
+    // Set the dashoffset to fill the circle according to the score
+    circleFill.style.strokeDashoffset = fillOffset;
   }
 
   if (statusElement) {
@@ -379,6 +508,12 @@ function showResult(result, elements) {
     } else {
       resultContainer.innerHTML = '';
     }
+  }
+
+  // Add random vote counts for demo purposes
+  if (upvotes && downvotes) {
+    upvotes.textContent = Math.floor(Math.random() * 30);
+    downvotes.textContent = Math.floor(Math.random() * 10);
   }
 }
 
