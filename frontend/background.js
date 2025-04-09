@@ -73,6 +73,7 @@ async function validateToken(token) {
       return true;
     }
     
+    console.log('Validating token...');
     const response = await fetch('http://localhost:3000/api/auth/verify', {
       method: 'GET',
       headers: {
@@ -81,16 +82,19 @@ async function validateToken(token) {
     });
     
     if (response.ok) {
+      console.log('Token validation successful');
       authState.lastVerified = Date.now();
       // Update timestamp in storage too
       chrome.storage.local.set({ authTimestamp: Date.now() });
       return true;
     }
     
+    console.warn('Token validation failed: server returned', response.status);
     return false;
   } catch (error) {
-    console.error('Token validation error:', error);
-    return false;
+    console.error('Token validation error (network):', error);
+    // Return true on network errors to prevent false negatives
+    return true; // Don't log out on network errors
   }
 }
 
@@ -106,37 +110,47 @@ async function logoutUser() {
     lastVerified: 0
   };
   
-  // Clear storage data
+  // Clear storage data - note we're using the clear method for voteCounts
   await chrome.storage.local.remove([
     'isLoggedIn', 
     'authToken', 
     'userData', 
-    'authTimestamp', 
-    'voteCounts'
+    'authTimestamp'
   ]);
   
-  // Notify any open popup
-  safelySendMessage({ action: 'authStateChanged', isLoggedIn: false });
-}
-
-// Send message safely to handle cases where receiver might be gone
-function safelySendMessage(message) {
+  // Clear vote counts separately to ensure it completes
+  await chrome.storage.local.set({ voteCounts: {} });
+  
+  // Check if popup is open before sending messages
   try {
-    chrome.runtime.sendMessage(message).catch(error => {
-      // Just log disconnection errors without throwing
-      if (error.message && error.message.includes("Receiving end does not exist")) {
-        console.log("Ignored disconnection: popup probably closed");
-      } else {
-        console.error("Message send error:", error);
+    const views = chrome.extension.getViews({ type: "popup" });
+    if (views && views.length > 0) {
+      // Popup is open, safe to send message
+      try {
+        await chrome.runtime.sendMessage({ action: 'authStateChanged', isLoggedIn: false });
+      } catch (e) {
+        // Swallow errors, don't log them
       }
-    });
+    }
   } catch (error) {
-    // Just log any errors without throwing
-    console.log("Safe message send caught error:", error);
+    // Ignore any errors in getting views
   }
 }
 
-// Check token expiry every minute
+// Send message safely without logging disconnection errors
+function safelySendMessage(message) {
+  try {
+    const views = chrome.extension.getViews({ type: "popup" });
+    if (views && views.length > 0) {
+      chrome.runtime.sendMessage(message).catch(() => {});
+    }
+  } catch (error) {
+    // Silently catch errors
+  }
+}
+
+// Check token expiry every 5 minutes (instead of every minute)
+// This reduces the frequency of token validations
 setInterval(() => {
   if (authState.isLoggedIn && authState.token) {
     validateToken(authState.token).then(isValid => {
@@ -145,7 +159,7 @@ setInterval(() => {
       }
     });
   }
-}, 60 * 1000);
+}, 5 * 60 * 1000); // 5 minutes
 
 // Listen for tab updates (when user navigates to a new page)
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -362,22 +376,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
   
-  // Handle auth state requests with updated security
+  // Handle auth state requests with updated security - IMPROVED VERSION
   if (message.action === 'getAuthState') {
-    validateToken(authState.token).then(isValid => {
-      if (isValid) {
-        sendResponse({
-          isLoggedIn: true,
-          token: authState.token,
-          userData: authState.userData
-        });
-      } else {
-        // Token is invalid - force logout
-        logoutUser().then(() => {
-          sendResponse({ isLoggedIn: false, userData: null });
-        });
-      }
+    // Don't validate token on every popup open - just return current auth state
+    // This prevents unnecessary validations that can cause logout issues
+    sendResponse({
+      isLoggedIn: authState.isLoggedIn,
+      token: authState.token,
+      userData: authState.userData
     });
+    
+    // Only perform validation in the background if it's been a while
+    const validationNeeded = !authState.lastVerified || 
+      (Date.now() - authState.lastVerified > 10 * 60 * 1000); // 10 minutes
+    
+    if (validationNeeded && authState.isLoggedIn && authState.token) {
+      // Validate in background after responding - don't block popup
+      validateToken(authState.token).then(isValid => {
+        if (!isValid) {
+          // Schedule logout if needed, but don't block popup rendering
+          setTimeout(() => logoutUser(), 100);
+        }
+      }).catch(err => {
+        console.warn('Background validation error:', err);
+      });
+    }
+    
     return true;
   }
 
@@ -419,217 +443,170 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   
-  // Handle voting action
-  if (message.action === 'vote') {
-    // Always respond immediately before doing any processing
-    sendResponse({ status: 'received' });
-    
-    // Get auth token and do the API call asynchronously
-    chrome.storage.local.get(['authToken'], (data) => {
-      if (!data.authToken) {
-        console.error('Cannot submit vote: User not authenticated');
-        return;
-      }
-      
-      // Process the vote after responding
-      fetch('http://localhost:3000/api/votes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': data.authToken
-        },
-        body: JSON.stringify({ 
-          url: message.url, 
-          voteType: message.voteType 
-        })
-      })
-      .then(response => response.json())
-      .then(data => console.log('Vote recorded:', data))
-      .catch(error => console.error('Vote error:', error));
-    });
-    
-    // Return true to indicate we'll send a response asynchronously
-    return true;
-  }
-  
-  // Handle request for vote counts
-  if (message.action === 'getVoteCounts') {
-    // For vote counts, also respond immediately
-    sendResponse({ counts: { safe: 0, phishing: 0 } });
-    
-    // Then fetch real counts asynchronously
-    chrome.storage.local.get(['authToken'], (data) => {
-      fetch(`http://localhost:3000/api/votes/counts?url=${encodeURIComponent(message.url)}`, {
-        headers: {
-          'x-auth-token': data.authToken || ''
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        // Store in local storage for future reference
-        chrome.storage.local.get(['voteCounts'], (storage) => {
-          const voteCounts = storage.voteCounts || {};
-          voteCounts[message.url] = data.counts;
-          chrome.storage.local.set({ voteCounts });
-        });
-      })
-      .catch(error => console.error('Vote count error:', error));
-    });
-    
-    return true;
-  }
-  
-  // Handle voting action with no response
+  // Handle voting action with no response - complete overhaul
   if (message.action === 'voteNoResponse') {
-    validateToken(authState.token).then(isValid => {
-      if (!isValid) {
-        console.error('Cannot submit vote: User token is invalid');
-        logoutUser(); // Force logout if token is invalid
+    // Step 1: Verify authentication status from storage
+    chrome.storage.local.get(['isLoggedIn', 'authToken'], async (authData) => {
+      // If not logged in, stop immediately
+      if (!authData.isLoggedIn || !authData.authToken) {
+        console.log('Vote rejected: User not authenticated');
+        
+        // Notify popup about failed vote to update UI
+        safelySendMessage({ 
+          action: 'voteRejected', 
+          reason: 'authentication' 
+        });
         return;
       }
       
-      // Get current cached vote counts for this URL
-      chrome.storage.local.get(['voteCounts'], (storage) => {
+      console.log('Processing vote for URL:', message.url);
+      
+      // Step 2: Get current vote data
+      chrome.storage.local.get(['voteCounts'], async (storage) => {
         const voteCounts = storage.voteCounts || {};
-        const currentCounts = voteCounts[message.url] || { safe: 0, phishing: 0 };
+        const currentCounts = voteCounts[message.url] || { 
+          safe: 0, 
+          phishing: 0, 
+          userVote: null 
+        };
         
-        // Process the vote asynchronously with secure token
-        fetch('http://localhost:3000/api/votes', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-auth-token': authState.token
-          },
-          body: JSON.stringify({ 
-            url: message.url, 
-            voteType: message.voteType 
-          })
-        })
-        .then(response => {
+        try {
+          // Step 3: Send vote to server
+          const response = await fetch('http://localhost:3000/api/votes', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-auth-token': authData.authToken
+            },
+            body: JSON.stringify({ 
+              url: message.url, 
+              voteType: message.voteType 
+            })
+          });
+          
+          // Step 4: Handle response
           if (!response.ok) {
             if (response.status === 401) {
-              // Authentication failed - token likely expired
-              logoutUser();
-              throw new Error('Authentication failed');
+              // Auth error - mark for revalidation but don't logout yet
+              authState.lastVerified = 0;
+              throw new Error('Authentication error');
             }
-            return response.text().then(text => {
-              throw new Error(`API error (${response.status}): ${text}`);
-            });
+            throw new Error(`Server error: ${response.status}`);
           }
-          return response.json();
-        })
-        .then(data => {
-          console.log('Vote recorded:', data);
           
-          // Save to local storage with the most up-to-date counts
-          chrome.storage.local.get(['voteCounts'], (storage) => {
-            const voteCounts = storage.voteCounts || {};
-            voteCounts[message.url] = {
+          // Step 5: Process successful vote
+          const data = await response.json();
+          console.log('Vote recorded successfully:', data);
+          
+          // Step 6: Update local storage with fresh data
+          chrome.storage.local.get(['voteCounts'], (currentStorage) => {
+            const updatedCounts = currentStorage.voteCounts || {};
+            updatedCounts[message.url] = {
               safe: data.counts?.safe || currentCounts.safe,
               phishing: data.counts?.phishing || currentCounts.phishing,
-              userVote: message.voteType
+              userVote: message.voteType,
+              lastUpdated: Date.now()
             };
-            chrome.storage.local.set({ voteCounts });
-            console.log('Vote counts updated in storage:', voteCounts[message.url]);
+            
+            chrome.storage.local.set({ voteCounts: updatedCounts });
+            
+            // Step 7: Notify popup about vote success
+            safelySendMessage({
+              action: 'voteRecorded',
+              url: message.url,
+              voteType: message.voteType,
+              counts: data.counts
+            });
           });
-        })
-        .catch(error => console.error('Vote error:', error));
+        } catch (error) {
+          console.error('Vote error:', error.message);
+          
+          // Step 8: Handle error cases
+          if (error.message.includes('Authentication')) {
+            // Let the popup know authentication failed
+            safelySendMessage({
+              action: 'voteRejected',
+              reason: 'authentication'
+            });
+          } else {
+            // General server error
+            safelySendMessage({
+              action: 'voteRejected',
+              reason: 'server',
+              error: error.message
+            });
+          }
+        }
       });
     });
-    
-    // No return value needed since we're not responding
   }
   
-  // Handle getting vote counts with no response
+  // Handle getting vote counts with better error handling
   if (message.action === 'getVoteCountsNoResponse') {
-    // Don't validate token here - we want counts regardless of login state
-    const headers = authState.token ? 
-      { 'x-auth-token': authState.token } : 
-      {};
+    const headers = {};
     
-    fetch(`http://localhost:3000/api/votes/counts?url=${encodeURIComponent(message.url)}`, {
-      headers: headers
-    })
-    .then(response => {
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
-      return response.json();
-    })
-    .then(data => {
-      // Store in local storage for UI to access, including the userVote
-      chrome.storage.local.get(['voteCounts'], (storage) => {
-        const voteCounts = storage.voteCounts || {};
-        voteCounts[message.url] = {
-          ...(data.counts || { safe: 0, phishing: 0 }),
-          userVote: data.userVote
-        };
-        chrome.storage.local.set({ voteCounts });
-        console.log('Updated vote counts in storage:', voteCounts[message.url]);
-        
-        // No need to send message back to popup - it will read from storage
-      });
-    })
-    .catch(error => {
-      console.error('Vote count error:', error);
-      // Still ensure we have a record in storage
-      chrome.storage.local.get(['voteCounts'], (storage) => {
-        const voteCounts = storage.voteCounts || {};
-        if (!voteCounts[message.url]) {
-          voteCounts[message.url] = { safe: 0, phishing: 0, userVote: null };
+    // Only include auth token if logged in
+    chrome.storage.local.get(['isLoggedIn', 'authToken'], (authData) => {
+      if (authData.isLoggedIn && authData.authToken) {
+        headers['x-auth-token'] = authData.authToken;
+      }
+      
+      fetch(`http://localhost:3000/api/votes/counts?url=${encodeURIComponent(message.url)}`, {
+        headers: headers
+      })
+      .then(response => {
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        // Update vote counts in storage
+        chrome.storage.local.get(['voteCounts'], (storage) => {
+          const voteCounts = storage.voteCounts || {};
+          
+          // Only include userVote if user is logged in
+          voteCounts[message.url] = {
+            safe: data.counts?.safe || 0,
+            phishing: data.counts?.phishing || 0,
+            userVote: authData.isLoggedIn ? data.userVote : null,
+            lastUpdated: Date.now()
+          };
+          
           chrome.storage.local.set({ voteCounts });
-        }
+          
+          // Notify popup about updated counts
+          safelySendMessage({
+            action: 'voteCounts',
+            url: message.url,
+            counts: data.counts,
+            userVote: authData.isLoggedIn ? data.userVote : null
+          });
+        });
+      })
+      .catch(error => {
+        console.error('Vote count error:', error);
+        chrome.storage.local.get(['voteCounts'], (storage) => {
+          const voteCounts = storage.voteCounts || {};
+          if (!voteCounts[message.url]) {
+            voteCounts[message.url] = { 
+              safe: 0, 
+              phishing: 0, 
+              userVote: null,
+              error: true
+            };
+            chrome.storage.local.set({ voteCounts });
+          }
+        });
       });
     });
   }
 });
-
-// Function to process votes
-async function processVote(url, voteType, token) {
-  try {
-    console.log(`Processing vote: ${voteType} for ${url}`);
-    
-    // Send vote to backend API
-    const response = await fetch('http://localhost:3000/api/votes', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': token
-      },
-      body: JSON.stringify({ url, voteType })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `API error: ${response.status}`);
-    }
-    
-    const result = await response.json();
-    console.log('Vote recorded successfully:', result);
-    
-    // Save vote counts AND userVote in local storage for future reference
-    if (result.counts) {
-      chrome.storage.local.get(['voteCounts'], (data) => {
-        const voteCounts = data.voteCounts || {};
-        voteCounts[url] = {
-          ...result.counts,
-          userVote: voteType  // Store the user's vote type
-        };
-        chrome.storage.local.set({ voteCounts });
-      });
-    }
-    
-    return result;
-  } catch (error) {
-    console.error('Error submitting vote:', error);
-    throw error;
-  }
-}
 
 // Ensure our vote storage is cleared when the user logs out
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && (changes.isLoggedIn || changes.authToken)) {
     if (changes.isLoggedIn?.newValue === false || !changes.authToken?.newValue) {
       console.log('User logged out - clearing vote data');
-      chrome.storage.local.remove(['voteCounts']);
+      chrome.storage.local.set({ voteCounts: {} }); // Use set with empty object instead of remove
     }
   }
 });

@@ -42,6 +42,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // First check authentication state
   await checkAuthState(elements);
 
+  // Create voting system instance directly after checking auth state
+  window.votingSystem = new VotingSystem(elements);
+  
   // Setup settings dropdown
   if (elements.settingsBtn && elements.settingsDropdown) {
     // Toggle dropdown when settings button is clicked
@@ -113,9 +116,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   
-  // Use the enhanced setup for vote buttons
-  setupVoteButtons(elements);
-  
   try {
     // Get current tab
     const tabs = await chrome.tabs.query({active: true, currentWindow: true});
@@ -126,6 +126,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Process the tab and analyze URL
     await processTab(tabs[0], elements);
+    
+    // Initialize voting system with current URL
+    if (window.votingSystem) {
+      window.votingSystem.init(tabs[0].url);
+    }
     
   } catch (error) {
     console.error('Popup error:', error);
@@ -180,9 +185,6 @@ async function processTab(tab, elements) {
     
     showResult(result, elements);
     
-    // Check if the user has already voted for this URL and highlight the appropriate button
-    await checkUserVoteForUrl(tab.url, elements);
-    
     // Add refresh button functionality
     const refreshButton = elements.refreshBtn;
     if (refreshButton) {
@@ -209,310 +211,17 @@ async function processTab(tab, elements) {
   }
 }
 
-// Enhanced function to check and display user's previous vote with better error handling
-async function checkUserVoteForUrl(url, elements) {
-  try {
-    // First clear any active state
-    elements.voteUp.classList.remove('active');
-    elements.voteDown.classList.remove('active');
-    
-    // Check if user is logged in
-    const authState = await getAuthState();
-    if (!authState.isLoggedIn) {
-      console.log('User not logged in, no vote to highlight');
-      return;
-    }
-    
-    // First check local storage for quick UI update
-    chrome.storage.local.get(['voteCounts'], (data) => {
-      try {
-        if (data.voteCounts && data.voteCounts[url]) {
-          console.log('Found local vote data for URL:', data.voteCounts[url]);
-          updateVoteUI(data.voteCounts[url], elements);
-        }
-      } catch (err) {
-        console.error('Error updating vote UI from storage:', err);
-      }
-    });
-    
-    // Make a direct API call for the most up-to-date data - with better error handling
-    if (authState.token) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-        
-        const response = await fetch(`http://localhost:3000/api/votes/counts?url=${encodeURIComponent(url)}`, {
-          headers: {
-            'x-auth-token': authState.token
-          },
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          if (response.status === 401) {
-            console.log('Token expired or invalid, logging out');
-            await logout();
-            return;
-          }
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        const voteData = await response.json();
-        console.log('Got fresh vote data from API:', voteData);
-        
-        // Save the fresh data to local storage
-        chrome.storage.local.get(['voteCounts'], (storage) => {
-          try {
-            const voteCounts = storage.voteCounts || {};
-            voteCounts[url] = {
-              safe: voteData.counts?.safe || 0,
-              phishing: voteData.counts?.phishing || 0,
-              userVote: voteData.userVote
-            };
-            chrome.storage.local.set({ voteCounts });
-            
-            // Now update the UI with the fresh data
-            updateVoteUI(voteCounts[url], elements);
-          } catch (err) {
-            console.error('Error saving vote data to storage:', err);
-          }
-        });
-      } catch (error) {
-        if (error.name === 'AbortError') {
-          console.log('Vote count API request timed out');
-        } else {
-          console.error('Error fetching vote data from API:', error);
-        }
-        
-        // Don't logout on network errors, only on auth errors
-        if (error.message && error.message.includes('401')) {
-          console.log('Auth error in vote fetch, logging out');
-          await logout();
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error checking user vote:', error);
-  }
-}
-
-// New function to centralize vote UI updates
-function updateVoteUI(voteData, elements) {
-  if (!voteData) return;
-  
-  // Update vote counts
-  if (elements.upvotes && typeof voteData.safe !== 'undefined') {
-    elements.upvotes.textContent = voteData.safe;
-  }
-  
-  if (elements.downvotes && typeof voteData.phishing !== 'undefined') {
-    elements.downvotes.textContent = voteData.phishing;
-  }
-  
-  // Highlight appropriate button based on user's vote
-  if (voteData.userVote) {
-    if (voteData.userVote === 'Safe') {
-      elements.voteUp.classList.add('active');
-      elements.voteDown.classList.remove('active');
-      console.log('Highlighting vote up button');
-    } else if (voteData.userVote === 'Phishing') {
-      elements.voteDown.classList.add('active');
-      elements.voteUp.classList.remove('active');
-      console.log('Highlighting vote down button');
-    }
-  }
-}
-
-// Enhanced vote button handler with login prompt and better error handling
-async function setupVoteButtons(elements) {
-  if (!elements.voteUp || !elements.voteDown) return;
-  
-  // Track current vote state to prevent multiple votes
-  let currentVoteState = null;
-  let isVoting = false; // Add a flag to prevent double-clicks
-  
-  // Get current vote state from storage
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tabs && tabs.length > 0) {
-    const currentUrl = tabs[0].url;
-    chrome.storage.local.get(['voteCounts'], (data) => {
-      if (data.voteCounts && data.voteCounts[currentUrl]) {
-        currentVoteState = data.voteCounts[currentUrl].userVote || null;
-      }
-    });
-  }
-  
-  elements.voteUp.addEventListener('click', async () => {
-    // Prevent rapid clicking
-    if (isVoting) return;
-    isVoting = true;
-    
-    try {
-      // Double-check if user is logged in with valid token
-      const authState = await getAuthState();
-      if (!authState.isLoggedIn) {
-        showLoginRequiredMessage(elements);
-        isVoting = false;
-        return;
-      }
-      
-      // Get current tab URL
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tabs && tabs.length > 0) {
-        const currentUrl = tabs[0].url;
-        
-        // If user already voted Safe, prevent additional clicks
-        if (currentVoteState === 'Safe') {
-          console.log('User already voted Safe for this URL - ignoring click');
-          return;
-        }
-        
-        // Get current vote counts
-        const safeCount = parseInt(elements.upvotes.textContent || '0');
-        const phishingCount = parseInt(elements.downvotes.textContent || '0');
-        
-        // Calculate new counts based on previous vote state
-        let newSafeCount = safeCount + 1;
-        let newPhishingCount = phishingCount;
-        
-        // If user had previously voted "Phishing", reduce that count
-        if (currentVoteState === 'Phishing') {
-          newPhishingCount = Math.max(0, phishingCount - 1);
-        }
-        
-        // Update vote state
-        currentVoteState = 'Safe';
-        
-        // Add visual feedback immediately
-        elements.voteUp.classList.add('active');
-        elements.voteDown.classList.remove('active');
-        
-        // Update UI with corrected counts
-        elements.upvotes.textContent = newSafeCount;
-        elements.downvotes.textContent = newPhishingCount;
-        
-        // Show thank you message
-        showMessage('Thank you for your feedback! You marked this site as safe.', elements);
-        
-        // Save optimistic update to local storage for immediate persistence
-        chrome.storage.local.get(['voteCounts'], (data) => {
-          const voteCounts = data.voteCounts || {};
-          voteCounts[currentUrl] = {
-            safe: newSafeCount,
-            phishing: newPhishingCount,
-            userVote: 'Safe'
-          };
-          chrome.storage.local.set({ voteCounts });
-        });
-        
-        // Send the vote securely
-        chrome.runtime.sendMessage({
-          action: 'voteNoResponse',
-          url: currentUrl,
-          voteType: 'Safe'
-        });
-      }
-    } catch (error) {
-      console.error('Error handling upvote:', error);
-      showMessage('Error recording vote. Please try again.', elements);
-    } finally {
-      // Re-enable voting after a short delay
-      setTimeout(() => {
-        isVoting = false;
-      }, 1000);
-    }
-  });
-  
-  elements.voteDown.addEventListener('click', async () => {
-    // Prevent rapid clicking
-    if (isVoting) return;
-    isVoting = true;
-    
-    try {
-      // Double-check if user is logged in with valid token
-      const authState = await getAuthState();
-      if (!authState.isLoggedIn) {
-        showLoginRequiredMessage(elements);
-        isVoting = false;
-        return;
-      }
-      
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tabs && tabs.length > 0) {
-        const currentUrl = tabs[0].url;
-        
-        // If user already voted Phishing, prevent additional clicks
-        if (currentVoteState === 'Phishing') {
-          console.log('User already voted Phishing for this URL - ignoring click');
-          return;
-        }
-        
-        // Get current vote counts
-        const safeCount = parseInt(elements.upvotes.textContent || '0');
-        const phishingCount = parseInt(elements.downvotes.textContent || '0');
-        
-        // Calculate new counts based on previous vote state
-        let newSafeCount = safeCount;
-        let newPhishingCount = phishingCount + 1;
-        
-        // If user had previously voted "Safe", reduce that count
-        if (currentVoteState === 'Safe') {
-          newSafeCount = Math.max(0, safeCount - 1);
-        }
-        
-        // Update vote state
-        currentVoteState = 'Phishing';
-        
-        // Add visual feedback immediately
-        elements.voteDown.classList.add('active');
-        elements.voteUp.classList.remove('active');
-        
-        // Update UI optimistically
-        elements.upvotes.textContent = newSafeCount;
-        elements.downvotes.textContent = newPhishingCount;
-        
-        // Show thank you message
-        showMessage('Thank you for your feedback! You marked this site as suspicious.', elements);
-        
-        // Save optimistic update to local storage for immediate persistence
-        chrome.storage.local.get(['voteCounts'], (data) => {
-          const voteCounts = data.voteCounts || {};
-          voteCounts[currentUrl] = {
-            safe: newSafeCount,
-            phishing: newPhishingCount,
-            userVote: 'Phishing'
-          };
-          chrome.storage.local.set({ voteCounts });
-        });
-        
-        // Send the vote securely
-        chrome.runtime.sendMessage({
-          action: 'voteNoResponse',
-          url: currentUrl,
-          voteType: 'Phishing'
-        });
-      }
-    } catch (error) {
-      console.error('Error handling downvote:', error);
-      showMessage('Error recording vote. Please try again.', elements);
-    } finally {
-      // Re-enable voting after a short delay
-      setTimeout(() => {
-        isVoting = false;
-      }, 1000);
-    }
-  });
-}
-
 // Special function for login-required message with action button
 function showLoginRequiredMessage(elements) {
-  const { resultContainer } = elements;
-  if (!resultContainer) return;
+  // Find the vote section
+  const votingSection = document.querySelector('.voting-section') || 
+                       document.querySelector('.vote-buttons-container') || 
+                       elements.voteUp.closest('.card-section');
+  
+  if (!votingSection && !elements.resultContainer) return;
 
   // Remove any existing login messages to prevent duplicates
-  const existingMessages = resultContainer.querySelectorAll('.login-required-message');
+  const existingMessages = document.querySelectorAll('.login-required-message');
   existingMessages.forEach(el => el.remove());
 
   // Create a dedicated message element that's more noticeable
@@ -523,17 +232,17 @@ function showLoginRequiredMessage(elements) {
       <i class="fas fa-lock message-icon"></i>
       <div class="login-message-text">
         <p><strong>Login Required</strong></p>
-        <p>You need to be logged in to vote on websites.</p>
       </div>
     </div>
-    <button class="login-now-btn">Log in now</button>
+    <button class="login-now-btn">Log in</button>
   `;
 
-  // Add to the DOM at the top
-  if (resultContainer.firstChild) {
-    resultContainer.insertBefore(messageElement, resultContainer.firstChild);
+  // Insert above the voting section
+  if (votingSection) {
+    votingSection.parentNode.insertBefore(messageElement, votingSection);
   } else {
-    resultContainer.appendChild(messageElement);
+    // Fallback to the result container
+    elements.resultContainer.insertAdjacentElement('afterbegin', messageElement);
   }
 
   // Add click handler to the login button
@@ -547,12 +256,11 @@ function showLoginRequiredMessage(elements) {
   // Animate in
   setTimeout(() => messageElement.classList.add('visible'), 10);
   
-  // Auto-remove after a longer period (8 seconds since it has a button)
+  // Auto-remove after a period
   setTimeout(() => {
     messageElement.classList.remove('visible');
-    // Remove from DOM after animation completes
     setTimeout(() => messageElement.remove(), 500);
-  }, 8000);
+  }, 6000);
 }
 
 // Check authentication state and update UI - reverted to original implementation
@@ -604,11 +312,12 @@ async function checkAuthState(elements) {
 // Improved logout function that properly clears all data
 function logout() {
   return new Promise((resolve) => {
+    // Reset vote UI immediately if voting system exists
+    if (window.votingSystem) {
+      window.votingSystem.resetVoteUI();
+    }
+    
     chrome.runtime.sendMessage({ action: 'logout' }, (response) => {
-      // Reset UI after logout
-      document.querySelectorAll('.vote-button').forEach(btn => {
-        btn.classList.remove('active');
-      });
       resolve(response);
     });
   });
@@ -623,11 +332,8 @@ function getAuthState() {
       
       // If we have local data, use it directly
       if (localIsLoggedIn) {
-        // Then verify with background in parallel but don't block
-        chrome.runtime.sendMessage({ action: 'getAuthState' }).catch(err => {
-          console.log('Background validation will happen asynchronously');
-        });
-        
+        // Return auth state immediately from storage without validation
+        // This prevents unnecessary token validations that can cause logout issues
         resolve({
           isLoggedIn: true,
           token: data.authToken,
@@ -636,18 +342,11 @@ function getAuthState() {
         return;
       }
       
-      // If no local data or not logged in, check with background script
+      // Only if no local data, check with background script
       chrome.runtime.sendMessage({ action: 'getAuthState' }, (response) => {
         if (chrome.runtime.lastError) {
           console.error('Error getting auth state:', chrome.runtime.lastError);
           resolve({ isLoggedIn: false });
-          return;
-        }
-        
-        // Handle invalid states
-        if (response && response.isLoggedIn && !response.token) {
-          console.error('Invalid auth state: logged in but no token');
-          logout().then(() => resolve({ isLoggedIn: false }));
           return;
         }
         
@@ -683,9 +382,9 @@ function makeAuthenticatedRequest(endpoint, method = 'GET', body = null) {
   });
 }
 
-// Replace the vote count retrieval in showResult with the centralized updateVoteUI function
+// Replace the vote count retrieval in showResult with the VotingSystem approach
 async function showResult(result, elements) {
-  const { scoreElement, statusElement, resultContainer, scoreSection, riskExplanation, currentSiteLink, upvotes, downvotes, circleFill } = elements;
+  const { scoreElement, statusElement, resultContainer, scoreSection, riskExplanation, currentSiteLink, circleFill } = elements;
 
   console.log('Processing result:', result);
 
@@ -785,32 +484,6 @@ async function showResult(result, elements) {
       `;
     } else {
       resultContainer.innerHTML = '';
-    }
-  }
-
-  // Get vote counts from local storage first, then request fresh data
-  if (elements.upvotes && elements.downvotes) {
-    try {
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tabs && tabs.length > 0) {
-        const currentUrl = tabs[0].url;
-        
-        // Get vote counts from local storage for immediate display
-        chrome.storage.local.get(['voteCounts'], (data) => {
-          const voteCounts = data.voteCounts || {};
-          if (voteCounts[currentUrl]) {
-            updateVoteUI(voteCounts[currentUrl], elements);
-          }
-        });
-        
-        // Always request fresh counts from API via background script
-        chrome.runtime.sendMessage({
-          action: 'getVoteCountsNoResponse',
-          url: currentUrl
-        });
-      }
-    } catch (error) {
-      console.error('Error getting vote counts:', error);
     }
   }
 }
@@ -929,7 +602,7 @@ function showMessage(message, elements) {
 
 // Add enhanced message and notification styling
 document.head.insertAdjacentHTML('beforeend', `
-  <style|
+  <style>
     /* Existing vote button styles */
     .vote-button.active {
       color: #4caf50;
@@ -965,6 +638,10 @@ document.head.insertAdjacentHTML('beforeend', `
       opacity: 1;
     }
     
+    .notification-message.error-message {
+      background-color: #f44336;
+    }
+    
     .message-content {
       display: flex;
       align-items: center;
@@ -981,45 +658,66 @@ document.head.insertAdjacentHTML('beforeend', `
       font-weight: 500;
     }
     
-    /* Login Required Message specific styles */
+    /* Login Required Message specific styles - IMPROVED & REPOSITIONED */
     .login-required-message {
-      background-color: #2196F3;
+      background: linear-gradient(135deg, #2196F3, #1976D2);
       display: flex;
-      flex-direction: column;
-      padding: 15px;
-    }
-    
-    .login-message-text {
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .login-message-text p:first-child {
-      margin-bottom: 5px;
-    }
-    
-    .login-message-text p:last-child {
-      font-weight: 400;
-      font-size: 0.9rem;
-      opacity: 0.9;
-    }
-    
-    .login-now-btn {
-      margin-top: 10px;
-      align-self: flex-end;
-      background-color: white;
-      color: #2196F3;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      margin: 0 0 12px 0;
       border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
+      box-sizing: border-box;
+      width: calc(100% - 10px); /* Slightly narrower to account for parent padding */
+      max-width: 95%;
+      position: relative;
+      z-index: 10;
+      margin-left: auto;
+      margin-right: auto;
+      overflow: hidden; /* Prevent content from spilling out */
+    }
+    
+    /* Parent container adjustments to keep message inside */
+    .card-section, .voting-section, .vote-buttons-container {
+      position: relative;
+      overflow: visible;
+    }
+    
+    /* Animation for login message */
+    @keyframes gentle-pulse {
+      0% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+      50% { box-shadow: 0 6px 16px rgba(33, 150, 243, 0.3); }
+      100% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+    }
+    
+    .login-required-message.visible {
+      animation: gentle-pulse 2s infinite;
+    }
+    
+    /* Simplified Login Button Styling */
+    .login-now-btn {
+      background: white;
+      color: #1976D2;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
-    .login-now-btn:hover {
-      background-color: #f5f5f5;
-      transform: translateY(-2px);
+    /* Remove unnecessary styles that were for hover effects */
+    
+    .login-btn-text {
+      position: relative;
+      z-index: 2;
+    }
+    
+    .login-btn-icon {
+      font-size: 0.8rem;
     }
   </style>
 `);
