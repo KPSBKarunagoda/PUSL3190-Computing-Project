@@ -632,6 +632,57 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
     });
   }
+  
+  // NEW: Direct immediate vote count for popup
+  if (message.action === 'getVoteCountsImmediate') {
+    const headers = {};
+    
+    // Only include auth token if logged in
+    chrome.storage.local.get(['isLoggedIn', 'authToken'], (authData) => {
+      if (authData.isLoggedIn && authData.authToken) {
+        headers['x-auth-token'] = authData.authToken;
+      }
+      
+      fetch(`http://localhost:3000/api/votes/counts?url=${encodeURIComponent(message.url)}`, {
+        headers: headers
+      })
+      .then(response => {
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        console.log('Immediate vote counts fetched:', data);
+        sendResponse({
+          success: true,
+          counts: data.counts,
+          userVote: authData.isLoggedIn ? data.userVote : null
+        });
+        
+        // Also update local storage
+        chrome.storage.local.get(['voteCounts'], (storage) => {
+          const voteCounts = storage.voteCounts || {};
+          
+          voteCounts[message.url] = {
+            safe: data.counts?.safe || 0,
+            phishing: data.counts?.phishing || 0,
+            userVote: authData.isLoggedIn ? data.userVote : null,
+            lastUpdated: Date.now()
+          };
+          
+          chrome.storage.local.set({ 
+            voteCounts, 
+            voteLastChecked: Date.now() 
+          });
+        });
+      })
+      .catch(error => {
+        console.error('Immediate vote count error:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    });
+    
+    return true; // Keep message channel open
+  }
 
   // New handler for fetching cached analysis directly
   if (message.action === 'getCachedAnalysis') {

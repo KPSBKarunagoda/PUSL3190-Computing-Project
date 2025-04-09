@@ -53,49 +53,143 @@ class VotingSystem {
     this.resetVoteUI();
     
     try {
+      // Get auth state first
       const authState = await this.getAuthState();
+      console.log('Auth state during voting init:', authState.isLoggedIn);
       
-      // Get vote counts from storage if available
+      // IMPROVEMENT: Get vote counts directly from server first for immediate display
+      await this.fetchVoteCountsDirectly(url);
+      
+      // As a fallback, check local storage
+      await this.loadStoredVotes(url, authState.isLoggedIn);
+      
+    } catch (error) {
+      console.error('Error initializing voting:', error);
+    }
+  }
+  
+  /**
+   * Directly fetch vote counts from the server
+   * @param {string} url Current URL
+   */
+  async fetchVoteCountsDirectly(url) {
+    return new Promise((resolve) => {
+      console.log('Directly requesting vote counts for immediate display');
+      
+      chrome.runtime.sendMessage(
+        { 
+          action: 'getVoteCountsImmediate', 
+          url: url 
+        },
+        response => {
+          if (response && response.success) {
+            console.log('Got immediate vote counts:', response);
+            
+            // Update UI with fresh data
+            const voteData = {
+              safe: response.counts?.safe || 0,
+              phishing: response.counts?.phishing || 0,
+              userVote: response.userVote || null
+            };
+            
+            // Get auth state and update UI
+            this.getAuthState().then(authState => {
+              this.updateUIFromData(voteData, authState.isLoggedIn);
+              
+              // Save to storage
+              chrome.storage.local.get(['voteCounts'], (data) => {
+                const voteCounts = data.voteCounts || {};
+                voteCounts[url] = {
+                  ...voteData,
+                  lastUpdated: Date.now()
+                };
+                chrome.storage.local.set({ 
+                  voteCounts,
+                  voteLastChecked: Date.now()
+                });
+              });
+            });
+          } else {
+            console.log('No immediate vote data available');
+          }
+          resolve();
+        }
+      );
+      
+      // Don't wait forever for a response
+      setTimeout(resolve, 2000);
+    });
+  }
+  
+  /**
+   * Load stored votes from cache
+   * @param {string} url Current URL
+   * @param {boolean} isLoggedIn Whether user is logged in
+   */
+  async loadStoredVotes(url, isLoggedIn) {
+    return new Promise((resolve) => {
       chrome.storage.local.get(['voteCounts'], (data) => {
         if (data.voteCounts && data.voteCounts[url]) {
           const voteData = data.voteCounts[url];
           console.log('Found stored vote data:', voteData);
           
-          // Don't clear userVote if we're logged in
-          if (!authState.isLoggedIn) {
-            // Create a copy to avoid modifying the stored data directly
-            const displayData = {
-              ...voteData,
-              userVote: null  // Clear user vote when logged out
-            };
-            // Update UI with counts but no user vote
-            this.updateUIFromData(displayData, false);
+          // Always show the vote counts
+          if (this.elements.upvotes) {
+            this.elements.upvotes.textContent = voteData.safe || 0;
+          }
+          
+          if (this.elements.downvotes) {
+            this.elements.downvotes.textContent = voteData.phishing || 0;
+          }
+          
+          // Only highlight the user's vote if they are logged in
+          if (isLoggedIn && voteData.userVote) {
+            this.currentVoteState = voteData.userVote;
+            
+            if (voteData.userVote === 'Safe') {
+              this.elements.voteUp.classList.add('active');
+              this.elements.voteDown.classList.remove('active');
+            } else if (voteData.userVote === 'Phishing') {
+              this.elements.voteDown.classList.add('active');
+              this.elements.voteUp.classList.remove('active');
+            }
           } else {
-            // Update UI with counts including user vote
-            this.updateUIFromData(voteData, true);
+            // Ensure buttons aren't highlighted when not logged in
+            this.elements.voteUp.classList.remove('active');
+            this.elements.voteDown.classList.remove('active');
+            this.currentVoteState = null;
           }
         }
+        resolve();
       });
-      
-      // Only request fresh vote counts if we're not doing it too frequently
-      // This helps prevent unnecessary API calls and race conditions
+    });
+  }
+  
+  /**
+   * Request fresh vote counts if needed
+   * @param {string} url Current URL
+   */
+  async requestFreshVotes(url) {
+    return new Promise((resolve) => {
       chrome.storage.local.get(['voteLastChecked'], (data) => {
         const lastChecked = data.voteLastChecked || 0;
         const now = Date.now();
         const MIN_CHECK_INTERVAL = 30000; // 30 seconds
         
         if (now - lastChecked > MIN_CHECK_INTERVAL) {
+          console.log('Requesting fresh vote counts');
           chrome.storage.local.set({ voteLastChecked: now });
           
           chrome.runtime.sendMessage({
             action: 'getVoteCountsNoResponse',
             url: url
           });
+        } else {
+          console.log('Skipping vote count request - too soon since last check');
         }
+        resolve();
       });
-    } catch (error) {
-      console.error('Error initializing voting:', error);
-    }
+    });
   }
   
   /**
@@ -121,25 +215,32 @@ class VotingSystem {
    * @param {boolean} isLoggedIn Whether user is logged in
    */
   updateUIFromData(voteData, isLoggedIn) {
-    // Update vote counts
+    console.log('Updating vote UI with data:', voteData, 'isLoggedIn:', isLoggedIn);
+    
+    // Always update vote counts - IMPROVED: handle undefined/null cases better
     if (this.elements.upvotes) {
-      this.elements.upvotes.textContent = voteData.safe || 0;
+      const safeCount = typeof voteData.safe === 'number' ? voteData.safe : 0;
+      this.elements.upvotes.textContent = safeCount;
     }
     
     if (this.elements.downvotes) {
-      this.elements.downvotes.textContent = voteData.phishing || 0;
+      const phishingCount = typeof voteData.phishing === 'number' ? voteData.phishing : 0;
+      this.elements.downvotes.textContent = phishingCount;
     }
     
     // Only show active state for user's vote if logged in
     if (isLoggedIn && voteData.userVote) {
       this.currentVoteState = voteData.userVote;
       
+      // Make sure to reset both buttons first
+      this.elements.voteUp.classList.remove('active');
+      this.elements.voteDown.classList.remove('active');
+      
+      // Then add the active class to the appropriate button
       if (voteData.userVote === 'Safe') {
         this.elements.voteUp.classList.add('active');
-        this.elements.voteDown.classList.remove('active');
       } else if (voteData.userVote === 'Phishing') {
         this.elements.voteDown.classList.add('active');
-        this.elements.voteUp.classList.remove('active');
       }
     } else {
       // Reset active state if not logged in
@@ -283,26 +384,39 @@ class VotingSystem {
   updateVoteCounts(message) {
     if (message.url !== this.currentUrl) return;
     
-    if (this.elements.upvotes) {
-      this.elements.upvotes.textContent = message.counts?.safe || 0;
-    }
+    console.log('Received server vote counts:', message);
     
-    if (this.elements.downvotes) {
-      this.elements.downvotes.textContent = message.counts?.phishing || 0;
-    }
-    
-    // Update buttons if there's user vote information
-    if (message.userVote) {
-      this.currentVoteState = message.userVote;
-      
-      if (message.userVote === 'Safe') {
-        this.elements.voteUp.classList.add('active');
-        this.elements.voteDown.classList.remove('active');
-      } else if (message.userVote === 'Phishing') {
-        this.elements.voteDown.classList.add('active');
-        this.elements.voteUp.classList.remove('active');
+    // First get current auth state to ensure proper UI updates
+    this.getAuthState().then(authState => {
+      if (this.elements.upvotes) {
+        this.elements.upvotes.textContent = message.counts?.safe || 0;
       }
-    }
+      
+      if (this.elements.downvotes) {
+        this.elements.downvotes.textContent = message.counts?.phishing || 0;
+      }
+      
+      // Only update user vote UI if logged in
+      if (authState.isLoggedIn && message.userVote) {
+        this.currentVoteState = message.userVote;
+        
+        // Reset both buttons first
+        this.elements.voteUp.classList.remove('active');
+        this.elements.voteDown.classList.remove('active');
+        
+        // Then set the active state
+        if (message.userVote === 'Safe') {
+          this.elements.voteUp.classList.add('active');
+        } else if (message.userVote === 'Phishing') {
+          this.elements.voteDown.classList.add('active');
+        }
+      } else if (!authState.isLoggedIn) {
+        // Make sure buttons are not active if not logged in
+        this.elements.voteUp.classList.remove('active');
+        this.elements.voteDown.classList.remove('active');
+        this.currentVoteState = null;
+      }
+    });
   }
   
   /**
