@@ -105,6 +105,11 @@ async function initializeServer() {
   app.use('/api/user', userRouter);
   app.use('/api/votes', votesRouter); // Add this line
 
+  // Register routes
+  app.use('/api/auth', authRouter);
+  app.use('/api/users', userRouter);
+  app.use('/api/votes', votesRouter); // Make sure votes routes are registered
+
   // Add test endpoint directly to app
   app.get('/api/test', (req, res) => {
     res.json({ message: 'API is working' });

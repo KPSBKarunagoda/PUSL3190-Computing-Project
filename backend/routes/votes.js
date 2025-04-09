@@ -239,7 +239,7 @@ module.exports = function(dbConnection) {
         }
     });
 
-    // GET /api/votes/stats - Get vote stats (admin only)
+    // GET /api/admin/votes/stats - Get vote stats (admin only)
     router.get('/stats', adminAuth, async (req, res) => {
         try {
             // Get overall vote statistics
@@ -249,7 +249,7 @@ module.exports = function(dbConnection) {
             const [uniqueUrls] = await dbConnection.execute('SELECT COUNT(DISTINCT URL) as count FROM Votes');
             const [uniqueUsers] = await dbConnection.execute('SELECT COUNT(DISTINCT UserID) as count FROM Votes');
             
-            // Get recent voting activity
+            // Get recent voting activity (last 30 days)
             const [recentActivity] = await dbConnection.execute(`
                 SELECT DATE(Timestamp) as date, COUNT(*) as count 
                 FROM Votes 
@@ -258,14 +258,21 @@ module.exports = function(dbConnection) {
                 ORDER BY date DESC
             `);
             
-            res.json({
-                total: totalVotes[0].total,
-                safeCount: safeVotes[0].count,
-                phishingCount: phishingVotes[0].count,
-                urlsVoted: uniqueUrls[0].count,
-                uniqueVoters: uniqueUsers[0].count,
-                recentActivity
-            });
+            // Format to match frontend expectations
+            const response = {
+                total: totalVotes[0].total || 0,
+                safeCount: safeVotes[0].count || 0,
+                phishingCount: phishingVotes[0].count || 0,
+                urlsVoted: uniqueUrls[0].count || 0,
+                uniqueVoters: uniqueUsers[0].count || 0,
+                recentActivity: recentActivity.map(item => ({
+                    date: item.date,
+                    count: item.count
+                }))
+            };
+            
+            console.log('Vote stats response:', response);
+            res.json(response);
         } catch (error) {
             console.error('Error fetching vote stats:', error);
             res.status(500).json({ message: 'Server error' });

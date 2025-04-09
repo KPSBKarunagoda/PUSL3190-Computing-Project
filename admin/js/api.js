@@ -332,8 +332,110 @@ const usersAPI = {
   }
 };
 
+/**
+ * Votes API
+ */
+const votesAPI = {
+  /**
+   * Get raw votes directly from database
+   * @returns {Promise<Array>} Raw vote data from database
+   */
+  async getVotes() {
+    try {
+      console.log('Fetching votes from API...');
+      const response = await apiRequest('/votes');
+      console.log(`Received ${Array.isArray(response) ? response.length : 0} votes from API`);
+      return response || [];
+    } catch (error) {
+      console.error('Error fetching votes:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Get vote statistics
+   * @returns {Promise<Object>} Vote stats including counts and trends
+   */
+  async getStats() {
+    try {
+      const response = await apiRequest('/votes/stats');
+      return response || {
+        total: 0,
+        safeCount: 0,
+        phishingCount: 0,
+        recentActivity: []
+      };
+    } catch (error) {
+      console.error('Error fetching vote stats:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Get vote details for a specific URL
+   * @param {string} url The URL to get vote details for
+   * @returns {Promise<Object>} Vote details including all individual votes
+   */
+  async getVoteDetails(url) {
+    try {
+      return await apiRequest(`/votes/url?url=${encodeURIComponent(url)}`);
+    } catch (error) {
+      console.error('Error fetching vote details:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Add URL to whitelist
+   * @param {string} url URL to whitelist
+   */
+  async addToWhitelist(url) {
+    try {
+      const domain = extractDomain(url);
+      return await apiRequest('/lists/whitelist', {
+        method: 'POST',
+        body: JSON.stringify({ domain })
+      });
+    } catch (error) {
+      console.error('Error adding to whitelist:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Add URL to blacklist
+   * @param {string} url URL to blacklist
+   */
+  async addToBlacklist(url) {
+    try {
+      const domain = extractDomain(url);
+      return await apiRequest('/lists/blacklist', {
+        method: 'POST',
+        body: JSON.stringify({ domain })
+      });
+    } catch (error) {
+      console.error('Error adding to blacklist:', error);
+      throw error;
+    }
+  }
+};
+
+/**
+ * Helper function to extract domain from URL
+ */
+function extractDomain(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname;
+  } catch (e) {
+    // If URL parsing fails, return the original string
+    return url;
+  }
+}
+
 // Export all APIs
 window.authAPI = authAPI;
 window.dashboardAPI = dashboardAPI;
 window.listsAPI = listsAPI;
 window.usersAPI = usersAPI;
+window.votesAPI = votesAPI;

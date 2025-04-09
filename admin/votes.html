@@ -237,33 +237,35 @@
               </div>
               <div class="vote-labels">
                 <span class="safe-label"><i class="fas fa-shield-alt"></i> Safe <span id="safe-percent">0%</span></span>
-                <span class="phishing-label"><span id="phishing-percent">0%</span> Phishing <i class="fas fa-skull-crossbones"></i></span>
+                <span class="phishing-label"><i class="fas fa-skull-crossbones"></i> Phishing <span id="phishing-percent">0%</span></span>
               </div>
             </div>
           </div>
           
-          <div class="vote-stats-grid">
-            <div class="vote-stat-item">
-              <span class="info-label">Total Votes:</span>
-              <span id="detail-total-votes" class="info-value">0</span>
-            </div>
-            <div class="vote-stat-item">
-              <span class="info-label">Safe Votes:</span>
-              <span id="detail-safe-votes" class="info-value">0</span>
-            </div>
-            <div class="vote-stat-item">
-              <span class="info-label">Phishing Votes:</span>
-              <span id="detail-phishing-votes" class="info-value">0</span>
-            </div>
-            <div class="vote-stat-item">
-              <span class="info-label">First Vote:</span>
-              <span id="detail-first-vote" class="info-value">-</span>
-            </div>
-            <div class="vote-stat-item">
-              <span class="info-label">Last Vote:</span>
-              <span id="detail-last-vote" class="info-value">-</span>
-            </div>
-          </div>
+          <table class="vote-stats-table">
+            <tbody>
+              <tr>
+                <th>Total Votes:</th>
+                <td id="detail-total-votes">0</td>
+              </tr>
+              <tr>
+                <th>Safe Votes:</th>
+                <td id="detail-safe-votes">0</td>
+              </tr>
+              <tr>
+                <th>Phishing Votes:</th>
+                <td id="detail-phishing-votes">0</td>
+              </tr>
+              <tr>
+                <th>First Vote:</th>
+                <td id="detail-first-vote">-</td>
+              </tr>
+              <tr>
+                <th>Last Vote:</th>
+                <td id="detail-last-vote">-</td>
+              </tr>
+            </tbody>
+          </table>
           
           <div class="action-container">
             <h4>Actions</h4>
@@ -273,9 +275,6 @@
               </button>
               <button id="blacklist-voted-url" class="btn btn-danger">
                 <i class="fas fa-ban"></i> Add to Blacklist
-              </button>
-              <button id="view-vote-history" class="btn btn-outline">
-                <i class="fas fa-history"></i> View Vote History
               </button>
             </div>
           </div>
