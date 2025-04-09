@@ -188,5 +188,17 @@ module.exports = function(dbConnection) {
         }
     });
     
+    // Add a token verification endpoint
+    router.get('/verify', authMiddleware, (req, res) => {
+        // If middleware passes, token is valid
+        res.json({ 
+            valid: true, 
+            user: {
+                id: req.user.id,
+                role: req.user.role
+            }
+        });
+    });
+    
     return router;
 };

@@ -88,20 +88,23 @@ async function initializeServer() {
   const listRouter = require('./routes/lists')(pool);
   const educationRouter = require('./routes/education')(pool);
   const adminRouter = require('./routes/admin')(pool);
-  const userRouter = require('./routes/user')(pool); // Add this line to import user router
-  
+  const userRouter = require('./routes/user')(pool);
+  const votesRouter = require('./routes/votes')(pool); // Add this line
+
   // Log routes before mounting
   console.log('Auth routes stack:', authRouter.stack.length);
   console.log('Admin routes stack:', adminRouter.stack.length);
-  console.log('User routes stack:', userRouter.stack.length); // Add this line
-  
+  console.log('User routes stack:', userRouter.stack.length);
+  console.log('Votes routes stack:', votesRouter.stack.length); // Add this line
+
   // Mount routes
   app.use('/api/auth', authRouter);
   app.use('/api/lists', listRouter);
   app.use('/api/education', educationRouter);
   app.use('/api/admin', adminRouter);
-  app.use('/api/user', userRouter); // Add this line to mount user router
-  
+  app.use('/api/user', userRouter);
+  app.use('/api/votes', votesRouter); // Add this line
+
   // Add test endpoint directly to app
   app.get('/api/test', (req, res) => {
     res.json({ message: 'API is working' });
