@@ -1368,5 +1368,78 @@ document.head.insertAdjacentHTML('beforeend', `
       position: relative;
       transition: all 0.3s ease;
     }
+    
+    /* Redesigned "Already Reported" message to match card theme */
+    .already-reported-container {
+      background: #212121;
+      color: white;
+      padding: 12px 15px;
+      border-radius: 8px;
+      margin: 12px 0;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+      animation: fade-in 0.3s ease-out forwards;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid #1565c0;
+    }
+    
+    @keyframes fade-in {
+      0% { opacity: 0; transform: translateY(-10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    
+    .already-reported-content {
+      display: flex;
+      align-items: center;
+    }
+    
+    .already-reported-icon {
+      margin-right: 12px;
+      font-size: 1.5rem;
+      color: #2196F3;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .already-reported-icon i {
+      font-size: 1.2rem;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+    
+    .already-reported-text {
+      flex: 1;
+    }
+    
+    .already-reported-text h4 {
+      margin: 0 0 5px 0;
+      font-size: 1rem;
+      font-weight: 600;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+    
+    .already-reported-text p {
+      margin: 0;
+      font-size: 0.9rem;
+      opacity: 0.95;
+      line-height: 1.4;
+    }
+    
+    .report-id {
+      margin-top: 8px !important;
+      font-size: 0.8rem !important;
+      opacity: 0.9 !important;
+      font-family: monospace;
+      background: rgba(0, 0, 0, 0.15);
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border-left: 2px solid rgba(255, 255, 255, 0.5);
+    }
   </style>
 `);
