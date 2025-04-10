@@ -35,12 +35,35 @@ class ReportingService {
                         Status ENUM('Pending', 'Resolved') DEFAULT 'Pending',
                         FOREIGN KEY (UserID) REFERENCES User(UserID),
                         Description TEXT,
-                        Reason VARCHAR(50)
+                        Reason VARCHAR(50),
+                        UNIQUE KEY unique_user_url (UserID, URL)
                     )
                 `);
                 console.log('Reports table created successfully');
             } else {
                 console.log('Reports table already exists');
+                
+                // Check if the unique constraint exists
+                try {
+                    const [checkConstraint] = await this.db.execute(`
+                        SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+                        WHERE CONSTRAINT_TYPE = 'UNIQUE' 
+                        AND TABLE_NAME = 'Reports' 
+                        AND CONSTRAINT_NAME = 'unique_user_url'
+                    `);
+                    
+                    // Add unique constraint if it doesn't exist
+                    if (checkConstraint.length === 0) {
+                        await this.db.execute(`
+                            ALTER TABLE Reports 
+                            ADD CONSTRAINT unique_user_url UNIQUE (UserID, URL)
+                        `);
+                        console.log('Added unique user_url constraint to Reports table');
+                    }
+                } catch (err) {
+                    // If there's an error checking or adding the constraint, log it
+                    console.error('Error checking or adding unique constraint:', err.message);
+                }
             }
         } catch (error) {
             console.error('Error creating reports tables:', error.message);

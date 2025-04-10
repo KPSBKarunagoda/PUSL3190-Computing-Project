@@ -19,6 +19,36 @@ module.exports = function(dbConnection) {
 
     // User endpoints - require regular auth
     
+    // POST /api/reports/check - Check if a URL has already been reported by this user
+    router.post('/check', auth, async (req, res) => {
+        try {
+            const { url } = req.body;
+            const userId = req.user.id;
+            
+            if (!url) {
+                return res.status(400).json({ message: 'URL is required' });
+            }
+            
+            // Check for existing report from this user for this URL
+            const [existingReports] = await dbConnection.execute(
+                'SELECT ReportID FROM Reports WHERE UserID = ? AND URL = ?',
+                [userId, url]
+            );
+            
+            if (existingReports.length > 0) {
+                return res.json({ 
+                    alreadyReported: true,
+                    reportId: existingReports[0].ReportID
+                });
+            }
+            
+            res.json({ alreadyReported: false });
+        } catch (error) {
+            console.error('Error checking report status:', error);
+            res.status(500).json({ message: 'Server error', error: error.message });
+        }
+    });
+    
     // POST /api/reports - Create a new report
     router.post('/', auth, async (req, res) => {
         try {
@@ -32,6 +62,20 @@ module.exports = function(dbConnection) {
             
             if (!reason) {
                 return res.status(400).json({ message: 'Reason is required' });
+            }
+            
+            // Check if user has already reported this URL
+            const [existingReports] = await dbConnection.execute(
+                'SELECT ReportID FROM Reports WHERE UserID = ? AND URL = ?',
+                [userId, url]
+            );
+            
+            if (existingReports.length > 0) {
+                return res.status(409).json({ 
+                    message: 'You have already reported this URL',
+                    alreadyReported: true,
+                    reportId: existingReports[0].ReportID
+                });
             }
             
             // Log the report submission

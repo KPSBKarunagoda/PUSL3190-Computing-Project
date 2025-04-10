@@ -76,13 +76,59 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
         
-        // Toggle form visibility
-        const isVisible = elements.reportForm.style.display !== 'none';
-        elements.reportForm.style.display = isVisible ? 'none' : 'flex';
-        
-        // If showing the form, focus the reason dropdown
-        if (!isVisible && elements.reportReason) {
-          elements.reportReason.focus();
+        try {
+          // Get current URL from active tab
+          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (!tabs || tabs.length === 0) {
+            showMessage("Couldn't determine current website URL", elements);
+            return;
+          }
+          
+          const url = tabs[0].url;
+          
+          // Check if user has already reported this URL
+          const response = await fetch('http://localhost:3000/api/reports/check', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-auth-token': authState.token
+            },
+            body: JSON.stringify({ url })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.alreadyReported) {
+              // Show permanent message instead of temporary notification
+              showAlreadyReportedMessage(elements, data.reportId);
+              return;
+            }
+          }
+          
+          // Toggle form visibility
+          const isVisible = elements.reportForm.style.display !== 'none';
+          elements.reportForm.style.display = isVisible ? 'none' : 'flex';
+          
+          // Hide already-reported message if it exists
+          const existingMessage = document.getElementById('already-reported-message');
+          if (existingMessage) {
+            existingMessage.style.display = 'none';
+          }
+          
+          // If showing the form, focus the reason dropdown
+          if (!isVisible && elements.reportReason) {
+            elements.reportReason.focus();
+          }
+        } catch (error) {
+          console.error('Error checking report status:', error);
+          
+          // If the check fails, still allow reporting
+          const isVisible = elements.reportForm.style.display !== 'none';
+          elements.reportForm.style.display = isVisible ? 'none' : 'flex';
+          
+          if (!isVisible && elements.reportReason) {
+            elements.reportReason.focus();
+          }
         }
       });
       
@@ -139,12 +185,30 @@ document.addEventListener('DOMContentLoaded', async () => {
               })
             });
             
+            // Parse response data
+            let responseData;
+            try {
+              responseData = await response.json();
+            } catch (parseError) {
+              console.error('Error parsing response:', parseError);
+              responseData = {};
+            }
+            
+            // Check for duplicate report
+            if (response.status === 409 || 
+                responseData.message === 'You have already reported this URL' || 
+                responseData.alreadyReported) {
+              showMessage('You have already reported this website', elements);
+              elements.reportForm.style.display = 'none'; // Hide form
+              return;
+            }
+            
+            // Check for other errors
             if (!response.ok) {
-              throw new Error('Failed to submit report');
+              throw new Error(responseData.message || 'Failed to submit report');
             }
             
             // Success - show enhanced success message and reset form
-            const responseData = await response.json();
             showSuccessMessage(`Report submitted successfully. Thank you for helping keep the web safe!`, elements);
             
             // Add report ID to success message if available
@@ -576,6 +640,64 @@ function showLoginRequiredMessage(elements) {
     messageElement.classList.remove('visible');
     setTimeout(() => messageElement.remove(), 500);
   }, 6000);
+}
+
+// Add this new function to show a persistent message when a site has already been reported
+function showAlreadyReportedMessage(elements, reportId) {
+  // Hide the report form if it's visible
+  if (elements.reportForm) {
+    elements.reportForm.style.display = 'none';
+  }
+  
+  // Check if the message already exists
+  let messageContainer = document.getElementById('already-reported-message');
+  
+  // If it doesn't exist, create it
+  if (!messageContainer) {
+    messageContainer = document.createElement('div');
+    messageContainer.id = 'already-reported-message';
+    messageContainer.className = 'already-reported-container';
+    
+    // Create the HTML content for the message
+    messageContainer.innerHTML = `
+      <div class="already-reported-content">
+        <div class="already-reported-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="already-reported-text">
+          <h4>Already Reported</h4>
+          <p>You have already reported this website. Thank you for helping keep the web safe!</p>
+          ${reportId ? `<p class="report-id">Report ID: ${reportId}</p>` : ''}
+        </div>
+      </div>
+    `;
+    
+    // Find where to insert the message
+    const reportSection = elements.reportForm.parentNode;
+    reportSection.appendChild(messageContainer);
+  } else {
+    // If it exists, just make it visible
+    messageContainer.style.display = 'block';
+    
+    // Update the report ID if provided
+    if (reportId) {
+      const reportIdElement = messageContainer.querySelector('.report-id');
+      if (reportIdElement) {
+        reportIdElement.textContent = `Report ID: ${reportId}`;
+      } else {
+        const textDiv = messageContainer.querySelector('.already-reported-text');
+        if (textDiv) {
+          const reportIdP = document.createElement('p');
+          reportIdP.className = 'report-id';
+          reportIdP.textContent = `Report ID: ${reportId}`;
+          textDiv.appendChild(reportIdP);
+        }
+      }
+    }
+  }
+  
+  // Also show a brief notification
+  showMessage('You have already reported this website', elements);
 }
 
 // Check authentication state and update UI - reverted to original implementation
