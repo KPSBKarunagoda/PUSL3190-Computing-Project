@@ -66,6 +66,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       loginLink.href = `${baseUrl}/login.html`;
     }
     
+    // Configure report button to show/hide the report form
+    if (elements.reportButton && elements.reportForm) {
+      elements.reportButton.addEventListener('click', () => {
+        // Toggle form visibility by changing display style directly
+        const isVisible = elements.reportForm.style.display !== 'none';
+        elements.reportForm.style.display = isVisible ? 'none' : 'flex';
+      });
+    }
+    
     // Configure login button
     if (elements.loginBtn) {
       elements.loginBtn.addEventListener('click', (e) => {

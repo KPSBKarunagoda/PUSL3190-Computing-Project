@@ -556,9 +556,15 @@ header h1 i {
 
 .report-form {
     margin-top: 15px;
-    display: flex;
+    display: none; /* Initially hidden */
     flex-direction: column;
     gap: 10px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .report-form select, .report-form textarea {
@@ -584,12 +590,6 @@ header h1 i {
     border-radius: 6px;
     padding: 10px;
     cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 500;
-}
-
-.submit-report-btn:hover {
-    filter: brightness(110%);
 }
 
 /* Diagnostic tools */
