@@ -590,6 +590,21 @@ header h1 i {
     border-radius: 6px;
     padding: 10px;
     cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.submit-report-btn:hover {
+    background-color: #e91e63;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(247, 37, 133, 0.25);
+}
+
+.submit-report-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 /* Diagnostic tools */

@@ -113,8 +113,8 @@
                 <button id="report-button" class="report-btn">
                     <i class="fas fa-flag"></i> Report this website
                 </button>
-                <div id="report-form" class="report-form" style="display:none;">
-                    <select id="report-reason">
+                <form id="report-form" class="report-form" style="display:none;">
+                    <select id="report-reason" name="reason" required>
                         <option value="">Select reason...</option>
                         <option value="phishing">Phishing attempt</option>
                         <option value="malware">Contains malware</option>
@@ -122,9 +122,9 @@
                         <option value="inappropriate">Inappropriate content</option>
                         <option value="other">Other (specify below)</option>
                     </select>
-                    <textarea id="report-comments" placeholder="Additional comments (optional)"></textarea>
-                    <button id="submit-report" class="submit-report-btn">Submit Report</button>
-                </div>
+                    <textarea id="report-comments" name="description" placeholder="Additional comments (optional)"></textarea>
+                    <button type="submit" id="submit-report" class="submit-report-btn">Submit Report</button>
+                </form>
             </div>
         </section>
 

@@ -22,21 +22,74 @@ module.exports = function(dbConnection) {
     // POST /api/reports - Create a new report
     router.post('/', auth, async (req, res) => {
         try {
-            const { url } = req.body;
+            const { url, reason, description } = req.body;
+            const userId = req.user.id; // Extracted from auth token
+            
+            // Validate inputs
             if (!url) {
                 return res.status(400).json({ message: 'URL is required' });
             }
             
-            // Create report
-            const reportId = await reportingService.createReport(req.user.id, url);
+            if (!reason) {
+                return res.status(400).json({ message: 'Reason is required' });
+            }
+            
+            // Log the report submission
+            console.log(`User ${userId} is reporting URL: ${url} for reason: ${reason}`);
+            
+            // Insert into the database
+            const [result] = await dbConnection.execute(
+                'INSERT INTO Reports (UserID, URL, Reason, Description, Status) VALUES (?, ?, ?, ?, ?)',
+                [userId, url, reason, description || null, 'Pending']
+            );
+            
+            // Add to activity log if available - using correct column names or skip if fails
+            try {
+                // First check if ActivityLog table exists and get its structure
+                const [activityColumns] = await dbConnection.execute(`
+                    SELECT COLUMN_NAME 
+                    FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'ActivityLog' AND TABLE_SCHEMA = DATABASE()
+                `);
+                
+                // If table exists, try to determine correct column names
+                if (activityColumns.length > 0) {
+                    // Map of column names we're looking for to possible alternatives
+                    const columnMap = {
+                        'ActivityType': ['ActivityType', 'Type', 'Action', 'ActionType'],
+                        'Details': ['Details', 'Description', 'Message', 'Content']
+                    };
+                    
+                    // Get actual column names from database
+                    const actualColumns = activityColumns.map(col => col.COLUMN_NAME);
+                    
+                    // Find matching column names
+                    const typeColumn = columnMap.ActivityType.find(col => 
+                        actualColumns.includes(col)) || 'Action';
+                    const detailsColumn = columnMap.Details.find(col => 
+                        actualColumns.includes(col)) || 'Details';
+                    
+                    // Create dynamic query with correct column names
+                    await dbConnection.execute(
+                        `INSERT INTO ActivityLog (UserID, ${typeColumn}, ${detailsColumn}) VALUES (?, ?, ?)`,
+                        [userId, 'report_submission', `Reported URL: ${url}`]
+                    );
+                    console.log('Activity logged successfully');
+                }
+            } catch (error) {
+                // Improved error handling - don't let activity log failure affect the main functionality
+                console.log('Activity log entry skipped:', error.message);
+            }
             
             res.status(201).json({ 
-                message: 'Report submitted successfully', 
-                reportId 
+                success: true,
+                message: 'Report submitted successfully',
+                reportId: result.insertId
             });
+            
         } catch (error) {
-            console.error('Error creating report:', error);
-            res.status(500).json({ message: 'Server error' });
+            console.error('Error submitting report:', error);
+            res.status(500).json({ message: 'Server error', error: error.message });
         }
     });
 
@@ -59,13 +112,26 @@ module.exports = function(dbConnection) {
     // Admin endpoints - require admin auth
     
     // GET /api/reports - Get all reports (admin only)
-    router.get('/', adminAuth, async (req, res) => {
+    router.get('/', auth, async (req, res) => {
         try {
-            const reports = await reportingService.getReports();
+            // Check if user is admin
+            if (req.user.role !== 'admin') {
+                return res.status(403).json({ message: 'Access denied' });
+            }
+            
+            // Get all reports with username of reporter
+            const [reports] = await dbConnection.execute(`
+                SELECT r.*, u.Username as ReporterName 
+                FROM Reports r
+                JOIN User u ON r.UserID = u.UserID
+                ORDER BY r.ReportDate DESC
+            `);
+            
             res.json(reports);
+            
         } catch (error) {
-            console.error('Error fetching reports:', error);
-            res.status(500).json({ message: 'Server error' });
+            console.error('Error retrieving reports:', error);
+            res.status(500).json({ message: 'Server error', error: error.message });
         }
     });
 

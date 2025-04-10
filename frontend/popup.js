@@ -68,11 +68,106 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Configure report button to show/hide the report form
     if (elements.reportButton && elements.reportForm) {
-      elements.reportButton.addEventListener('click', () => {
-        // Toggle form visibility by changing display style directly
+      elements.reportButton.addEventListener('click', async (e) => {
+        // Check if user is logged in before showing form
+        const authState = await getAuthState();
+        if (!authState.isLoggedIn) {
+          showLoginRequiredMessage(elements);
+          return;
+        }
+        
+        // Toggle form visibility
         const isVisible = elements.reportForm.style.display !== 'none';
         elements.reportForm.style.display = isVisible ? 'none' : 'flex';
+        
+        // If showing the form, focus the reason dropdown
+        if (!isVisible && elements.reportReason) {
+          elements.reportReason.focus();
+        }
       });
+      
+      // Handle report form submission
+      if (elements.reportForm) {
+        elements.reportForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          // Verify auth state again (in case token expired during form interaction)
+          const authState = await getAuthState();
+          if (!authState.isLoggedIn) {
+            showLoginRequiredMessage(elements);
+            elements.reportForm.style.display = 'none';
+            return;
+          }
+          
+          // Get current URL from active tab
+          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (!tabs || tabs.length === 0) {
+            showMessage("Couldn't determine current website URL", elements);
+            return;
+          }
+          
+          const url = tabs[0].url;
+          const reason = elements.reportReason?.value;
+          const description = elements.reportComments?.value;
+          
+          // Form validation
+          if (!reason) {
+            showMessage("Please select a reason for reporting", elements);
+            return;
+          }
+          
+          // Get submit button to show loading state
+          const submitBtn = elements.submitReport;
+          const originalText = submitBtn.textContent || 'Submit Report';
+          
+          try {
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            
+            // Send report to backend
+            const response = await fetch('http://localhost:3000/api/reports', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-auth-token': authState.token
+              },
+              body: JSON.stringify({
+                url, 
+                reason,
+                description
+              })
+            });
+            
+            if (!response.ok) {
+              throw new Error('Failed to submit report');
+            }
+            
+            // Success - show enhanced success message and reset form
+            const responseData = await response.json();
+            showSuccessMessage(`Report submitted successfully. Thank you for helping keep the web safe!`, elements);
+            
+            // Add report ID to success message if available
+            if (responseData.reportId) {
+              console.log(`Report created with ID: ${responseData.reportId}`);
+            }
+            
+            // Hide form and reset it
+            elements.reportForm.style.display = 'none';
+            elements.reportForm.reset();
+            
+          } catch (error) {
+            console.error('Error submitting report:', error);
+            showMessage("Error submitting report. Please try again.", elements);
+          } finally {
+            // Reset button state
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalText;
+            }
+          }
+        });
+      }
     }
     
     // Configure login button
@@ -820,6 +915,66 @@ function showMessage(message, elements) {
   }, 4000);
 }
 
+function showSuccessMessage(message, elements) {
+  const { resultContainer } = elements;
+  if (!resultContainer) return;
+
+  // Remove any existing success messages to prevent stacking
+  const existingMessages = document.querySelectorAll('.success-notification');
+  existingMessages.forEach(el => el.remove());
+
+  // Create a dedicated success message element with more visual impact
+  const messageElement = document.createElement('div');
+  messageElement.className = 'success-notification';
+  messageElement.innerHTML = `
+    <div class="success-content">
+      <div class="success-icon-container">
+        <i class="fas fa-check-circle success-icon"></i>
+        <div class="success-icon-ripple"></div>
+      </div>
+      <div class="success-message">
+        <p class="success-title">Report Submitted!</p>
+        <p>${message}</p>
+      </div>
+    </div>
+  `;
+
+  // Add to the DOM - insert at the top
+  if (resultContainer.firstChild) {
+    resultContainer.insertBefore(messageElement, resultContainer.firstChild);
+  } else {
+    resultContainer.appendChild(messageElement);
+  }
+
+  // Force browser reflow before animation
+  void messageElement.offsetWidth;
+
+  // Add extra class for additional animation
+  messageElement.classList.add('show-success');
+  
+  // Animate in
+  setTimeout(() => messageElement.classList.add('visible'), 10);
+  
+  // Show for longer - 8 seconds
+  setTimeout(() => {
+    messageElement.classList.add('fade-out');
+    setTimeout(() => {
+      messageElement.classList.remove('visible');
+      // Remove from DOM after animation completes
+      setTimeout(() => messageElement.remove(), 500);
+    }, 500);
+  }, 8000);
+  
+  // Add a temporary flash effect to the form section
+  const formContainer = document.querySelector('.report-section');
+  if (formContainer) {
+    formContainer.classList.add('success-flash');
+    setTimeout(() => {
+      formContainer.classList.remove('success-flash');
+    }, 1500);
+  }
+}
+
 // Add enhanced message and notification styling
 document.head.insertAdjacentHTML('beforeend', `
   <style>
@@ -878,7 +1033,7 @@ document.head.insertAdjacentHTML('beforeend', `
       font-weight: 500;
     }
     
-    /* Login Required Message specific styles - IMPROVED & REPOSITIONED */
+    /* Login Required Message specific styles */
     .login-required-message {
       background: linear-gradient(135deg, #2196F3, #1976D2);
       display: flex;
@@ -929,8 +1084,6 @@ document.head.insertAdjacentHTML('beforeend', `
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
-    /* Remove unnecessary styles that were for hover effects */
-    
     .login-btn-text {
       position: relative;
       z-index: 2;
@@ -957,6 +1110,141 @@ document.head.insertAdjacentHTML('beforeend', `
     .cache-indicator i {
       margin-right: 6px;
       color: #1976D2;
+    }
+    
+    /* Enhanced Success Notification */
+    .success-notification {
+      background: linear-gradient(135deg, #43a047, #4caf50);
+      color: white;
+      padding: 0;
+      border-radius: 8px;
+      margin: 0 auto 15px auto;
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+      transform: translateY(-20px) scale(0.95);
+      opacity: 0;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                  opacity 0.3s ease;
+      overflow: hidden;
+      position: relative;
+      width: 95%;
+      max-width: 100%;
+      z-index: 1000;
+    }
+    
+    .success-notification:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: white;
+      opacity: 0.7;
+    }
+    
+    .success-notification.visible {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    
+    .success-notification.show-success {
+      animation: success-pop 0.5s ease-out;
+    }
+    
+    @keyframes success-pop {
+      0% { transform: translateY(-20px) scale(0.95); opacity: 0; }
+      50% { transform: translateY(5px) scale(1.02); opacity: 1; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    
+    .success-notification.fade-out {
+      transition: all 0.5s ease-out;
+      opacity: 0;
+      transform: translateY(0) scale(0.95);
+    }
+    
+    .success-content {
+      display: flex;
+      padding: 15px;
+      align-items: center;
+    }
+    
+    .success-icon-container {
+      position: relative;
+      width: 45px;
+      height: 45px;
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+    
+    .success-icon {
+      font-size: 2.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .success-icon-ripple {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      transform: scale(0);
+      animation: ripple 2s infinite;
+    }
+    
+    @keyframes ripple {
+      0% { transform: scale(0); opacity: 1; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+    
+    .success-message {
+      flex: 1;
+    }
+    
+    .success-title {
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin: 0 0 5px 0;
+    }
+    
+    .success-message p {
+      margin: 0;
+      padding: 0;
+      line-height: 1.4;
+    }
+    
+    /* Flash effect for form container */
+    .success-flash {
+      animation: flash-green 1.5s;
+    }
+    
+    @keyframes flash-green {
+      0% { box-shadow: 0 0 0 rgba(76, 175, 80, 0); }
+      20% { box-shadow: 0 0 15px rgba(76, 175, 80, 0.7); }
+      100% { box-shadow: 0 0 0 rgba(76, 175, 80, 0); }
+    }
+    
+    /* Animation for the success notification */
+    @keyframes pulse-success {
+      0% { box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3); }
+      50% { box-shadow: 0 4px 25px rgba(76, 175, 80, 0.5); }
+      100% { box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3); }
+    }
+    
+    .success-notification.visible {
+      animation: pulse-success 2s infinite ease-in-out;
+    }
+    
+    /* Make sure report section has relative positioning for the flash effect */
+    .report-section {
+      position: relative;
+      transition: all 0.3s ease;
     }
   </style>
 `);
