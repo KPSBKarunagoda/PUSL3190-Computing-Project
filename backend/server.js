@@ -89,13 +89,7 @@ async function initializeServer() {
   const educationRouter = require('./routes/education')(pool);
   const adminRouter = require('./routes/admin')(pool);
   const userRouter = require('./routes/user')(pool);
-  const votesRouter = require('./routes/votes')(pool); // Add this line
-
-  // Log routes before mounting
-  console.log('Auth routes stack:', authRouter.stack.length);
-  console.log('Admin routes stack:', adminRouter.stack.length);
-  console.log('User routes stack:', userRouter.stack.length);
-  console.log('Votes routes stack:', votesRouter.stack.length); // Add this line
+  const votesRouter = require('./routes/votes')(pool);
 
   // Mount routes
   app.use('/api/auth', authRouter);
@@ -103,8 +97,26 @@ async function initializeServer() {
   app.use('/api/education', educationRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/user', userRouter);
-  app.use('/api/votes', votesRouter); // Add this line
-  app.use('/api/reports', require('./routes/reports')(pool)); // Add this line
+  app.use('/api/votes', votesRouter);
+  app.use('/api/reports', require('./routes/reports')(pool));
+  
+  // ADDED: Admin reports endpoint that uses admin authentication middleware
+  app.use('/api/admin/reports', require('./routes/admin-reports')(pool));
+
+  // Log routes before mounting
+  console.log('Auth routes stack:', authRouter.stack.length);
+  console.log('Admin routes stack:', adminRouter.stack.length);
+  console.log('User routes stack:', userRouter.stack.length);
+  console.log('Votes routes stack:', votesRouter.stack.length);
+
+  // Mount routes
+  app.use('/api/auth', authRouter);
+  app.use('/api/lists', listRouter);
+  app.use('/api/education', educationRouter);
+  app.use('/api/admin', adminRouter);
+  app.use('/api/user', userRouter);
+  app.use('/api/votes', votesRouter);
+  app.use('/api/reports', require('./routes/reports')(pool));
 
   // Add test endpoint directly to app
   app.get('/api/test', (req, res) => {
