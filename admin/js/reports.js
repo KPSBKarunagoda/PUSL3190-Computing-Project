@@ -443,15 +443,18 @@ function displayReports(reports) {
       ? report.URL.substring(0, 47) + '...' 
       : report.URL || 'Unknown URL';
     
+    // Map status to proper badge class (resolved -> success, pending -> warning)
+    const badgeClass = report.Status?.toLowerCase() === 'resolved' ? 'badge-success' : 'badge-warning';
+    
     row.innerHTML = `
       <td class="url-cell" title="${escapeHtml(report.URL)}">${escapeHtml(displayUrl)}</td>
       <td>${escapeHtml(report.ReporterName || 'Unknown')}</td>
       <td>${escapeHtml(formattedDate)}</td>
-      <td><span class="status-badge ${report.Status?.toLowerCase() || 'pending'}">${escapeHtml(report.Status || 'Pending')}</span></td>
+      <td><span class="badge ${badgeClass}">${escapeHtml(report.Status || 'Pending')}</span></td>
       <td>
-        <button class="btn btn-sm view-report" data-report-id="${report.ReportID}">
+        <a href="javascript:void(0)" class="view-report" data-report-id="${report.ReportID}" style="color: #3D85C6; cursor: pointer;">
           <i class="fas fa-eye"></i>
-        </button>
+        </a>
       </td>
     `;
     
@@ -509,6 +512,9 @@ async function showReportDetails(reportId) {
       formattedDate = reportDate.toLocaleDateString() + ' ' + reportDate.toLocaleTimeString();
     } catch (e) {}
     
+    // Map status to proper badge class (resolved -> success, pending -> warning)
+    const badgeClass = report.Status?.toLowerCase() === 'resolved' ? 'badge-success' : 'badge-warning';
+    
     modalBody.innerHTML = `
       <div class="report-details">
         <div class="report-url-container">
@@ -531,7 +537,7 @@ async function showReportDetails(reportId) {
           </div>
           <div class="report-info-item">
             <span class="info-label">Status:</span>
-            <span id="report-status" class="info-value status-${report.Status?.toLowerCase() || 'pending'}">${escapeHtml(report.Status || 'Pending')}</span>
+            <span id="report-status" class="badge ${badgeClass}">${escapeHtml(report.Status || 'Pending')}</span>
           </div>
           <div class="report-info-item">
             <span class="info-label">Reason:</span>

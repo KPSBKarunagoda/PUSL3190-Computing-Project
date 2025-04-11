@@ -131,6 +131,33 @@
           </div>
         </div>
         
+        <style>
+          /* Status Badge Styles - Using existing badge classes */
+          .status-badge {
+            display: inline-block;
+            padding: 0.25em 0.6em;
+            font-size: 0.75rem;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 10px;
+          }
+          
+          .status-badge.pending {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #FFC107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+          }
+          
+          .status-badge.resolved {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+          }
+        </style>
+        
         <div class="card-body">
           <div id="reports-loader" class="loader">
             <i class="fas fa-circle-notch fa-spin"></i>
@@ -245,6 +272,50 @@
       </div>
     </div>
   </div>
+
+  <!-- Add custom styles for status highlights -->
+  <style>
+    /* Status badge styles */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+      text-align: center;
+    }
+    
+    .status-badge.pending {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+    }
+    
+    .status-badge.resolved {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    /* Make sure these styles apply in the modal as well */
+    #report-status.status-badge {
+      display: inline-block !important;
+      padding: 4px 10px !important;
+      border-radius: 12px !important;
+      font-weight: 600 !important;
+    }
+    
+    #report-status.pending {
+      background-color: #fff3cd !important;
+      color: #856404 !important;
+      border: 1px solid #ffeeba !important;
+    }
+    
+    #report-status.resolved {
+      background-color: #d4edda !important;
+      color: #155724 !important;
+      border: 1px solid #c3e6cb !important;
+    }
+  </style>
 
   <script src="js/common.js"></script>
   <script src="js/api.js"></script>
