@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Reports - PhishGuard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body.dark-theme {
+      padding-top: 80px;
+      padding-bottom: 40px;
+      background-color: var(--dark-bg);
+    }
+    
+    /* Header Navigation Styles - same as dashboard */
+    .top-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      padding: 0 30px;
+      height: 60px;
+    }
+    
+    .top-header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    
+    .logo i {
+      font-size: 1.4rem;
+    }
+    
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .header-nav-item {
+      color: var(--text-primary);
+      text-decoration: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .header-nav-item:hover {
+      background-color: rgba(61, 133, 198, 0.1);
+      color: var(--primary-color);
+    }
+    
+    .header-nav-item.active {
+      color: var(--primary-color);
+      background-color: rgba(61, 133, 198, 0.1);
+    }
+    
+    /* Reports specific styles */
+    .reports-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Updated back button styles to match URL analysis page */
+    .back-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background-color: rgba(0, 0, 0, 0.2);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+    
+    .back-button:hover {
+      background-color: rgba(0, 0, 0, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      color: var(--primary-color);
+    }
+    
+    .back-button i {
+      font-size: 0.9rem;
+      transition: transform 0.2s;
+    }
+    
+    .back-button:hover i {
+      transform: translateX(-3px);
+    }
+    
+    .reports-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
+    }
+    
+    .reports-header:after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100px;
+      height: 3px;
+      background-color: var(--primary-color);
+      border-radius: 3px;
+    }
+    
+    .reports-header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+    
+    .reports-section {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 25px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    .reports-section h2 {
+      margin-top: 0;
+      color: var(--primary-color);
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      padding-bottom: 12px;
+    }
+    
+    .reports-section h2:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 40px;
+      height: 3px;
+      background-color: var(--accent-color);
+      border-radius: 3px;
+    }
+    
+    .reports-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    
+    .reports-table th, 
+    .reports-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .reports-table th {
+      background-color: rgba(61, 133, 198, 0.1);
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    
+    .reports-table tr:hover {
+      background-color: rgba(61, 133, 198, 0.05);
+    }
+    
+    .reports-table .url-cell {
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .reports-table .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-align: center;
+    }
+    
+    .reports-table .status-pending {
+      background-color: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+    }
+    
+    .reports-table .status-resolved {
+      background-color: rgba(40, 167, 69, 0.2);
+      color: #28a745;
+    }
+    
+    .empty-reports {
+      text-align: center;
+      padding: 50px 20px;
+      color: var(--text-secondary);
+    }
+    
+    .empty-reports i {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+    
+    .empty-reports h3 {
+      margin: 10px 0;
+      font-size: 1.5rem;
+      color: var(--text-primary);
+    }
+    
+    .empty-reports p {
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    .report-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+    }
+    
+    .report-actions .btn {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    
+    .report-actions .btn:hover {
+      background: var(--accent-color);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .report-loader {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    
+    .report-loader .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(61, 133, 198, 0.2);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Modal Styles */
+    .modal-container {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.3s;
+    }
+    
+    .modal-container.show {
+      display: flex;
+    }
+    
+    .modal {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      animation: slideUp 0.3s;
+    }
+    
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-header h3 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: var(--primary-color);
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    
+    .modal-close:hover {
+      color: var(--accent-color);
+    }
+    
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+    
+    .modal-footer {
+      padding: 15px 20px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    
+    .report-details {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .report-details .label {
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    
+    .report-details .value {
+      word-break: break-word;
+    }
+    
+    .report-details .value.url {
+      word-break: break-all;
+      color: var(--primary-color);
+      font-family: monospace;
+      background: rgba(61, 133, 198, 0.1);
+      padding: 8px;
+      border-radius: 4px;
+    }
+    
+    .report-details .value.description {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.05);
+      padding: 10px;
+      border-radius: 4px;
+      border-left: 3px solid var(--accent-color);
+    }
+    
+    .report-details .value.status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    
+    .report-details .value.status-pending {
+      background-color: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+    }
+    
+    .report-details .value.status-resolved {
+      background-color: rgba(40, 167, 69, 0.2);
+      color: #28a745;
+    }
+    
+    .btn-view {
+      background: transparent;
+      border: none;
+      color: var(--primary-color);
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    
+    .btn-view:hover {
+      background-color: rgba(61, 133, 198, 0.1);
+      transform: scale(1.1);
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    @media (max-width: 768px) {
+      .top-header {
+        padding: 0 15px;
+      }
+      
+      .header-nav-item {
+        padding: 6px 10px;
+      }
+      
+      .logo span {
+        display: none;
+      }
+      
+      .reports-table .url-cell {
+        max-width: 150px;
+      }
+      
+      .reports-table th:nth-child(3),
+      .reports-table td:nth-child(3) {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <header class="top-header">
+    <div class="top-header-content">
+      <div class="logo-container">
+        <a href="index.html" class="logo">
+          <i class="fas fa-shield-alt"></i>
+          <span>PhishGuard</span>
+        </a>
+      </div>
+      <nav class="header-nav">
+        <a href="dashboard.html" class="header-nav-item">
+          <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="analyze.html" class="header-nav-item">
+          <i class="fas fa-search"></i> Analyze
+        </a>
+        <a href="settings.html" class="header-nav-item">
+          <i class="fas fa-cog"></i> Settings
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="reports-container">
+    <div class="reports-header">
+      <div class="reports-header-content">
+        <h1>My Reported URLs</h1>
+        <div class="user-info">
+          <a href="dashboard.html" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <section class="reports-section">
+      <h2><i class="fas fa-flag"></i> Submitted Reports</h2>
+      <p>View all phishing URLs you've reported to help make the web safer</p>
+      <div class="report-actions">
+        <button id="refresh-reports" class="btn"><i class="fas fa-sync-alt"></i> Refresh</button>
+      </div>
+      <div id="reports-loader" class="report-loader">
+        <div class="spinner"></div>
+      </div>
+      <table id="reports-table" class="reports-table" style="display: none;">
+        <thead>
+          <tr>
+            <th>URL</th>
+            <th>Reason</th>
+            <th>Date Reported</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="reports-table-body">
+          <!-- Reports will be inserted here by JavaScript -->
+        </tbody>
+      </table>
+      <div id="empty-reports" class="empty-reports" style="display: none;">
+        <i class="fas fa-flag"></i>
+        <h3>No Reports Found</h3>
+        <p>You haven't reported any suspicious URLs yet. When you report phishing sites or suspicious URLs, they will appear here.</p>
+      </div>
+    </section>
+    
+    <section class="reports-section">
+      <h2><i class="fas fa-info-circle"></i> About Reporting</h2>
+      <p>Your reports are valuable in our fight against phishing. Here's what happens when you report a URL:</p>
+      <ul>
+        <li>Our team reviews each reported URL to verify it's malicious</li>
+        <li>Confirmed phishing sites are added to our blacklist database</li>
+        <li>Your reports help protect other users from falling victim to scams</li>
+        <li>We may also report severe cases to domain registrars and hosting providers</li>
+      </ul>
+      <p>Thank you for contributing to a safer internet!</p>
+    </section>
+  </div>
+  
+  <div id="report-modal" class="modal-container">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Report Details</h3>
+        <button class="modal-close" id="close-modal">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Report details will be dynamically inserted here -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn" id="close-modal-footer">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('phishguardToken');
+      const userJson = localStorage.getItem('phishguardUser');
+      
+      if (!token || !userJson) {
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      // Modal handling
+      const modal = document.getElementById('report-modal');
+      const closeModalButtons = document.querySelectorAll('#close-modal, #close-modal-footer');
+      
+      closeModalButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          modal.classList.remove('show');
+        });
+      });
+      
+      // Close modal when clicking outside
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('show');
+      });
+      
+      // Load user reports
+      loadUserReports();
+      
+      // Add refresh button functionality
+      document.getElementById('refresh-reports').addEventListener('click', () => {
+        loadUserReports();
+      });
+      
+      async function loadUserReports() {
+        const reportsLoader = document.getElementById('reports-loader');
+        const reportsTable = document.getElementById('reports-table');
+        const emptyReports = document.getElementById('empty-reports');
+        const reportsTableBody = document.getElementById('reports-table-body');
+        
+        // Show loading state
+        if (reportsLoader) reportsLoader.style.display = 'flex';
+        if (reportsTable) reportsTable.style.display = 'none';
+        if (emptyReports) emptyReports.style.display = 'none';
+        
+        try {
+          const response = await fetch('http://localhost:3000/api/reports/user', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-auth-token': token
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+          }
+          
+          const reports = await response.json();
+          
+          // Hide loader
+          if (reportsLoader) reportsLoader.style.display = 'none';
+          
+          // Display reports or empty state
+          if (reports && reports.length > 0) {
+            if (reportsTableBody) {
+              reportsTableBody.innerHTML = ''; // Clear existing reports
+              
+              // Add each report as a row
+              reports.forEach(report => {
+                const reportDate = new Date(report.ReportDate);
+                const formattedDate = reportDate.toLocaleDateString() + ' ' + reportDate.toLocaleTimeString();
+                
+                const row = document.createElement('tr');
+                
+                const url = report.URL || '';
+                const displayUrl = url.length > 60 ? url.substring(0, 57) + '...' : url;
+                
+                row.innerHTML = `
+                  <td class="url-cell" title="${escapeHtml(url)}">${escapeHtml(displayUrl)}</td>
+                  <td>${escapeHtml(report.Reason || 'Not specified')}</td>
+                  <td>${escapeHtml(formattedDate)}</td>
+                  <td><span class="status-badge status-${(report.Status || 'pending').toLowerCase()}">${escapeHtml(report.Status || 'Pending')}</span></td>
+                  <td>
+                    <button class="btn-view" data-report-id="${report.ReportID}">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </td>
+                `;
+                
+                reportsTableBody.appendChild(row);
+              });
+              
+              // Add event listeners for view buttons
+              document.querySelectorAll('.btn-view').forEach(btn => {
+                btn.addEventListener('click', () => {
+                  const reportId = btn.dataset.reportId;
+                  const report = reports.find(r => r.ReportID == reportId);
+                  
+                  if (report) {
+                    showReportDetails(report);
+                  }
+                });
+              });
+            }
+            
+            if (reportsTable) reportsTable.style.display = 'table';
+          } else {
+            if (emptyReports) emptyReports.style.display = 'block';
+          }
+          
+        } catch (error) {
+          console.error('Error loading reports:', error);
+          
+          // Hide loader and show error message
+          if (reportsLoader) reportsLoader.style.display = 'none';
+          if (emptyReports) {
+            emptyReports.style.display = 'block';
+            const title = emptyReports.querySelector('h3');
+            const message = emptyReports.querySelector('p');
+            if (title) title.textContent = 'Error Loading Reports';
+            if (message) message.textContent = 'There was a problem loading your reports. Please try again later.';
+          }
+        }
+      }
+      
+      function showReportDetails(report) {
+        const modalBody = document.getElementById('modal-body');
+        
+        // Format date
+        const reportDate = new Date(report.ReportDate);
+        const formattedDate = reportDate.toLocaleDateString() + ' ' + reportDate.toLocaleTimeString();
+        
+        // Create details HTML
+        modalBody.innerHTML = `
+          <div class="report-details">
+            <div class="label">Report ID:</div>
+            <div class="value">${escapeHtml(report.ReportID)}</div>
+            
+            <div class="label">URL:</div>
+            <div class="value url">${escapeHtml(report.URL)}</div>
+            
+            <div class="label">Reported:</div>
+            <div class="value">${escapeHtml(formattedDate)}</div>
+            
+            <div class="label">Reason:</div>
+            <div class="value">${escapeHtml(report.Reason || 'Not specified')}</div>
+            
+            <div class="label">Status:</div>
+            <div class="value status status-${(report.Status || 'pending').toLowerCase()}">${escapeHtml(report.Status || 'Pending')}</div>
+            
+            <div class="label">Description:</div>
+            <div class="value description">${escapeHtml(report.Description || 'No additional details provided.')}</div>
+          </div>
+        `;
+        
+        // Show modal
+        const modal = document.getElementById('report-modal');
+        modal.classList.add('show');
+      }
+      
+      function escapeHtml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return '';
+        return unsafe
+          .toString()
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+    });
+  </script>
+</body>
+</html>
