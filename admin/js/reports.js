@@ -517,49 +517,60 @@ async function showReportDetails(reportId) {
     
     modalBody.innerHTML = `
       <div class="report-details">
-        <div class="report-url-container">
-          <h4>Reported URL</h4>
-          <p id="report-url" class="report-url">${escapeHtml(report.URL || 'Unknown URL')}</p>
+        <div class="report-url-container" style="margin-bottom: 20px; background-color: var(--dark-lighter); padding: 15px; border-radius: var(--radius);">
+          <h4 style="margin-bottom: 8px; font-size: 1rem; color: var(--text-secondary);">Reported URL</h4>
+          <p id="report-url" class="report-url" style="font-family: monospace; word-break: break-all; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px; margin-bottom: 0;">
+            ${escapeHtml(report.URL || 'Unknown URL')}
+          </p>
         </div>
         
-        <div class="report-info-grid">
-          <div class="report-info-item">
-            <span class="info-label">Report ID:</span>
-            <span id="report-id" class="info-value">${escapeHtml(report.ReportID || 'Unknown')}</span>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-bottom: 25px;">
+          <div style="background-color: var(--dark-lighter); padding: 15px; border-radius: var(--radius);">
+            <h4 style="margin-bottom: 12px; font-size: 1rem; color: var(--text-secondary);">Report Information</h4>
+            <div style="display: grid; gap: 10px;">
+              <div>
+                <span style="display: block; font-size: 0.75rem; color: var(--text-secondary);">Report ID</span>
+                <span style="font-weight: 500;">${escapeHtml(report.ReportID || 'Unknown')}</span>
+              </div>
+              <div>
+                <span style="display: block; font-size: 0.75rem; color: var(--text-secondary);">Reported By</span>
+                <span style="font-weight: 500;">${escapeHtml(report.ReporterName || 'Unknown User')}</span>
+              </div>
+              <div>
+                <span style="display: block; font-size: 0.75rem; color: var(--text-secondary);">Date Submitted</span>
+                <span style="font-weight: 500;">${escapeHtml(formattedDate)}</span>
+              </div>
+              <div>
+                <span style="display: block; font-size: 0.75rem; color: var(--text-secondary);">Status</span>
+                <span class="badge ${badgeClass}" style="margin-top: 4px;">${escapeHtml(report.Status || 'Pending')}</span>
+              </div>
+            </div>
           </div>
-          <div class="report-info-item">
-            <span class="info-label">Reported By:</span>
-            <span id="report-user" class="info-value">${escapeHtml(report.ReporterName || 'Unknown User')}</span>
-          </div>
-          <div class="report-info-item">
-            <span class="info-label">Report Date:</span>
-            <span id="report-date" class="info-value">${escapeHtml(formattedDate)}</span>
-          </div>
-          <div class="report-info-item">
-            <span class="info-label">Status:</span>
-            <span id="report-status" class="badge ${badgeClass}">${escapeHtml(report.Status || 'Pending')}</span>
-          </div>
-          <div class="report-info-item">
-            <span class="info-label">Reason:</span>
-            <span class="info-value">${escapeHtml(report.Reason || 'Not specified')}</span>
-          </div>
-          <div class="report-info-item">
-            <span class="info-label">Description:</span>
-            <span class="info-value description">${escapeHtml(report.Description || 'No additional details provided')}</span>
+          
+          <div style="background-color: var(--dark-lighter); padding: 15px; border-radius: var(--radius);">
+            <h4 style="margin-bottom: 12px; font-size: 1rem; color: var(--text-secondary);">Reason & Description</h4>
+            <div style="display: grid; gap: 10px;">
+              <div>
+                <span style="display: block; font-size: 0.75rem; color: var(--text-secondary);">Reason</span>
+                <span style="font-weight: 500;">${escapeHtml(report.Reason || 'Not specified')}</span>
+              </div>
+              <div>
+                <span style="display: block; font-size: 0.75rem; color: var(--text-secondary);">Additional Details</span>
+                <p style="margin: 4px 0 0 0; font-style: ${report.Description ? 'normal' : 'italic'}; line-height: 1.4;">
+                  ${escapeHtml(report.Description || 'No additional details provided')}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
         
-        <div class="action-container">
-          <h4>Actions</h4>
-          <div class="action-buttons">
-            <button id="blacklist-url" class="btn btn-danger" data-url="${escapeHtml(report.URL)}">
+        <div class="action-container" style="text-align: center;">
+          <div class="action-buttons" style="justify-content: center; gap: 15px;">
+            <button id="blacklist-url" class="btn btn-danger" data-url="${escapeHtml(report.URL)}" style="min-width: 160px;">
               <i class="fas fa-ban"></i> Add to Blacklist
             </button>
-            <button id="resolve-report" class="btn btn-success" data-report-id="${report.ReportID}">
+            <button id="resolve-report" class="btn btn-success" data-report-id="${report.ReportID}" style="min-width: 160px;">
               <i class="fas fa-check"></i> ${report.Status?.toLowerCase() === 'resolved' ? 'Already Resolved' : 'Mark as Resolved'}
-            </button>
-            <button id="dismiss-report" class="btn btn-outline modal-close">
-              <i class="fas fa-times"></i> Dismiss
             </button>
           </div>
         </div>
@@ -568,7 +579,6 @@ async function showReportDetails(reportId) {
     
     document.getElementById('blacklist-url').addEventListener('click', handleBlacklistUrl);
     document.getElementById('resolve-report').addEventListener('click', handleResolveReport);
-    document.getElementById('dismiss-report').addEventListener('click', () => hideModal('report-modal'));
     
     if (report.Status?.toLowerCase() === 'resolved') {
       document.getElementById('resolve-report').disabled = true;
