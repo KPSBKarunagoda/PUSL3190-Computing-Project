@@ -1,5 +1,6 @@
 /**
  * PhishGuard Admin Votes Management
+ * Updated to use Positive/Negative terminology for user-facing content
  */
 
 // Define functions first before they're called
@@ -129,6 +130,22 @@ function searchVotes(query) {
   }
 }
 
+/**
+ * Helper function to safely escape HTML special characters
+ * Must be defined before it's used in the loadVoteData function
+ */
+function escapeHtml(unsafe) {
+  if (unsafe === null || unsafe === undefined) return '';
+  
+  return unsafe
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function exportVoteData() {
   try {
     // Get vote data from table
@@ -147,23 +164,27 @@ function exportVoteData() {
     const data = [];
     
     // Header row
-    data.push(['URL', 'Safe Votes', 'Phishing Votes', 'Safe Percentage', 'Phishing Percentage', 'Last Vote']);
+    data.push(['URL', 'Positive Votes', 'Negative Votes', 'Positive Percentage', 'Negative Percentage', 'Score', 'Last Vote']);
     
     // Data rows
     for (let i = 0; i < rows.length; i++) {
       if (rows[i].style.display === 'none') continue; // Skip hidden rows
       
       const url = rows[i].querySelector('.url-cell').getAttribute('title');
-      const safeVotes = rows[i].querySelector('.safe-votes').textContent;
-      const phishingVotes = rows[i].querySelector('.phishing-votes').textContent;
       const ratioText = rows[i].querySelector('.ratio-text').textContent;
-      const lastVote = rows[i].cells[4].textContent;
+      const score = rows[i].querySelector('.score-value')?.textContent || 'N/A';
+      const lastVote = rows[i].cells[4].textContent; // Updated index since we added Score column
+      
+      // Need to get the vote counts from our stored summaries instead of the table
+      const urlData = document.voteSummaries.find(v => v.url === url);
+      const positiveVotes = urlData ? urlData.safeVotes : 0;
+      const negativeVotes = urlData ? urlData.phishingVotes : 0;
       
       // Extract percentages from ratio text
-      const safePercentage = ratioText.match(/(\d+)% Safe/)[1];
-      const phishingPercentage = ratioText.match(/(\d+)% Phishing/)[1];
+      const positivePercentage = ratioText.match(/(\d+)% Positive/)[1];
+      const negativePercentage = ratioText.match(/(\d+)% Negative/)[1];
       
-      data.push([url, safeVotes, phishingVotes, safePercentage, phishingPercentage, lastVote]);
+      data.push([url, positiveVotes, negativeVotes, positivePercentage, negativePercentage, score, lastVote]);
     }
     
     // Convert to CSV
@@ -261,8 +282,8 @@ async function loadVoteStats() {
     console.log('Loading vote statistics...');
     // Show loading indicators
     document.getElementById('total-votes').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    document.getElementById('safe-votes').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    document.getElementById('phishing-votes').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    document.getElementById('positive-votes').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    document.getElementById('negative-votes').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     document.getElementById('today-votes').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     
     // Fetch vote statistics from API
@@ -277,8 +298,8 @@ async function loadVoteStats() {
     
     // Update statistics in the UI
     document.getElementById('total-votes').textContent = stats.total || 0;
-    document.getElementById('safe-votes').textContent = stats.safeCount || 0;
-    document.getElementById('phishing-votes').textContent = stats.phishingCount || 0;
+    document.getElementById('positive-votes').textContent = stats.safeCount || 0;
+    document.getElementById('negative-votes').textContent = stats.phishingCount || 0;
     
     // Calculate today's vote count from recent activity
     const today = new Date().toISOString().split('T')[0];
@@ -292,8 +313,8 @@ async function loadVoteStats() {
     
     // Show error but continue to load other parts
     document.getElementById('total-votes').textContent = '0';
-    document.getElementById('safe-votes').textContent = '0';
-    document.getElementById('phishing-votes').textContent = '0';
+    document.getElementById('positive-votes').textContent = '0';
+    document.getElementById('negative-votes').textContent = '0';
     document.getElementById('today-votes').textContent = '0';
     
     showAlert('Failed to load vote statistics', 'error');
@@ -339,8 +360,8 @@ async function loadVoteData(filter = 'all') {
       // Reset analytics placeholders
       document.getElementById('most-voted-url').textContent = '-';
       document.getElementById('most-contested-url').textContent = '-';
-      document.getElementById('most-phishing-url').textContent = '-';
-      document.getElementById('most-safe-url').textContent = '-';
+      document.getElementById('most-negative-url').textContent = '-';
+      document.getElementById('most-positive-url').textContent = '-';
       return;
     }
     
@@ -384,17 +405,28 @@ async function loadVoteData(filter = 'all') {
         }
         
         // Calculate vote ratio
-        const safeVotes = parseInt(vote.safeVotes || 0);
-        const phishingVotes = parseInt(vote.phishingVotes || 0);
-        const totalVotes = safeVotes + phishingVotes;
-        const safePercentage = totalVotes > 0 ? Math.round((safeVotes / totalVotes) * 100) : 0;
-        const phishingPercentage = 100 - safePercentage;
+        const positiveVotes = parseInt(vote.safeVotes || 0);
+        const negativeVotes = parseInt(vote.phishingVotes || 0);
+        const totalVotes = positiveVotes + negativeVotes;
+        const positivePercentage = totalVotes > 0 ? Math.round((positiveVotes / totalVotes) * 100) : 0;
+        const negativePercentage = 100 - positivePercentage;
         
         // Determine ratio class
         let ratioClass = 'ratio-neutral';
-        if (safePercentage > 70) ratioClass = 'ratio-safe';
-        else if (phishingPercentage > 70) ratioClass = 'ratio-phishing';
-        else if (Math.abs(safePercentage - phishingPercentage) < 20) ratioClass = 'ratio-contested';
+        if (positivePercentage > 70) ratioClass = 'ratio-positive';
+        else if (negativePercentage > 70) ratioClass = 'ratio-negative';
+        else if (Math.abs(positivePercentage - negativePercentage) < 20) ratioClass = 'ratio-contested';
+        
+        // Get score value (default to N/A if not available)
+        const score = vote.score || 'N/A';
+        
+        // Determine score class for styling
+        let scoreClass = 'score-medium';
+        if (score !== 'N/A') {
+          const scoreValue = parseFloat(score);
+          if (scoreValue >= 0.7) scoreClass = 'score-high';
+          else if (scoreValue <= 0.3) scoreClass = 'score-low';
+        }
         
         // Create row
         const row = document.createElement('tr');
@@ -407,32 +439,28 @@ async function loadVoteData(filter = 'all') {
             </div>
           </td>
           <td>
-            <span class="vote-count safe-votes">${safeVotes}</span>
-          </td>
-          <td>
-            <span class="vote-count phishing-votes">${phishingVotes}</span>
-          </td>
-          <td>
             <div class="vote-ratio ${ratioClass}">
-              <div class="ratio-bar">
-                <div class="safe-bar" style="width: ${safePercentage}%"></div>
-                <div class="phishing-bar" style="width: ${phishingPercentage}%"></div>
+              <div class="ratio-text">
+                <span style="color: ${positivePercentage >= negativePercentage ? '#4CAF50' : 'inherit'};">${positivePercentage}% Positive</span>
+                 / 
+                <span style="color: ${negativePercentage > positivePercentage ? '#F72585' : 'inherit'};">${negativePercentage}% Negative</span>
               </div>
-              <div class="ratio-text">${safePercentage}% Safe / ${phishingPercentage}% Phishing</div>
             </div>
+          </td>
+          <td>
+            <span class="score-value ${scoreClass}">${score}</span>
+          </td>
+          <td>
+            <span class="prediction-badge ${vote.prediction ? (vote.prediction === 'Safe' ? 'badge-success' : vote.prediction === 'Phishing' ? 'badge-danger' : 'badge-secondary') : 'badge-secondary'}">
+              ${vote.prediction ? (vote.prediction === 'Safe' ? 'Positive' : vote.prediction === 'Phishing' ? 'Negative' : vote.prediction) : 'No prediction'}
+            </span>
           </td>
           <td>${formattedDate}</td>
           <td>
-            <div class="actions">
-              <button class="btn btn-icon view-details" data-url="${escapeHtml(urlDisplay)}" title="View details">
+            <div class="actions" style="display: flex; justify-content: center;">
+              <a href="javascript:void(0)" class="view-details" data-url="${escapeHtml(urlDisplay)}" style="color: #3D85C6; cursor: pointer;" title="View details">
                 <i class="fas fa-eye"></i>
-              </button>
-              <button class="btn btn-icon add-whitelist" data-url="${escapeHtml(urlDisplay)}" title="Add to whitelist">
-                <i class="fas fa-check-circle"></i>
-              </button>
-              <button class="btn btn-icon add-blacklist" data-url="${escapeHtml(urlDisplay)}" title="Add to blacklist">
-                <i class="fas fa-ban"></i>
-              </button>
+              </a>
             </div>
           </td>
         `;
@@ -445,7 +473,7 @@ async function loadVoteData(filter = 'all') {
       
       // Update analytics with top URLs
       updateVoteAnalytics(voteSummaries);
-    }
+    }   
   } catch (error) {
     console.error('Failed to load vote data:', error);
     
@@ -462,6 +490,18 @@ async function loadVoteData(filter = 'all') {
   }
 }
 
+function setupVoteTableActions() {
+  // Only need view details buttons now
+  document.querySelectorAll('.view-details').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const url = btn.getAttribute('data-url');
+      if (url) {
+        showVoteDetails(url);
+      }
+    });
+  });
+}
+
 /**
  * Process raw votes from database into summarized format by URL
  * @param {Array} rawVotes Raw vote data from the database
@@ -471,29 +511,12 @@ function processRawVotes(rawVotes) {
   // Create a map to group votes by URL
   const votesByUrl = new Map();
   
-  // Log the type of data we're receiving to help with debugging
-  console.log('Raw votes data type:', typeof rawVotes);
-  if (rawVotes.length > 0) {
-    console.log('First vote example:', rawVotes[0]);
-  }
-  
-  // Process each vote - with detailed logging
-  rawVotes.forEach((vote, index) => {
-    if (index < 3) {
-      console.log(`Processing vote ${index}:`, vote);
-    }
-    
-    // Handle database field names - looking for both standard and MySQL convention names
+  // Process each vote
+  rawVotes.forEach(vote => {
     const url = vote.URL || vote.url;
     const voteType = vote.VoteType || vote.voteType;
     const timestamp = vote.Timestamp || vote.timestamp;
-    const voteId = vote.VoteID || vote.voteId || vote.id;
-    const userId = vote.UserID || vote.userId || vote.user_id;
-    
-    if (!url) {
-      console.warn('Vote without URL:', vote);
-      return; // Skip votes without URL
-    }
+    if (!url) return; // Skip votes without URL
     
     // Get or create summary for this URL
     let summary = votesByUrl.get(url);
@@ -514,33 +537,23 @@ function processRawVotes(rawVotes) {
       summary.safeVotes++;
     } else if (voteType === 'Phishing') {
       summary.phishingVotes++;
-    } else {
-      console.warn(`Unknown vote type "${voteType}" for vote:`, vote);
     }
     
     // Track timestamps
     if (timestamp) {
-      try {
-        const voteTime = new Date(timestamp);
-        if (!isNaN(voteTime.getTime())) {
-          if (!summary.firstVote || voteTime < new Date(summary.firstVote)) {
-            summary.firstVote = timestamp;
-          }
-          if (!summary.lastVote || voteTime > new Date(summary.lastVote)) {
-            summary.lastVote = timestamp;
-          }
-        } else {
-          console.warn(`Invalid timestamp "${timestamp}" for vote:`, vote);
+      const voteTime = new Date(timestamp);
+      if (!isNaN(voteTime.getTime())) {
+        if (!summary.firstVote || voteTime < new Date(summary.firstVote)) {
+          summary.firstVote = timestamp;
         }
-      } catch (e) {
-        console.error('Error processing timestamp:', e, vote);
+        if (!summary.lastVote || voteTime > new Date(summary.lastVote)) {
+          summary.lastVote = timestamp;
+        }
       }
     }
     
     // Add to vote list
     summary.votes.push({
-      voteId: voteId,
-      userId: userId,
       voteType: voteType,
       timestamp: timestamp
     });
@@ -554,7 +567,6 @@ function processRawVotes(rawVotes) {
     return totalB - totalA;
   });
   
-  console.log(`Processed ${rawVotes.length} votes into ${voteArray.length} URL summaries`);
   return voteArray;
 }
 
@@ -562,26 +574,17 @@ function processRawVotes(rawVotes) {
  * Filter vote data based on selected criteria
  */
 function filterVoteData(voteSummaries, filter) {
-  console.log('Filtering votes by:', filter);
-  
-  if (!voteSummaries || !Array.isArray(voteSummaries)) {
-    return [];
-  }
-  
   return voteSummaries.filter(vote => {
     const safeVotes = parseInt(vote.safeVotes || 0);
     const phishingVotes = parseInt(vote.phishingVotes || 0);
     const totalVotes = safeVotes + phishingVotes;
-    
     if (totalVotes === 0) return false;
-    
     const safePercentage = Math.round((safeVotes / totalVotes) * 100);
     const phishingPercentage = 100 - safePercentage;
-    
     switch (filter) {
-      case 'safe-majority':
+      case 'positive-majority':
         return safePercentage > 60;
-      case 'phishing-majority':
+      case 'negative-majority':
         return phishingPercentage > 60;
       case 'contested':
         return Math.abs(safePercentage - phishingPercentage) < 20;
@@ -596,7 +599,6 @@ function filterVoteData(voteSummaries, filter) {
  */
 function updateVoteAnalytics(voteSummaries) {
   if (!voteSummaries || voteSummaries.length === 0) return;
-  
   try {
     // Find most voted URL
     const mostVoted = [...voteSummaries].sort((a, b) => {
@@ -609,66 +611,31 @@ function updateVoteAnalytics(voteSummaries) {
     const mostContested = [...voteSummaries].sort((a, b) => {
       const totalA = (a.safeVotes || 0) + (a.phishingVotes || 0);
       const totalB = (b.safeVotes || 0) + (b.phishingVotes || 0);
-      
       if (totalA === 0) return 1;
       if (totalB === 0) return -1;
-      
       const safePercentA = (a.safeVotes || 0) / totalA;
       const safePercentB = (b.safeVotes || 0) / totalB;
-      
       return Math.abs(safePercentA - 0.5) - Math.abs(safePercentB - 0.5);
     })[0];
     
-    // Find most reported as phishing
-    const mostPhishing = [...voteSummaries]
+    // Find most reported as negative (phishing)
+    const mostNegative = [...voteSummaries]
       .filter(v => (v.phishingVotes || 0) > 0)
       .sort((a, b) => (b.phishingVotes || 0) - (a.phishingVotes || 0))[0];
     
-    // Find most reported as safe
-    const mostSafe = [...voteSummaries]
+    // Find most reported as positive (safe)
+    const mostPositive = [...voteSummaries]
       .filter(v => (v.safeVotes || 0) > 0)
       .sort((a, b) => (b.safeVotes || 0) - (a.safeVotes || 0))[0];
     
     // Update UI elements
     document.getElementById('most-voted-url').textContent = formatUrl(mostVoted?.url || '-');
     document.getElementById('most-contested-url').textContent = formatUrl(mostContested?.url || '-');
-    document.getElementById('most-phishing-url').textContent = formatUrl(mostPhishing?.url || '-');
-    document.getElementById('most-safe-url').textContent = formatUrl(mostSafe?.url || '-');
+    document.getElementById('most-negative-url').textContent = formatUrl(mostNegative?.url || '-');
+    document.getElementById('most-positive-url').textContent = formatUrl(mostPositive?.url || '-');
   } catch (error) {
     console.error('Error updating vote analytics:', error);
   }
-}
-
-function setupVoteTableActions() {
-  // View details buttons
-  document.querySelectorAll('.view-details').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const url = btn.getAttribute('data-url');
-      if (url) {
-        showVoteDetails(url);
-      }
-    });
-  });
-  
-  // Add to whitelist buttons
-  document.querySelectorAll('.add-whitelist').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const url = btn.getAttribute('data-url');
-      if (url) {
-        addToWhitelist(url);
-      }
-    });
-  });
-  
-  // Add to blacklist buttons
-  document.querySelectorAll('.add-blacklist').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const url = btn.getAttribute('data-url');
-      if (url) {
-        addToBlacklist(url);
-      }
-    });
-  });
 }
 
 async function showVoteDetails(url) {
@@ -681,74 +648,142 @@ async function showVoteDetails(url) {
     
     if (voteSummaries && Array.isArray(voteSummaries)) {
       voteSummary = voteSummaries.find(v => v.url === url);
-      console.log('Found vote summary:', voteSummary);
     }
     
-    // If we don't have the vote summary in memory, try to fetch it from the active table row
     if (!voteSummary) {
-      console.log('Vote summary not found in memory, fetching from table...');
-      const tableRow = document.querySelector(`.view-details[data-url="${escapeHtml(url)}"]`)?.closest('tr');
-      
-      if (tableRow) {
-        const safeVotes = parseInt(tableRow.querySelector('.safe-votes').textContent) || 0;
-        const phishingVotes = parseInt(tableRow.querySelector('.phishing-votes').textContent) || 0;
-        
-        voteSummary = {
-          url: url,
-          safeVotes: safeVotes,
-          phishingVotes: phishingVotes,
-          lastVote: new Date().toISOString(), // Estimate
-          firstVote: new Date().toISOString() // Estimate
-        };
-        console.log('Created vote summary from table:', voteSummary);
-      } else {
-        console.error('Could not find table row for URL:', url);
-        showAlert('Failed to load vote details', 'error');
-        return;
-      }
+      console.error('Vote summary not found for URL:', url);
+      showAlert('Failed to load vote details', 'error');
+      return;
     }
-    
-    // Update modal content with vote details
-    document.getElementById('vote-modal-title').textContent = 'Vote Details';
-    document.getElementById('vote-url').textContent = url;
     
     // Calculate percentages
     const totalVotes = (voteSummary.safeVotes || 0) + (voteSummary.phishingVotes || 0);
-    const safePercent = totalVotes > 0 ? Math.round((voteSummary.safeVotes / totalVotes) * 100) : 50;
-    const phishingPercent = 100 - safePercent;
+    const positivePercent = totalVotes > 0 ? Math.round((voteSummary.safeVotes / totalVotes) * 100) : 50;
+    const negativePercent = 100 - positivePercent;
     
-    // Update percentages
-    document.getElementById('safe-percent').textContent = safePercent + '%';
-    document.getElementById('phishing-percent').textContent = phishingPercent + '%';
+    // Determine accuracy status based on extension prediction
+    const prediction = voteSummary.prediction || 'No prediction';
+    let accuracyClass = 'neutral';
+    let accuracyText = 'No prediction data available';
+    if (voteSummary.prediction) {
+      if (voteSummary.prediction === 'Safe' && positivePercent >= 60) {
+        accuracyClass = 'success';
+        accuracyText = `Prediction was correct with ${positivePercent}% user agreement`;
+      } else if (voteSummary.prediction === 'Phishing' && negativePercent >= 60) {
+        accuracyClass = 'success';
+        accuracyText = `Prediction was correct with ${negativePercent}% user agreement`;
+      } else if ((voteSummary.prediction === 'Safe' && positivePercent < 40) || 
+                (voteSummary.prediction === 'Phishing' && negativePercent < 40)) {
+        accuracyClass = 'danger';
+        accuracyText = 'Prediction differs from majority user opinion';
+      } else {
+        accuracyClass = 'warning';
+        accuracyText = 'User opinion is mixed on this prediction';
+      }
+    }
     
-    // Update vote counts
-    document.getElementById('detail-total-votes').textContent = totalVotes;
-    document.getElementById('detail-safe-votes').textContent = voteSummary.safeVotes || 0;
-    document.getElementById('detail-phishing-votes').textContent = voteSummary.phishingVotes || 0;
+    // Convert prediction display names
+    const displayPrediction = 
+      prediction === 'Safe' ? 'Positive' : 
+      prediction === 'Phishing' ? 'Negative' : 
+      prediction;
     
-    // Format dates
-    document.getElementById('detail-first-vote').textContent = formatDate(voteSummary.firstVote);
-    document.getElementById('detail-last-vote').textContent = formatDate(voteSummary.lastVote);
+    // Get score
+    const score = voteSummary.score || 'N/A';
+    let scoreClass = 'score-medium';
+    if (score !== 'N/A') {
+      const scoreValue = parseFloat(score);
+      if (scoreValue >= 0.7) scoreClass = 'score-high';
+      else if (scoreValue <= 0.3) scoreClass = 'score-low';
+    }
     
-    // Update chart bars
-    document.getElementById('safe-bar').style.width = safePercent + '%';
-    document.getElementById('phishing-bar').style.width = phishingPercent + '%';
+    // Update the modal with enhanced content using new terminology
+    const modalContent = `
+      <div class="url-details">
+        <h4>URL Information</h4>
+        <p id="vote-url" class="vote-url">${escapeHtml(url)}</p>
+        <div class="prediction-section">
+          <h4>Extension Prediction</h4>
+          <div class="prediction-result">
+            <span class="prediction-badge ${prediction === 'Safe' ? 'badge-success' : prediction === 'Phishing' ? 'badge-danger' : 'badge-warning'}">
+              ${displayPrediction}
+            </span>
+            <p class="accuracy-text ${accuracyClass}">${accuracyText}</p>
+            <div class="score-display" style="margin-top: 10px;">
+              <span class="detail-label">Risk Score:</span>
+              <span class="score-value ${scoreClass}">${score}</span>
+              <span class="help-text" style="margin-left: 5px;">(Higher values indicate more trustworthy sites)</span>
+            </div>
+          </div>
+        </div>
+        <div class="vote-summary">
+          <h4>User Votes</h4>
+          <div class="vote-chart">
+            <div class="vote-labels">
+              <div class="safe-label">
+                <i class="fas fa-check-circle"></i> Positive
+                <span id="safe-percent">${positivePercent}%</span>
+              </div>
+              <div class="phishing-label">
+                <i class="fas fa-ban"></i> Negative
+                <span id="phishing-percent">${negativePercent}%</span>
+              </div>
+            </div>
+          </div>
+          <div class="vote-details">
+            <div class="vote-detail-item">
+              <span class="detail-label">Total Votes:</span>
+              <span id="detail-total-votes" class="detail-value">${totalVotes}</span>
+            </div>
+            <div class="vote-detail-item">
+              <span class="detail-label">Positive Votes:</span>
+              <span id="detail-safe-votes" class="detail-value">${voteSummary.safeVotes || 0}</span>
+            </div>
+            <div class="vote-detail-item">
+              <span class="detail-label">Negative Votes:</span>
+              <span id="detail-phishing-votes" class="detail-value">${voteSummary.phishingVotes || 0}</span>
+            </div>
+            <div class="vote-detail-item">
+              <span class="detail-label">First Vote:</span>
+              <span id="detail-first-vote" class="detail-value">${formatDate(voteSummary.firstVote)}</span>
+            </div>
+            <div class="vote-detail-item">
+              <span class="detail-label">Last Vote:</span>
+              <span id="detail-last-vote" class="detail-value">${formatDate(voteSummary.lastVote)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button id="whitelist-url" class="btn btn-success">
+            <i class="fas fa-check-circle"></i> Add to Whitelist
+          </button>
+          <button id="blacklist-voted-url" class="btn btn-danger">
+            <i class="fas fa-ban"></i> Add to Blacklist
+          </button>
+        </div>
+      </div>
+    `;
+    
+    // Update the modal content - complete replacement to avoid styling conflicts
+    const modalBody = document.querySelector('#vote-modal .modal-body');
+    if (modalBody) {
+      modalBody.innerHTML = modalContent;
+    }
     
     // Show modal
     const modal = document.getElementById('vote-modal');
-    modal.classList.add('show');
-    
-    // Re-attach close button event listener to ensure it works
-    const closeButton = modal.querySelector('.modal-close');
-    if (closeButton) {
-      // Remove any existing event listeners
-      closeButton.replaceWith(closeButton.cloneNode(true));
-      
-      // Add fresh event listener
-      modal.querySelector('.modal-close').addEventListener('click', () => {
-        hideModal('vote-modal');
-      });
+    if (modal) {
+      modal.classList.add('show');
     }
+    
+    // Add event listeners to buttons
+    document.getElementById('whitelist-url')?.addEventListener('click', () => {
+      addToWhitelist(url);
+    });
+    document.getElementById('blacklist-voted-url')?.addEventListener('click', () => {
+      addToBlacklist(url);
+    });
+    
   } catch (error) {
     console.error('Error showing vote details:', error);
     showAlert('Failed to load vote details: ' + error.message, 'error');
@@ -758,99 +793,37 @@ async function showVoteDetails(url) {
 function hideModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
-    console.log('Hiding modal:', modalId);
     modal.classList.remove('show');
   }
 }
 
-// Helper function to format URLs for display
 function formatUrl(url) {
-  if (!url) return 'Unknown URL';
-  
   try {
-    // Try to parse URL and get hostname + pathname
     const parsed = new URL(url);
-    // Truncate long paths
-    const path = parsed.pathname.length > 20 ? parsed.pathname.substring(0, 20) + '...' : parsed.pathname;
-    return parsed.hostname + path;
-  } catch (e) {
-    // Return original if parsing fails, but truncated if too long
-    return url.length > 40 ? url.substring(0, 40) + '...' : url;
+    return parsed.hostname + parsed.pathname;
+  } catch (error) {
+    return url;
   }
 }
 
-// Helper function to format dates
-function formatDate(dateString) {
-  if (!dateString) return '-';
-  
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '-';
-    
-    return date.toLocaleDateString() + ' ' + 
-           date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch (e) {
-    return '-';
-  }
-}
-
-// Helper function to calculate percentages
-function calculatePercentage(safe, phishing) {
-  const total = (safe || 0) + (phishing || 0);
-  if (total === 0) return 50; // Default to 50% if no votes
-  
-  return Math.round((safe || 0) / total * 100);
-}
-
-// Utility function to escape HTML
-function escapeHtml(unsafe) {
-  if (!unsafe) return '';
-  
-  return unsafe
-    .toString()
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-// Function to show an alert message
 function showAlert(message, type = 'info') {
   const alertContainer = document.getElementById('system-alert');
-  if (!alertContainer) return;
-  
-  alertContainer.textContent = message;
-  alertContainer.className = `alert alert-${type === 'error' ? 'danger' : type}`;
-  alertContainer.style.display = 'block';
-  
-  if (type !== 'error' && type !== 'danger') {
+  if (alertContainer) {
+    alertContainer.textContent = message;
+    alertContainer.className = `alert alert-${type}`;
+    alertContainer.style.display = 'block';
     setTimeout(() => {
       alertContainer.style.display = 'none';
-    }, 5000);
+    }, 3000);
   }
 }
 
-// Add a direct modal close event listener at the document level
-document.addEventListener('DOMContentLoaded', function() {
-  const modalCloseButtons = document.querySelectorAll('.modal-close');
-  modalCloseButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      const modal = this.closest('.modal');
-      if (modal) {
-        modal.classList.remove('show');
-      }
-    });
-  });
-  
-  // Also close on overlay click
-  const modalOverlays = document.querySelectorAll('.modal-overlay');
-  modalOverlays.forEach(overlay => {
-    overlay.addEventListener('click', function() {
-      const modal = this.closest('.modal');
-      if (modal) {
-        modal.classList.remove('show');
-      }
-    });
-  });
-});
+function formatDate(date) {
+  if (!date) return 'Unknown';
+  try {
+    const parsedDate = new Date(date);
+    return parsedDate.toLocaleDateString() + ' ' + parsedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch (error) {
+    return 'Unknown';
+  }
+}

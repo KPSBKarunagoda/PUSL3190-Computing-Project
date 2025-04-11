@@ -1,0 +1,411 @@
+/* Custom styles for the enhanced votes page */
+
+/* ===== Vote Ratio and Chart Components ===== */
+
+/* Base styles for vote ratio component */
+.vote-ratio {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background-color: transparent !important;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  margin: 0 auto;
+  padding: 8px 0;
+  text-align: center;
+  width: 100%;
+}
+
+/* Remove background colors from all ratio classes */
+.ratio-positive, .ratio-negative, .ratio-neutral, .ratio-contested {
+  background-color: transparent !important;
+  border: 1px solid transparent;
+}
+
+/* Updated ratio text styling */
+.ratio-text {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.9rem;
+  gap: 5px;
+  text-align: center;
+  width: 100%;
+}
+
+.ratio-text span {
+  background-color: transparent !important;
+  font-weight: normal !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: inline;
+}
+
+/* Vote labels for detailed view */
+.vote-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 15px 0;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Update vote chart without bars */
+.vote-chart {
+  margin-bottom: 15px;
+  background: transparent !important;
+}
+
+/* ===== Prediction Badges ===== */
+
+/* Base prediction badge */
+.prediction-badge {
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+  display: inline-block;
+  margin: 0 auto;
+}
+
+/* Prediction badge variants */
+.badge-success {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.badge-danger {
+  background-color: rgba(247, 37, 133, 0.15);
+  color: #F72585;
+  border: 1px solid rgba(247, 37, 133, 0.3);
+}
+
+.badge-warning {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #FFC107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.badge-secondary {
+  background-color: rgba(128, 128, 128, 0.15);
+  color: #888888;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+/* ===== Vote Details Modal ===== */
+
+/* Vote URL display */
+.vote-url {
+  background-color: rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  border-radius: 6px;
+  word-break: break-all;
+  font-family: monospace;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+}
+
+/* Prediction section */
+.prediction-section {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  padding: 15px;
+  margin: 20px 0;
+  border: 1px solid var(--border);
+}
+
+.prediction-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Accuracy text styling */
+.accuracy-text {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin-top: 5px;
+}
+
+.accuracy-text.success {
+  color: var(--success);
+}
+
+.accuracy-text.warning {
+  color: var(--warning);
+}
+
+.accuracy-text.danger {
+  color: var(--danger);
+}
+
+.accuracy-text.neutral {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Vote chart in modal */
+.vote-bars {
+  height: 12px;
+  width: 100%;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  display: flex;
+  margin-bottom: 10px;
+}
+
+/* Vote details grid */
+.vote-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.vote-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.detail-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.detail-value {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+/* ===== Analytics Section ===== */
+
+.analytics-container {
+  margin-bottom: 20px;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.analytics-card {
+  background-color: var(--dark-light);
+  border-radius: var(--radius);
+  padding: 15px;
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+.analytics-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.analytics-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.analytics-value {
+  font-size: 1.1rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Responsive Adjustments ===== */
+
+@media (max-width: 768px) {
+  .analytics-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .vote-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Action Buttons in Modal ===== */
+.action-buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+/* Fix for any remaining text highlighting issues */
+*, *::before, *::after {
+  text-decoration-thickness: initial;
+  text-decoration-style: initial;
+  text-decoration-color: initial;
+}
+
+/* Ensure table column alignment */
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 12px 15px;
+  vertical-align: middle;
+}
+
+/* Specifically target the vote ratio column (2nd column) */
+.votes-table th:nth-child(2),
+.votes-table td:nth-child(2) {
+  text-align: center; /* Center the header and content */
+}
+
+/* Score column alignment (3rd column) */
+.votes-table th:nth-child(3),
+.votes-table td:nth-child(3) {
+  text-align: center;
+}
+
+/* Prediction column alignment (4th column) */
+.votes-table th:nth-child(4),
+.votes-table td:nth-child(4) {
+  text-align: center;
+}
+
+/* Actions column alignment (6th column) */
+.votes-table th:nth-child(6),
+.votes-table td:nth-child(6) {
+  text-align: center;
+}
+
+/* Even spacing for the columns */
+.votes-table th:nth-child(1),
+.votes-table td:nth-child(1) {
+  width: 30%; /* URL column gets more space */
+}
+
+.votes-table th:nth-child(2),
+.votes-table td:nth-child(2) {
+  width: 20%; /* Vote ratio gets adequate space */
+}
+
+.votes-table th:nth-child(3),
+.votes-table td:nth-child(3) {
+  width: 10%; /* Score column is compact */
+}
+
+.votes-table th:nth-child(4),
+.votes-table td:nth-child(4) {
+  width: 15%; /* Prediction gets moderate space */
+}
+
+.votes-table th:nth-child(5),
+.votes-table td:nth-child(5) {
+  width: 15%; /* Last Vote date */
+}
+
+.votes-table th:nth-child(6),
+.votes-table td:nth-child(6) {
+  width: 10%; /* Actions column */
+}
+
+/* Set consistent column widths */
+.data-table th:nth-child(1),
+.data-table td:nth-child(1) {
+  width: 30%;
+}
+
+.data-table th:nth-child(2),
+.data-table td:nth-child(2) {
+  width: 20%;
+}
+
+.data-table th:nth-child(3),
+.data-table td:nth-child(3) {
+  width: 10%;
+  text-align: center;
+}
+
+.data-table th:nth-child(4),
+.data-table td:nth-child(4) {
+  width: 15%;
+  text-align: center;
+}
+
+.data-table th:nth-child(5),
+.data-table td:nth-child(5) {
+  width: 15%;
+}
+
+.data-table th:nth-child(6),
+.data-table td:nth-child(6) {
+  width: 10%;
+  text-align: center;
+}
+
+/* For URL column - limit width and handle overflow */
+.data-table td:first-child {
+  max-width: 300px;
+}
+
+.url-cell {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Score display styling */
+.score-value {
+  font-weight: 500;
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-align: center;
+  min-width: 40px;
+}
+
+/* Score value alignment */
+.score-value {
+  display: inline-block;
+  min-width: 40px;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.score-high {
+  color: #4CAF50;
+}
+
+.score-medium {
+  color: #FFC107;
+}
+
+.score-low {
+  color: #F72585;
+}
+
+/* Center action buttons */
+.actions {
+  display: flex;
+  justify-content: center;
+}
+
+/* Fix for Firefox specific alignment issues */
+@-moz-document url-prefix() {
+  .data-table th, .data-table td {
+    text-align: start;
+  }
+}

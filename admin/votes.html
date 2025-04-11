@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PhishGuard Admin | User Votes</title>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/votes-custom.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <meta name="description" content="PhishGuard Admin User Votes Management">
 </head>
@@ -78,30 +79,30 @@
         
         <div class="stat-card">
           <div class="stat-card-icon bg-success">
-            <i class="fas fa-shield-alt"></i>
+            <i class="fas fa-check-circle"></i>
           </div>
           <div class="stat-card-info">
-            <h3>Safe Votes</h3>
-            <p id="safe-votes" class="stat-value">0</p>
+            <h3>Positive Votes</h3>
+            <p id="positive-votes" class="stat-value">0</p>
           </div>
         </div>
         
         <div class="stat-card">
           <div class="stat-card-icon bg-danger">
-            <i class="fas fa-skull-crossbones"></i>
+            <i class="fas fa-ban"></i>
           </div>
           <div class="stat-card-info">
-            <h3>Phishing Votes</h3>
-            <p id="phishing-votes" class="stat-value">0</p>
+            <h3>Negative Votes</h3>
+            <p id="negative-votes" class="stat-value">0</p>
           </div>
         </div>
         
         <div class="stat-card">
-          <div class="stat-card-icon bg-info">
-            <i class="fas fa-calendar-alt"></i>
+          <div class="stat-card-icon bg-warning">
+            <i class="fas fa-calendar-day"></i>
           </div>
           <div class="stat-card-info">
-            <h3>Votes Today</h3>
+            <h3>Today's Votes</h3>
             <p id="today-votes" class="stat-value">0</p>
           </div>
         </div>
@@ -119,10 +120,10 @@
               </button>
             </div>
             
-            <select id="vote-filter" class="vote-filter">
+            <select id="vote-filter" class="form-select">
               <option value="all">All Votes</option>
-              <option value="safe-majority">Safe Majority</option>
-              <option value="phishing-majority">Phishing Majority</option>
+              <option value="positive-majority">Positive Majority</option>
+              <option value="negative-majority">Negative Majority</option>
               <option value="contested">Contested</option>
             </select>
             
@@ -139,13 +140,13 @@
           </div>
           
           <div class="table-responsive">
-            <table id="votes-table" class="data-table">
+            <table id="votes-table" class="data-table votes-table">
               <thead>
                 <tr>
                   <th>URL</th>
-                  <th>Safe Votes</th>
-                  <th>Phishing Votes</th>
                   <th>Vote Ratio</th>
+                  <th>Score</th>
+                  <th>Prediction</th>
                   <th>Last Vote</th>
                   <th>Actions</th>
                 </tr>
@@ -182,22 +183,25 @@
         </div>
         
         <div class="card-body">
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Most Voted URL</span>
-              <span id="most-voted-url" class="info-value">-</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Most Contested URL</span>
-              <span id="most-contested-url" class="info-value">-</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Most Reported as Phishing</span>
-              <span id="most-phishing-url" class="info-value">-</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Most Reported as Safe</span>
-              <span id="most-safe-url" class="info-value">-</span>
+          <div class="analytics-container">
+            <h3>Key Insights</h3>
+            <div class="analytics-grid">
+              <div class="analytics-card">
+                <div class="analytics-label">Most Voted URL</div>
+                <div id="most-voted-url" class="analytics-value">-</div>
+              </div>
+              <div class="analytics-card">
+                <div class="analytics-label">Most Contested URL</div>
+                <div id="most-contested-url" class="analytics-value">-</div>
+              </div>
+              <div class="analytics-card">
+                <div class="analytics-label">Most Positive URL</div>
+                <div id="most-positive-url" class="analytics-value">-</div>
+              </div>
+              <div class="analytics-card">
+                <div class="analytics-label">Most Negative URL</div>
+                <div id="most-negative-url" class="analytics-value">-</div>
+              </div>
             </div>
           </div>
           
