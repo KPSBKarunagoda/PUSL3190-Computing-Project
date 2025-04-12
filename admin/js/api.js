@@ -251,6 +251,62 @@ const listsAPI = {
       console.error('Error removing from blacklist:', error);
       throw error;
     }
+  },
+  
+  // Add URL to whitelist
+  async addToWhitelist(url, token) {
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+    
+    try {
+      const response = await fetch('http://localhost:3000/api/lists/whitelist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ url })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to add to whitelist: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('API error in addToWhitelist:', error);
+      throw error;
+    }
+  },
+  
+  // Add URL to blacklist
+  async addToBlacklist(url, token) {
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+    
+    try {
+      const response = await fetch('http://localhost:3000/api/lists/blacklist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ url })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to add to blacklist: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('API error in addToBlacklist:', error);
+      throw error;
+    }
   }
 };
 
@@ -381,6 +437,107 @@ const votesAPI = {
       return await apiRequest(`/votes/url?url=${encodeURIComponent(url)}`);
     } catch (error) {
       console.error('Error fetching vote details:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Get vote statistics with token
+   * @param {string} token Authentication token
+   * @returns {Promise<Object>} Vote stats including counts and trends
+   */
+  async getStats(token) {
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+    
+    try {
+      const response = await fetch('http://localhost:3000/api/votes/stats', {
+        headers: {
+          'x-auth-token': token
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch vote stats: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Map data to consistent naming convention
+      return {
+        total: data.total || 0,
+        positiveCount: data.positiveCount || 0,
+        negativeCount: data.negativeCount || 0,
+        urlsVoted: data.urlsVoted || 0,
+        uniqueVoters: data.uniqueVoters || 0,
+        recentActivity: data.recentActivity || []
+      };
+    } catch (error) {
+      console.error('API error in getStats:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Get all votes for admin view
+   * @param {string} token Authentication token
+   * @returns {Promise<Array>} Raw vote data from database
+   */
+  async getVotes(token) {
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+    
+    try {
+      const response = await fetch('http://localhost:3000/api/votes', {
+        headers: {
+          'x-auth-token': token
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch votes: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('API error in getVotes:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Get votes for specific URL
+   * @param {string} url The URL to get vote details for
+   * @param {string} token Authentication token
+   * @returns {Promise<Object>} Vote details including all individual votes
+   */
+  async getVotesByUrl(url, token) {
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+    
+    if (!url) {
+      throw new Error('URL is required');
+    }
+    
+    try {
+      const response = await fetch(`http://localhost:3000/api/votes/url?url=${encodeURIComponent(url)}`, {
+        headers: {
+          'x-auth-token': token
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch votes by URL: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('API error in getVotesByUrl:', error);
       throw error;
     }
   },

@@ -257,9 +257,10 @@ module.exports = function(dbConnection) {
     // GET /api/votes - Get all vote summaries (admin only)
     router.get('/', adminAuth, async (req, res) => {
         try {
-            // Query all votes with user info
+            // Query all votes with user info and prediction data
             const [rows] = await dbConnection.execute(`
                 SELECT v.VoteID, v.URL, v.VoteType, v.Timestamp,
+                       v.PredictionShown, v.PredictionScore,
                        u.Username, u.Email
                 FROM Votes v
                 JOIN User u ON v.UserID = u.UserID
@@ -323,9 +324,10 @@ module.exports = function(dbConnection) {
                 return res.status(400).json({ message: 'URL parameter is required' });
             }
             
-            // Get votes for the specified URL
+            // Get votes for the specified URL - include prediction data columns
             const [votes] = await dbConnection.execute(`
-                SELECT v.VoteID, v.UserID, v.VoteType, v.Timestamp,
+                SELECT v.VoteID, v.UserID, v.VoteType, v.Timestamp, 
+                       v.PredictionShown, v.PredictionScore,
                        u.Username, u.Email
                 FROM Votes v
                 JOIN User u ON v.UserID = u.UserID
