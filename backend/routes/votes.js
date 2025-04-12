@@ -16,7 +16,7 @@ module.exports = function(dbConnection) {
     // POST /api/votes - Submit a vote
     router.post('/', auth, async (req, res) => {
         try {
-            const { url, voteType } = req.body;
+            const { url, voteType, predictionShown, predictionScore } = req.body;
             const userId = req.user.id;
             
             if (!url || !voteType) {
@@ -24,8 +24,8 @@ module.exports = function(dbConnection) {
             }
             
             // Validate vote type
-            if (!['Safe', 'Phishing'].includes(voteType)) {
-                return res.status(400).json({ message: 'Vote type must be "Safe" or "Phishing"' });
+            if (!['Positive', 'Negative'].includes(voteType)) {
+                return res.status(400).json({ message: 'Vote type must be "Positive" or "Negative"' });
             }
             
             try {
@@ -34,41 +34,61 @@ module.exports = function(dbConnection) {
                     SHOW TABLES LIKE 'Votes'
                 `);
                 
-                // Create table if it doesn't exist
+                // Create table if it doesn't exist - remove FeedbackType column
                 if (tables.length === 0) {
                     await dbConnection.query(`
                         CREATE TABLE Votes (
                             VoteID INT PRIMARY KEY AUTO_INCREMENT,
                             UserID INT NOT NULL,
                             URL VARCHAR(255) NOT NULL,
-                            VoteType ENUM('Safe', 'Phishing') NOT NULL,
+                            VoteType ENUM('Positive', 'Negative') NOT NULL,
+                            PredictionShown VARCHAR(50) NULL,
+                            PredictionScore FLOAT NULL,
                             Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             FOREIGN KEY (UserID) REFERENCES User(UserID),
                             UNIQUE KEY unique_user_url (UserID, URL)
                         )
                     `);
-                    console.log('Votes table created successfully with unique constraint');
+                    console.log('Votes table created successfully with prediction columns');
                 } else {
-                    // Try to add the unique constraint if needed
+                    // Check if we need to modify the existing table
                     try {
-                        await dbConnection.query(`
-                            ALTER TABLE Votes ADD UNIQUE KEY unique_user_url (UserID, URL)
+                        // Check if FeedbackType column exists and remove it if present
+                        const [feedbackColumn] = await dbConnection.query(`
+                            SHOW COLUMNS FROM Votes LIKE 'FeedbackType'
                         `);
-                        console.log('Added unique constraint to existing Votes table');
-                    } catch (constraintErr) {
-                        // Constraint might already exist, which will cause an error
-                        if (!constraintErr.message.includes('Duplicate key name')) {
-                            console.error('Error adding constraint:', constraintErr);
+                        
+                        if (feedbackColumn.length > 0) {
+                            // Drop the FeedbackType column if it exists
+                            await dbConnection.query(`
+                                ALTER TABLE Votes 
+                                DROP COLUMN FeedbackType
+                            `);
+                            console.log('Removed FeedbackType column from Votes table');
                         }
+                        
+                        // Check if PredictionShown column exists
+                        const [columnsPrediction] = await dbConnection.query(`
+                            SHOW COLUMNS FROM Votes LIKE 'PredictionShown'
+                        `);
+                        
+                        if (columnsPrediction.length === 0) {
+                            // Add the new columns
+                            await dbConnection.query(`
+                                ALTER TABLE Votes 
+                                ADD COLUMN PredictionShown VARCHAR(50) NULL,
+                                ADD COLUMN PredictionScore FLOAT NULL
+                            `);
+                            console.log('Added prediction data columns to Votes table');
+                        }
+                    } catch (alterErr) {
+                        console.error('Error updating votes table schema:', alterErr);
                     }
                 }
             } catch (err) {
                 console.error('Error checking/creating votes table:', err);
             }
             
-            // REMOVE TRANSACTION CODE AND REPLACE WITH DIRECT QUERY
-            // Use REPLACE INTO which deletes any existing record and inserts a new one
-            // This is atomic at the database level and doesn't require a transaction
             try {
                 // Check if user has already voted for this URL
                 const [existingVote] = await dbConnection.execute(`
@@ -76,19 +96,34 @@ module.exports = function(dbConnection) {
                 `, [userId, url]);
                 
                 if (existingVote.length > 0) {
-                    // User already voted - update their vote
+                    // User already voted - update their vote without FeedbackType
                     await dbConnection.execute(`
                         UPDATE Votes
-                        SET VoteType = ?, Timestamp = CURRENT_TIMESTAMP
+                        SET VoteType = ?, 
+                            PredictionShown = ?,
+                            PredictionScore = ?,
+                            Timestamp = CURRENT_TIMESTAMP
                         WHERE UserID = ? AND URL = ?
-                    `, [voteType, userId, url]);
+                    `, [
+                        voteType, 
+                        predictionShown || null, 
+                        predictionScore !== undefined && predictionScore !== null ? predictionScore : null, 
+                        userId, 
+                        url
+                    ]);
                     console.log(`Updated vote for user ${userId} on URL ${url} to ${voteType}`);
                 } else {
-                    // New vote - insert
+                    // New vote - insert without FeedbackType
                     await dbConnection.execute(`
-                        INSERT INTO Votes (UserID, URL, VoteType)
-                        VALUES (?, ?, ?)
-                    `, [userId, url, voteType]);
+                        INSERT INTO Votes (UserID, URL, VoteType, PredictionShown, PredictionScore)
+                        VALUES (?, ?, ?, ?, ?)
+                    `, [
+                        userId, 
+                        url, 
+                        voteType, 
+                        predictionShown || null, 
+                        predictionScore !== undefined && predictionScore !== null ? predictionScore : null
+                    ]);
                     console.log(`New vote added for user ${userId} on URL ${url}: ${voteType}`);
                 }
             } catch (queryError) {
@@ -97,12 +132,12 @@ module.exports = function(dbConnection) {
             }
             
             // Get current vote counts
-            const [safeCounts] = await dbConnection.execute(`
-                SELECT COUNT(*) AS count FROM Votes WHERE URL = ? AND VoteType = 'Safe'
+            const [positiveCounts] = await dbConnection.execute(`
+                SELECT COUNT(*) AS count FROM Votes WHERE URL = ? AND VoteType = 'Positive'
             `, [url]);
             
-            const [phishingCounts] = await dbConnection.execute(`
-                SELECT COUNT(*) AS count FROM Votes WHERE URL = ? AND VoteType = 'Phishing'
+            const [negativeCounts] = await dbConnection.execute(`
+                SELECT COUNT(*) AS count FROM Votes WHERE URL = ? AND VoteType = 'Negative'
             `, [url]);
             
             // Verify the user has exactly one vote
@@ -115,8 +150,8 @@ module.exports = function(dbConnection) {
             res.status(200).json({
                 message: 'Vote recorded successfully',
                 counts: {
-                    safe: safeCounts[0].count,
-                    phishing: phishingCounts[0].count
+                    positive: positiveCounts[0].count,
+                    negative: negativeCounts[0].count
                 },
                 userVote: voteType
             });
@@ -165,31 +200,31 @@ module.exports = function(dbConnection) {
                 // If table doesn't exist, return zeros
                 if (tables.length === 0) {
                     return res.json({
-                        counts: { safe: 0, phishing: 0 },
+                        counts: { positive: 0, negative: 0 },
                         userVote
                     });
                 }
                 
                 // Get vote counts
-                const [safeCounts] = await dbConnection.execute(`
-                    SELECT COUNT(*) AS count FROM Votes WHERE URL = ? AND VoteType = 'Safe'
+                const [positiveCounts] = await dbConnection.execute(`
+                    SELECT COUNT(*) AS count FROM Votes WHERE URL = ? AND VoteType = 'Positive'
                 `, [url]);
                 
-                const [phishingCounts] = await dbConnection.execute(`
-                    SELECT COUNT(*) AS count FROM Votes WHERE URL = ? AND VoteType = 'Phishing'
+                const [negativeCounts] = await dbConnection.execute(`
+                    SELECT COUNT(*) AS count FROM Votes WHERE URL = ? AND VoteType = 'Negative'
                 `, [url]);
                 
                 res.json({
                     counts: {
-                        safe: safeCounts[0].count,
-                        phishing: phishingCounts[0].count
+                        positive: positiveCounts[0].count,
+                        negative: negativeCounts[0].count
                     },
                     userVote
                 });
             } catch (err) {
                 console.error('Error fetching vote counts:', err);
                 res.json({
-                    counts: { safe: 0, phishing: 0 },
+                    counts: { positive: 0, negative: 0 },
                     userVote
                 });
             }
@@ -244,8 +279,8 @@ module.exports = function(dbConnection) {
         try {
             // Get overall vote statistics
             const [totalVotes] = await dbConnection.execute('SELECT COUNT(*) as total FROM Votes');
-            const [safeVotes] = await dbConnection.execute("SELECT COUNT(*) as count FROM Votes WHERE VoteType = 'Safe'");
-            const [phishingVotes] = await dbConnection.execute("SELECT COUNT(*) as count FROM Votes WHERE VoteType = 'Phishing'");
+            const [positiveVotes] = await dbConnection.execute("SELECT COUNT(*) as count FROM Votes WHERE VoteType = 'Positive'");
+            const [negativeVotes] = await dbConnection.execute("SELECT COUNT(*) as count FROM Votes WHERE VoteType = 'Negative'");
             const [uniqueUrls] = await dbConnection.execute('SELECT COUNT(DISTINCT URL) as count FROM Votes');
             const [uniqueUsers] = await dbConnection.execute('SELECT COUNT(DISTINCT UserID) as count FROM Votes');
             
@@ -261,8 +296,8 @@ module.exports = function(dbConnection) {
             // Format to match frontend expectations
             const response = {
                 total: totalVotes[0].total || 0,
-                safeCount: safeVotes[0].count || 0,
-                phishingCount: phishingVotes[0].count || 0,
+                positiveCount: positiveVotes[0].count || 0,
+                negativeCount: negativeVotes[0].count || 0,
                 urlsVoted: uniqueUrls[0].count || 0,
                 uniqueVoters: uniqueUsers[0].count || 0,
                 recentActivity: recentActivity.map(item => ({
@@ -299,20 +334,20 @@ module.exports = function(dbConnection) {
             `, [url]);
             
             // Get summary counts
-            const [safeCounts] = await dbConnection.execute(`
-                SELECT COUNT(*) AS count FROM Votes WHERE URL = ? AND VoteType = 'Safe'
+            const [positiveCounts] = await dbConnection.execute(`
+                SELECT COUNT(*) AS count FROM Votes WHERE URL = ? AND VoteType = 'Positive'
             `, [url]);
             
-            const [phishingCounts] = await dbConnection.execute(`
-                SELECT COUNT(*) AS count FROM Votes WHERE URL = ? AND VoteType = 'Phishing'
+            const [negativeCounts] = await dbConnection.execute(`
+                SELECT COUNT(*) AS count FROM Votes WHERE URL = ? AND VoteType = 'Negative'
             `, [url]);
             
             res.json({
                 votes,
                 summary: {
                     url,
-                    safeCount: safeCounts[0].count,
-                    phishingCount: phishingCounts[0].count,
+                    positiveCount: positiveCounts[0].count,
+                    negativeCount: negativeCounts[0].count,
                     totalVotes: votes.length
                 }
             });

@@ -820,7 +820,7 @@ function makeAuthenticatedRequest(endpoint, method = 'GET', body = null) {
 }
 
 // Replace the vote count retrieval in showResult with the VotingSystem approach
-async function showResult(result, elements) {
+function showResult(result, elements) {
   const { scoreElement, statusElement, resultContainer, scoreSection, riskExplanation, currentSiteLink, circleFill } = elements;
 
   console.log('Processing result:', result);
@@ -835,6 +835,22 @@ async function showResult(result, elements) {
   };
 
   console.log('Display data:', displayData);
+
+  // Set prediction data for voting system
+  if (window.votingSystem) {
+    // Determine prediction from result data
+    let prediction = 'Safe';
+    if (displayData.is_phishing) {
+      prediction = 'Phishing';
+    } else if (displayData.risk_score >= 60) {
+      prediction = 'Phishing';
+    } else if (displayData.risk_score >= 30) {
+      prediction = 'Suspicious';
+    }
+    
+    console.log('Setting prediction data in voting system:', prediction, displayData.risk_score);
+    window.votingSystem.setPrediction(prediction, displayData.risk_score);
+  }
 
   // Update the score text
   if (scoreElement) {

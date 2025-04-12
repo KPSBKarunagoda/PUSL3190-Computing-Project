@@ -476,7 +476,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   
-  // Handle voting action with no response - complete overhaul
+  // Handle voting action - remove feedbackType from request body
   if (message.action === 'voteNoResponse') {
     // Step 1: Verify authentication status from storage
     chrome.storage.local.get(['isLoggedIn', 'authToken'], async (authData) => {
@@ -493,6 +493,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       
       console.log('Processing vote for URL:', message.url);
+      console.log('Vote includes prediction data:', message.predictionShown, message.predictionScore);
       
       // Step 2: Get current vote data
       chrome.storage.local.get(['voteCounts'], async (storage) => {
@@ -504,16 +505,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         };
         
         try {
-          // Step 3: Send vote to server
+          // Ensure we have values for prediction and score
+          const predictionToSend = message.predictionShown || 'Unknown';
+          const scoreToSend = message.predictionScore !== undefined && message.predictionScore !== null ? 
+                            Number(message.predictionScore) : 0;
+          
+          console.log('Sending vote to API with prediction:', predictionToSend, 'score:', scoreToSend);
+          
+          // Step 3: Send vote to server - without feedbackType
           const response = await fetch('http://localhost:3000/api/votes', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'x-auth-token': authData.authToken
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
               url: message.url, 
-              voteType: message.voteType 
+              voteType: message.voteType,
+              predictionShown: predictionToSend,
+              predictionScore: scoreToSend
             })
           });
           
@@ -535,9 +545,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           chrome.storage.local.get(['voteCounts'], (currentStorage) => {
             const updatedCounts = currentStorage.voteCounts || {};
             updatedCounts[message.url] = {
-              safe: data.counts?.safe || currentCounts.safe,
-              phishing: data.counts?.phishing || currentCounts.phishing,
-              userVote: message.voteType,
+              // Map from server response (positive/negative) to UI format (safe/phishing)
+              safe: data.counts?.positive || 0,
+              phishing: data.counts?.negative || 0,
+              userVote: message.feedbackAction, // Store agree/disagree
               lastUpdated: Date.now()
             };
             
@@ -547,7 +558,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             safelySendMessage({
               action: 'voteRecorded',
               url: message.url,
-              voteType: message.voteType,
+              voteType: message.voteType, // Backend vote type (Positive/Negative)
+              uiVoteType: message.uiVoteType || (message.voteType === 'Positive' ? 'Safe' : 'Phishing'), // UI vote type (Safe/Phishing)
               counts: data.counts
             });
           });
@@ -592,26 +604,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return response.json();
       })
       .then(data => {
-        // Update vote counts in storage
+        // Update vote counts in storage - map from positive/negative to safe/phishing
         chrome.storage.local.get(['voteCounts'], (storage) => {
           const voteCounts = storage.voteCounts || {};
           
+          // Convert backend positive/negative to UI safe/phishing
+          const mappedCounts = {
+            safe: data.counts?.positive || 0,
+            phishing: data.counts?.negative || 0
+          };
+          
+          // Get the user's feedback type based on vote
+          let userFeedbackType = null;
+          if (data.userVote) {
+            // Look up the user's current prediction from storage
+            // (temporary fix - we would need to store this on the server long-term)
+            const existingVoteData = voteCounts[message.url];
+            if (existingVoteData && existingVoteData.userVote) {
+              userFeedbackType = existingVoteData.userVote; // This should be 'agree' or 'disagree'
+            }
+          }
+          
           // Only include userVote if user is logged in
           voteCounts[message.url] = {
-            safe: data.counts?.safe || 0,
-            phishing: data.counts?.phishing || 0,
-            userVote: authData.isLoggedIn ? data.userVote : null,
+            safe: mappedCounts.safe,
+            phishing: mappedCounts.phishing,
+            userVote: userFeedbackType, 
             lastUpdated: Date.now()
           };
           
           chrome.storage.local.set({ voteCounts });
           
-          // Notify popup about updated counts
+          // Notify popup with the proper format
           safelySendMessage({
             action: 'voteCounts',
             url: message.url,
-            counts: data.counts,
-            userVote: authData.isLoggedIn ? data.userVote : null
+            counts: mappedCounts,
+            userVote: userFeedbackType
           });
         });
       })
@@ -633,7 +662,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
   }
   
-  // NEW: Direct immediate vote count for popup
+  // Direct immediate vote count for popup - FIX MAPPING BETWEEN BACKEND AND UI
   if (message.action === 'getVoteCountsImmediate') {
     const headers = {};
     
@@ -652,20 +681,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
       .then(data => {
         console.log('Immediate vote counts fetched:', data);
+        
+        // Convert backend positive/negative to UI safe/phishing
+        const mappedCounts = {
+          safe: data.counts?.positive || 0,
+          phishing: data.counts?.negative || 0
+        };
+        
+        // Fix: Convert backend vote type to UI vote type directly
+        let uiVote = null;
+        if (data.userVote === 'Positive') uiVote = 'Safe';
+        else if (data.userVote === 'Negative') uiVote = 'Phishing';
+        
         sendResponse({
           success: true,
-          counts: data.counts,
-          userVote: authData.isLoggedIn ? data.userVote : null
+          counts: mappedCounts,
+          userVote: uiVote // Use the properly mapped vote type
         });
         
-        // Also update local storage
+        // Fix: Store the correct user vote type in storage
         chrome.storage.local.get(['voteCounts'], (storage) => {
           const voteCounts = storage.voteCounts || {};
           
           voteCounts[message.url] = {
-            safe: data.counts?.safe || 0,
-            phishing: data.counts?.phishing || 0,
-            userVote: authData.isLoggedIn ? data.userVote : null,
+            safe: mappedCounts.safe,
+            phishing: mappedCounts.phishing,
+            userVote: uiVote, // Store the UI-friendly vote type
             lastUpdated: Date.now()
           };
           
@@ -673,6 +714,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             voteCounts, 
             voteLastChecked: Date.now() 
           });
+          
+          // Also send a message to update any open popups
+          if (uiVote) {
+            safelySendMessage({
+              action: 'voteCounts',
+              url: message.url,
+              counts: mappedCounts,
+              userVote: uiVote
+            });
+          }
         });
       })
       .catch(error => {
@@ -702,6 +753,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ cached: false });
     }
     return true;  // Keep channel open for async response
+  }
+
+  // Handle vote counts response for UI - FIX THE REFERENCE ERROR WITH data
+  if (message.action === 'voteCounts') {
+    // Fix: Don't use 'data' which is undefined - use 'message' instead
+    const response = {
+      action: 'voteCounts',
+      url: message.url,
+      counts: {
+        safe: message.counts?.positive || 0,
+        phishing: message.counts?.negative || 0
+      },
+      userVote: message.userVote === 'Positive' ? 'Safe' : 
+                message.userVote === 'Negative' ? 'Phishing' : null
+    };
+    
+    // Actually send the processed message
+    safelySendMessage(response);
   }
 });
 

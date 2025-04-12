@@ -6,18 +6,40 @@
 class VotingSystem {
   constructor(elements) {
     this.elements = elements;
+    this.currentPrediction = null; // Store the current prediction
+    this.currentScore = null;      // Store the prediction score
+    this.currentUrl = null;
     this.isVoting = false;
-    this.currentUrl = '';
     this.currentVoteState = null;
     this.setupListeners();
+    
+    // Debug current prediction data
+    console.log('VotingSystem initialized with prediction:', this.currentPrediction, 'score:', this.currentScore);
+  }
+
+  // Set the current prediction so we know what feedback means
+  setPrediction(prediction, score) {
+    console.log('setPrediction called with:', prediction, score);
+    this.currentPrediction = prediction;
+    this.currentScore = score;
+    
+    // Update the UI to show what we're getting feedback on
+    if (this.elements.predictionResult) {
+      this.elements.predictionResult.textContent = prediction;
+      this.elements.predictionResult.className = 'prediction-badge ' + 
+        (prediction === 'Safe' ? 'badge-success' : prediction === 'Phishing' ? 'badge-danger' : 'badge-warning');
+    }
+    
+    console.log('Updated VotingSystem prediction data:', this.currentPrediction, this.currentScore);
   }
 
   /**
-   * Set up the vote button event listeners
+   * Set up the vote button event listeners - reverted to previous safe/phishing approach
    */
   setupListeners() {
     if (!this.elements.voteUp || !this.elements.voteDown) return;
     
+    // Change back to Safe/Phishing to match the original behavior
     this.elements.voteUp.addEventListener('click', () => this.handleVote('Safe'));
     this.elements.voteDown.addEventListener('click', () => this.handleVote('Phishing'));
     
@@ -122,7 +144,7 @@ class VotingSystem {
   }
   
   /**
-   * Load stored votes from cache
+   * Load stored votes from cache - updated to handle the original UI model
    * @param {string} url Current URL
    * @param {boolean} isLoggedIn Whether user is logged in
    */
@@ -146,12 +168,15 @@ class VotingSystem {
           if (isLoggedIn && voteData.userVote) {
             this.currentVoteState = voteData.userVote;
             
+            // Reset both buttons first
+            this.elements.voteUp.classList.remove('active');
+            this.elements.voteDown.classList.remove('active');
+            
+            // Then highlight the appropriate button
             if (voteData.userVote === 'Safe') {
               this.elements.voteUp.classList.add('active');
-              this.elements.voteDown.classList.remove('active');
             } else if (voteData.userVote === 'Phishing') {
               this.elements.voteDown.classList.add('active');
-              this.elements.voteUp.classList.remove('active');
             }
           } else {
             // Ensure buttons aren't highlighted when not logged in
@@ -166,7 +191,7 @@ class VotingSystem {
   }
   
   /**
-   * Request fresh vote counts if needed
+   * Request fresh votes if needed
    * @param {string} url Current URL
    */
   async requestFreshVotes(url) {
@@ -210,9 +235,7 @@ class VotingSystem {
   }
   
   /**
-   * Update UI from vote data
-   * @param {Object} voteData Vote data object
-   * @param {boolean} isLoggedIn Whether user is logged in
+   * Update UI from vote data - improved to handle Safe/Phishing consistently
    */
   updateUIFromData(voteData, isLoggedIn) {
     console.log('Updating vote UI with data:', voteData, 'isLoggedIn:', isLoggedIn);
@@ -239,8 +262,10 @@ class VotingSystem {
       // Then add the active class to the appropriate button
       if (voteData.userVote === 'Safe') {
         this.elements.voteUp.classList.add('active');
+        console.log('Setting SAFE button active');
       } else if (voteData.userVote === 'Phishing') {
         this.elements.voteDown.classList.add('active');
+        console.log('Setting PHISHING button active');
       }
     } else {
       // Reset active state if not logged in
@@ -251,10 +276,15 @@ class VotingSystem {
   }
   
   /**
-   * Handle voting action
+   * Handle voting action - simplified without feedbackType
    * @param {string} voteType 'Safe' or 'Phishing'
    */
   async handleVote(voteType) {
+    if (!this.currentUrl) {
+      console.error('Cannot vote without URL context');
+      return;
+    }
+    
     // Prevent rapid clicking
     if (this.isVoting) return;
     this.isVoting = true;
@@ -271,7 +301,7 @@ class VotingSystem {
       
       // Check if this is the same as the current vote
       if (this.currentVoteState === voteType) {
-        console.log(`Already voted ${voteType, ignoring}`);
+        console.log(`Already voted ${voteType}, ignoring`);
         this.isVoting = false;
         return;
       }
@@ -332,11 +362,26 @@ class VotingSystem {
         chrome.storage.local.set({ voteCounts });
       });
       
-      // Send vote to background script
+      // Log the current prediction data before voting
+      console.log('Before voting - prediction:', this.currentPrediction, 'score:', this.currentScore);
+      
+      // Default values if somehow missing
+      const predictionToSend = this.currentPrediction || 'Unknown';
+      const scoreToSend = this.currentScore !== null ? this.currentScore : 0;
+      
+      // Map UI vote types to backend vote types
+      const backendVoteType = voteType === 'Safe' ? 'Positive' : 'Negative';
+      
+      // Send vote to background script without feedbackType
+      console.log(`Sending vote ${voteType} (backend: ${backendVoteType}) with prediction ${predictionToSend} and score ${scoreToSend}`);
+      
       chrome.runtime.sendMessage({
         action: 'voteNoResponse',
         url: this.currentUrl,
-        voteType: voteType
+        voteType: backendVoteType, // Send Positive/Negative to backend
+        predictionShown: predictionToSend,
+        predictionScore: scoreToSend,
+        uiVoteType: voteType // Include original UI vote type
       });
     } catch (error) {
       console.error('Error handling vote:', error);
@@ -351,15 +396,21 @@ class VotingSystem {
   
   /**
    * Handle successful vote
-   * @param {Object} message Vote success message
    */
   handleVoteSuccess(message) {
     if (message.url !== this.currentUrl) return;
     
-    // Update current vote state
-    this.currentVoteState = message.voteType;
+    // Use UI vote type if available, otherwise use the original vote type
+    const voteType = message.uiVoteType || message.voteType;
     
-    // No need to update UI as we've already done it optimistically
+    if (voteType) {
+      this.currentVoteState = voteType;
+      
+      // Update UI if needed
+      this.elements.voteUp.classList.toggle('active', voteType === 'Safe');
+      this.elements.voteDown.classList.toggle('active', voteType === 'Phishing');
+    }
+    
     console.log('Vote confirmed by server');
   }
   
@@ -379,15 +430,14 @@ class VotingSystem {
   
   /**
    * Update vote counts from server data
-   * @param {Object} message Vote counts message
    */
   updateVoteCounts(message) {
     if (message.url !== this.currentUrl) return;
     
     console.log('Received server vote counts:', message);
     
-    // First get current auth state to ensure proper UI updates
     this.getAuthState().then(authState => {
+      // Update vote counts
       if (this.elements.upvotes) {
         this.elements.upvotes.textContent = message.counts?.safe || 0;
       }
@@ -398,20 +448,27 @@ class VotingSystem {
       
       // Only update user vote UI if logged in
       if (authState.isLoggedIn && message.userVote) {
-        this.currentVoteState = message.userVote;
+        // Convert from backend vote type if needed
+        let uiVoteType = message.userVote;
         
-        // Reset both buttons first
+        // Handle potential mappings from backend
+        if (message.userVote === 'Positive') uiVoteType = 'Safe';
+        if (message.userVote === 'Negative') uiVoteType = 'Phishing';
+        
+        this.currentVoteState = uiVoteType;
+        
+        // Reset button states
         this.elements.voteUp.classList.remove('active');
         this.elements.voteDown.classList.remove('active');
         
-        // Then set the active state
-        if (message.userVote === 'Safe') {
+        // Set the appropriate active state
+        if (uiVoteType === 'Safe') {
           this.elements.voteUp.classList.add('active');
-        } else if (message.userVote === 'Phishing') {
+        } else if (uiVoteType === 'Phishing') {
           this.elements.voteDown.classList.add('active');
         }
       } else if (!authState.isLoggedIn) {
-        // Make sure buttons are not active if not logged in
+        // Clear button states if not logged in
         this.elements.voteUp.classList.remove('active');
         this.elements.voteDown.classList.remove('active');
         this.currentVoteState = null;
