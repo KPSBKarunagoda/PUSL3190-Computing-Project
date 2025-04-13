@@ -81,6 +81,339 @@
       color: var(--primary-color);
       background-color: rgba(61, 133, 198, 0.1);
     }
+    
+    /* Updated Transparent Report Styling */
+    .transparent-report {
+      font-family: var(--font-main);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+    
+    .scan-summary {
+      margin-bottom: 20px;
+      border-radius: 6px;
+      padding: 15px;
+      background-color: var(--card-bg);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    .scan-summary h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .scan-summary h3:before {
+      content: "\f021";
+      font-family: "Font Awesome 5 Free";
+      font-weight: 900;
+      font-size: 18px;
+      color: var(--primary-color);
+    }
+    
+    .risk-score {
+      font-size: 16px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .risk-score-label {
+      color: var(--text-secondary);
+    }
+    
+    .risk-score span.high-risk {
+      color: #f44336;
+      font-weight: bold;
+      font-size: 20px;
+    }
+    
+    .risk-score span.medium-risk {
+      color: #ff9800;
+      font-weight: bold;
+      font-size: 20px;
+    }
+    
+    .risk-score span.low-risk {
+      color: #4caf50;
+      font-weight: bold;
+      font-size: 20px;
+    }
+    
+    .factors-section {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 10px 0;
+      color: var(--text-primary);
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .section-title i {
+      color: var(--primary-color);
+    }
+    
+    .risk-factors-list, .safe-factors-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .factor-card {
+      background-color: var(--card-bg);
+      border-radius: 6px;
+      padding: 12px 15px;
+      border-left-width: 3px;
+      border-left-style: solid;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    .factor-card.critical {
+      border-left-color: #d32f2f;
+      background-color: rgba(211, 47, 47, 0.03);
+    }
+    
+    .factor-card.high {
+      border-left-color: #f44336;
+      background-color: rgba(244, 67, 54, 0.03);
+    }
+    
+    .factor-card.medium {
+      border-left-color: #ff9800;
+      background-color: rgba(255, 152, 0, 0.03);
+    }
+    
+    .factor-card.low {
+      border-left-color: #ffc107;
+      background-color: rgba(255, 193, 7, 0.03);
+    }
+    
+    .factor-card.safe {
+      border-left-color: #4caf50;
+      background-color: rgba(76, 175, 80, 0.03);
+    }
+    
+    .factor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    
+    .factor-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .impact-badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 12px;
+      color: white;
+    }
+    
+    .impact-badge.critical {
+      background-color: #d32f2f;
+    }
+    
+    .impact-badge.high {
+      background-color: #f44336;
+    }
+    
+    .impact-badge.medium {
+      background-color: #ff9800;
+    }
+    
+    .impact-badge.low {
+      background-color: #ffc107;
+      color: #333;
+    }
+    
+    .factor-explanation {
+      color: var(--text-secondary);
+      font-size: 13px;
+      margin: 0;
+    }
+    
+    .factor-value {
+      color: var(--text-tertiary);
+      font-size: 12px;
+      margin-top: 5px;
+    }
+    
+    .technical-section {
+      margin-top: 20px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    
+    .technical-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      background-color: var(--bg-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .technical-header h4 {
+      margin: 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .technical-header h4 i {
+      color: var(--primary-color);
+      font-size: 14px;
+    }
+    
+    .toggle-icon {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--text-tertiary);
+      transition: transform 0.2s;
+    }
+    
+    .technical-content {
+      display: none;
+      padding: 0;
+      background-color: var(--bg-secondary);
+      overflow-x: auto;
+    }
+    
+    .technical-section.expanded .technical-content {
+      display: block;
+    }
+    
+    .technical-section.expanded .toggle-icon {
+      transform: rotate(45deg);
+    }
+    
+    .features-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    
+    .features-table th {
+      text-align: left;
+      padding: 8px 12px;
+      background-color: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    
+    .features-table td {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border-color-light);
+    }
+    
+    .features-table tr.risk td:first-child {
+      color: #f44336;
+    }
+    
+    .features-table tr.safe td:first-child {
+      color: #4caf50;
+    }
+    
+    .features-table td.impact {
+      text-align: center;
+    }
+    
+    .table-note {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      padding: 10px 15px;
+      margin: 0;
+      font-style: italic;
+    }
+    
+    .recommendations-section {
+      margin-top: 25px;
+      padding: 15px;
+      border-radius: 6px;
+      background-color: var(--card-bg);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    .recommendations-title {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .recommendations-title i {
+      color: var(--primary-color);
+    }
+    
+    .security-advice {
+      background-color: rgba(76, 175, 80, 0.05);
+      border-left: 3px solid #4caf50;
+      padding: 12px 15px;
+      border-radius: 4px;
+      color: var(--text-primary);
+    }
+    
+    .security-advice.high-risk {
+      background-color: rgba(244, 67, 54, 0.05);
+      border-left: 3px solid #f44336;
+    }
+    
+    .security-advice.medium-risk {
+      background-color: rgba(255, 152, 0, 0.05);
+      border-left: 3px solid #ff9800;
+    }
+    
+    .security-advice p {
+      margin: 0;
+      font-weight: 500;
+    }
+    
+    .safety-tips {
+      padding-left: 20px;
+      margin: 15px 0 0 0;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    
+    .safety-tips li {
+      margin-bottom: 5px;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .factor-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .factor-impact {
+        margin-top: 5px;
+      }
+    }
   </style>
 </head>
 <body class="dark-theme">
@@ -113,7 +446,7 @@
         <i class="fas fa-arrow-left"></i> Back to Dashboard
       </a>
     </div>
-    
+
     <!-- URL Analysis Input Card -->
     <div class="analysis-card">
       <div class="input-section" id="analysis-input">
@@ -132,7 +465,6 @@
           <i class="fas fa-exclamation-circle"></i>
           <span>Please enter a valid URL (e.g., https://example.com)</span>
         </div>
-        
         <div class="input-footer">
           <div class="input-tips">
             <i class="fas fa-info-circle"></i>
@@ -140,7 +472,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Loading Section -->
       <div id="loading-container" class="analysis-loading" style="display: none;">
         <div class="loading-animation">
@@ -153,7 +485,7 @@
           <div class="loading-progress-bar"></div>
         </div>
       </div>
-      
+
       <!-- Results Section -->
       <div id="results-container" class="result-section" style="display: none;">
         <div class="result-header-banner">
@@ -165,7 +497,7 @@
             <div id="analyzed-url" class="analyzed-url">URL: https://example.com</div>
           </div>
         </div>
-        
+              
         <div class="result-details">
           <div class="score-container">
             <div class="score-header">
@@ -222,34 +554,13 @@
           <h3>Phishing Protection Tips</h3>
           <p>Complete a URL analysis to get personalized educational content and learn how to protect yourself from common phishing techniques.</p>
         </div>
-        
-        <div class="resource-cards">
-          <div class="resource-card">
-            <div class="resource-card-header">
-              <i class="fas fa-exclamation-triangle"></i>
-              Common Warning Signs
-            </div>
-            <div class="resource-card-content">
-              <p>Learn to identify suspicious URLs, misleading website designs, and other red flags that may indicate a phishing attempt.</p>
-              <a href="#" class="resource-link">Read more <i class="fas fa-arrow-right"></i></a>
-            </div>
-          </div>
-          
-          <div class="resource-card">
-            <div class="resource-card-header">
-              <i class="fas fa-lock"></i>
-              Stay Protected
-            </div>
-            <div class="resource-card-content">
-              <p>Discover best practices for safe browsing, including using strong passwords and enabling two-factor authentication.</p>
-              <a href="#" class="resource-link">Read more <i class="fas fa-arrow-right"></i></a>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
-
+  
+  <!-- Don't forget to add the script tag before your main script -->
+  <script src="js/ml-feature-explainer.js"></script>
+  
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Check if user is logged in
@@ -287,32 +598,26 @@
       
       // Handle analysis button click
       analyzeButton.addEventListener('click', async () => {
+        inputError.style.display = 'none';
         const url = urlInput.value.trim();
         
-        // Reset error
-        inputError.style.display = 'none';
-        
-        // Validate URL
         if (!url) {
+          inputError.style.display = 'flex';
           inputError.querySelector('span').textContent = 'Please enter a URL to analyze';
-          inputError.style.display = 'flex';
           return;
         }
         
-        // Check for valid URL format
         if (!isValidUrl(url)) {
-          inputError.querySelector('span').textContent = 'Please enter a valid URL (e.g., https://example.com)';
           inputError.style.display = 'flex';
+          inputError.querySelector('span').textContent = 'Please enter a valid URL (e.g., https://example.com)';
           return;
         }
         
-        // Show loading
         analysisInput.style.display = 'none';
         loadingContainer.style.display = 'flex';
         resultsContainer.style.display = 'none';
         
         try {
-          // Send URL for analysis
           const response = await fetch('http://localhost:3000/analyze-url', {
             method: 'POST',
             headers: {
@@ -330,16 +635,11 @@
           }
           
           const result = await response.json();
-          
-          // Display results
           displayResults(url, result);
-          
         } catch (error) {
           console.error('Analysis error:', error);
-          
-          // Show error and return to input view
-          inputError.querySelector('span').textContent = error.message || 'Failed to analyze URL. Please try again.';
           inputError.style.display = 'flex';
+          inputError.querySelector('span').textContent = error.message || 'Failed to analyze URL. Please try again.';
           analysisInput.style.display = 'block';
           loadingContainer.style.display = 'none';
         }
@@ -347,10 +647,8 @@
       
       // Display analysis results
       function displayResults(url, result) {
-        // Set analyzed URL
         analyzedUrl.textContent = `URL: ${url}`;
         
-        // Calculate score
         let score;
         if (result.risk_score > 1) {
           score = Math.min(100, result.risk_score);
@@ -358,16 +656,13 @@
           score = result.risk_score * 100;
         }
         
-        // Round to 1 decimal place
         const displayScore = Math.round(score * 10) / 10;
         riskScoreValue.textContent = `${displayScore}/100`;
         
-        // Set risk indicators based on score
         const isHighRisk = score > 60;
         const isMediumRisk = score > 30;
         const mlPrediction = result.ml_result?.prediction || 0;
         
-        // Update UI based on risk level
         if (result.is_phishing || (isHighRisk && mlPrediction === 1)) {
           resultIcon.className = 'fas fa-exclamation-triangle';
           resultIconContainer.className = 'result-icon-container icon-danger';
@@ -388,15 +683,107 @@
           scoreFill.className = 'score-fill score-fill-safe';
         }
         
-        // Animate score fill
         setTimeout(() => {
           scoreFill.style.width = `${score}%`;
         }, 300);
         
-        // Set explanation
-        riskExplanation.textContent = result.risk_explanation || 'No detailed explanation available.';
+        try {
+          const featureExplainer = new MLFeatureExplainer();
+          
+          // Debug to see what's in the result object
+          console.log("Full analysis result:", result);
+          
+          // Fix: Check the actual content of result.features
+          console.log("Raw features object:", result.features);
+          
+          // Fix the feature extraction - inspect all properties
+          let features = {};
+          
+          if (result.ml_result && result.ml_result.features && Object.keys(result.ml_result.features).length > 0) {
+            console.log("Found features in ml_result.features");
+            features = result.ml_result.features;
+          } else if (result.features && typeof result.features === 'object') {
+            console.log("Found features in result.features, keys:", Object.keys(result.features));
+            features = result.features;
+            
+            // Fix: If features is empty object but we're getting properties in the console
+            // This handles cases where Object.keys() doesn't work due to non-enumerable properties
+            if (Object.keys(features).length === 0) {
+              console.log("Features object appears empty, trying direct access method");
+              
+              // Create a new object with all properties from result that look like features
+              const featureProperties = [
+                'domain_in_ip', 'tls_ssl_certificate', 'length_url', 'time_domain_activation',
+                'url_shortened', 'qty_redirects', 'domain_google_index', 'qty_nameservers'
+              ];
+              
+              // Check if any of these properties exist directly in result
+              featureProperties.forEach(prop => {
+                if (result[prop] !== undefined) {
+                  features[prop] = result[prop];
+                }
+              });
+              
+              // Also check for reported features in the console logs
+              if (url.includes('://') && /\d+\.\d+\.\d+\.\d+/.test(url)) {
+                console.log("URL contains IP address, extracting from pattern");
+                features.domain_in_ip = 1.0;
+              }
+              
+              if (url.startsWith('http:')) {
+                console.log("URL uses http (not https), marking as no SSL");
+                features.tls_ssl_certificate = 0.0;
+              }
+            }
+          } else {
+            console.warn("No features found in response. Using IP address detection as fallback.");
+            // Special case for IP addresses
+            if (url.includes('://') && /\d+\.\d+\.\d+\.\d+/.test(url)) {
+              features = {
+                domain_in_ip: 1.0,
+                tls_ssl_certificate: 0.0
+              };
+              console.log("Created fallback features for IP address:", features);
+            }
+          }
+          
+          // If we still have no features, extract what we can from the URL itself
+          if (Object.keys(features).length === 0) {
+            console.log("Still no features found, extracting basic ones from URL");
+            features = {
+              length_url: url.length,
+              tls_ssl_certificate: url.startsWith('https:') ? 1.0 : 0.0
+            };
+            
+            // Check for IP address in URL
+            if (/\d+\.\d+\.\d+\.\d+/.test(url)) {
+              features.domain_in_ip = 1.0;
+            }
+            
+            // Check for dots in URL
+            features.qty_dot_url = (url.match(/\./g) || []).length;
+            
+            // Check for hyphens in URL
+            features.qty_hyphen_url = (url.match(/-/g) || []).length;
+            
+            console.log("Extracted basic features from URL:", features);
+          }
+          
+          console.log("Final features for analysis:", features);
+          
+          const transparentHTML = featureExplainer.generateTransparentHTML(features, url, {
+            risk_score: displayScore,
+            is_phishing: result.is_phishing
+          });
+          
+          riskExplanation.innerHTML = transparentHTML;
+          riskExplanation.className = 'result-explanation transparent-report';
+        } catch (error) {
+          console.error('Error generating transparent explanation:', error);
+          console.error('Result object structure:', JSON.stringify(result, null, 2));
+          riskExplanation.textContent = result.risk_explanation || 'No detailed explanation available.';
+        }
         
-        // Create analysis summary
         let summaryHTML = '';
         
         if (result.is_phishing || (isHighRisk && mlPrediction === 1)) {
@@ -405,158 +792,127 @@
             characteristics commonly associated with phishing websites. The risk score 
             of ${displayScore}/100 suggests this may be an attempt to steal sensitive information.</p>
             
-            <h4>Risk Indicators:</h4>
-            <ul>
-              <li>Suspicious URL patterns detected</li>
-              <li>Website exhibits common phishing techniques</li>
-              ${result.safe_browsing_result?.threats ? '<li><strong>Google Safe Browsing has flagged this website</strong></li>' : ''}
-              <li>Risk score: ${displayScore}/100 (High)</li>
-            </ul>
-            
-            <p><strong>Recommendation:</strong> Avoid sharing any personal information with this website.</p>
+            ${result.safe_browsing_result?.threats ? '<p class="warning-message"><strong>Google Safe Browsing has flagged this website as dangerous.</strong></p>' : ''}
           `;
         } else if (isMediumRisk) {
           summaryHTML = `
             <p><strong>Moderate Risk Detected:</strong> This URL shows some suspicious characteristics
             but may not be a confirmed phishing site. The risk score of ${displayScore}/100 indicates
             caution is advised when interacting with this website.</p>
-            
-            <h4>Risk Indicators:</h4>
-            <ul>
-              <li>Some suspicious elements were detected</li>
-              <li>The website has potentially concerning features</li>
-              <li>Risk score: ${displayScore}/100 (Medium)</li>
-            </ul>
-            
-            <p><strong>Recommendation:</strong> Proceed with caution and verify the website's legitimacy before sharing any sensitive information.</p>
           `;
         } else {
           summaryHTML = `
             <p><strong>Low Risk Detected:</strong> Our analysis indicates this URL appears to be legitimate
             with a low risk score of ${displayScore}/100. No major phishing indicators were detected.</p>
-            
-            <h4>Result Summary:</h4>
-            <ul>
-              <li>No significant phishing indicators found</li>
-              <li>URL structure appears normal</li>
-              <li>Risk score: ${displayScore}/100 (Low)</li>
-            </ul>
-            
-            <p><strong>Recommendation:</strong> While this URL appears safe, always remain vigilant when sharing personal information online.</p>
           `;
         }
         
         analysisSummary.innerHTML = summaryHTML;
-        
-        // Show educational content based on the analysis
         loadEducationalContent(result);
-        
-        // Show results container
         loadingContainer.style.display = 'none';
         resultsContainer.style.display = 'block';
       }
       
-      // Load educational content
-      async function loadEducationalContent(analysisResult) {
-        try {
-          const educationContent = document.getElementById('education-content');
-          
-          // First show loading state
-          educationContent.innerHTML = `
-            <div class="analysis-loading" style="padding: 30px;">
-              <div class="loading-animation" style="width: 50px; height: 50px;">
-                <div class="circle"></div>
-                <div class="circle"></div>
-              </div>
-              <p style="margin-top: 20px;">Loading personalized educational content...</p>
-            </div>
-          `;
-          
-          // Request content from server
-          const response = await fetch('http://localhost:3000/api/education/generate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-auth-token': token
-            },
-            body: JSON.stringify({
-              analysisResult: analysisResult,
-              contentType: 'explain'
-            })
-          });
-          
-          if (!response.ok) {
-            throw new Error('Failed to load educational content');
-          }
-          
-          const data = await response.json();
-          
-          if (data.success && data.content) {
-            educationContent.innerHTML = `
-              <div class="education-content-custom">
-                <div style="line-height: 1.7; color: var(--text-primary);">
-                  ${data.content.replace(/\n/g, '<br>')}
-                </div>
-              </div>
-            `;
-          } else {
-            throw new Error('Invalid content received');
-          }
-        } catch (error) {
-          console.error('Error loading educational content:', error);
-          
-          // Fallback content
-          const riskLevel = analysisResult.is_phishing ? 'high' : 
-                           (analysisResult.risk_score > 0.6 || analysisResult.risk_score > 60) ? 'high' :
-                           (analysisResult.risk_score > 0.3 || analysisResult.risk_score > 30) ? 'medium' : 'low';
-          
-          let educationalHTML = '';
-          
-          if (riskLevel === 'high') {
-            educationalHTML = `
-              <h3>Understanding High-Risk Phishing Sites</h3>
-              <p>This URL shows multiple indicators commonly associated with phishing attacks. Phishing sites often:</p>
-              <ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
-                <li>Mimic legitimate websites to steal your credentials</li>
-                <li>Create a false sense of urgency to prompt immediate action</li>
-                <li>Contain spelling or grammatical errors</li>
-                <li>Use suspicious domain names that are slightly different from legitimate sites</li>
-                <li>Request sensitive personal information</li>
-              </ul>
-              <p><strong>Always verify the website's legitimacy before entering any personal information.</strong></p>
-            `;
-          } else if (riskLevel === 'medium') {
-            educationalHTML = `
-              <h3>Understanding Medium-Risk Websites</h3>
-              <p>This URL has some suspicious characteristics but isn't necessarily a phishing site. When dealing with medium-risk sites:</p>
-              <ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
-                <li>Verify the website's identity through other channels</li>
-                <li>Check for HTTPS security and a valid certificate</li>
-                <li>Be cautious about sharing personal information</li>
-                <li>Look for contact information and legitimate privacy policies</li>
-              </ul>
-              <p><strong>Use caution and your best judgment when interacting with this site.</strong></p>
-            `;
-          } else {
-            educationalHTML = `
-              <h3>Safe Browsing Practices</h3>
-              <p>This URL appears to be safe, but it's always good to follow these secure browsing habits:</p>
-              <ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
-                <li>Keep your browser and security software updated</li>
-                <li>Use strong, unique passwords for different websites</li>
-                <li>Enable two-factor authentication when available</li>
-                <li>Be careful when clicking on links in emails or messages</li>
-                <li>Check website URLs before entering personal information</li>
-              </ul>
-              <p><strong>Even on safe websites, always be mindful of the information you share online.</strong></p>
-            `;
-          }
-          
-          educationContent.innerHTML = educationalHTML;
+      // Add the loadEducationalContent function that uses the extracted features
+      function loadEducationalContent(analysisResult) {
+        const educationContent = document.getElementById('education-content');
+        const features = analysisResult.ml_result?.features || {};
+        
+        // Determine risk level
+        const riskLevel = analysisResult.is_phishing ? 'high' : 
+                         (analysisResult.risk_score > 0.6 || analysisResult.risk_score > 60) ? 'high' :
+                         (analysisResult.risk_score > 0.3 || analysisResult.risk_score > 30) ? 'medium' : 'low';
+        
+        // Build a list of security issues based on features
+        const securityIssues = [];
+        
+        // Check for IP address in domain (a strong phishing indicator)
+        if (features.domain_in_ip === 1.0) {
+          securityIssues.push("IP address used instead of domain name");
         }
+        
+        // Check for SSL certificate
+        if (features.tls_ssl_certificate === 0.0) {
+          securityIssues.push("Missing SSL/TLS security certificate");
+        }
+        
+        // Check for URL shortening
+        if (features.url_shortened === 1.0) {
+          securityIssues.push("URL shortening service used");
+        }
+        
+        // Check for multiple redirects
+        if (features.qty_redirects > 1) {
+          securityIssues.push(`${features.qty_redirects} redirects detected`);
+        }
+        
+        // Check for domain age
+        if (features.time_domain_activation < 30 && features.time_domain_activation !== 0) {
+          securityIssues.push(`Very new domain (only ${features.time_domain_activation} days old)`);
+        }
+        
+        // Check if domain is indexed by search engines
+        if (features.domain_google_index === 0) {
+          securityIssues.push("Domain not indexed by search engines");
+        }
+        
+        // Generate educational content with dynamic references to detected issues
+        let educationalHTML = '';
+        
+        if (riskLevel === 'high') {
+          educationalHTML = `
+            <h3>Understanding High-Risk Phishing Sites</h3>
+            <p>This URL shows multiple indicators commonly associated with phishing attacks:</p>
+            ${securityIssues.length > 0 ? 
+              `<ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
+                ${securityIssues.map(issue => `<li>${issue}</li>`).join('')}
+              </ul>` : ''}
+            
+            <p>Phishing sites often:</p>
+            <ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
+              <li>Mimic legitimate websites to steal your credentials</li>
+              <li>Create a false sense of urgency to prompt immediate action</li>
+              <li>Use suspicious domain names that look similar to legitimate sites</li>
+              <li>Request sensitive personal information</li>
+            </ul>
+            <p><strong>Always verify a website's legitimacy before entering personal information.</strong></p>
+          `;
+        } else if (riskLevel === 'medium') {
+          educationalHTML = `
+            <h3>Understanding Medium-Risk Websites</h3>
+            <p>This URL has some suspicious characteristics that warrant caution:</p>
+            ${securityIssues.length > 0 ? 
+              `<ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
+                ${securityIssues.map(issue => `<li>${issue}</li>`).join('')}
+              </ul>` : ''}
+            
+            <p>When dealing with medium-risk sites:</p>
+            <ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
+              <li>Verify the website's identity through other channels</li>
+              <li>Check for HTTPS security and a valid certificate</li>
+              <li>Be cautious about sharing personal information</li>
+              <li>Look for contact information and legitimate privacy policies</li>
+            </ul>
+            <p><strong>Use caution and your best judgment when interacting with this site.</strong></p>
+          `;
+        } else {
+          educationalHTML = `
+            <h3>Safe Browsing Practices</h3>
+            <p>This URL appears to be safe, but it's always good to follow these secure browsing habits:</p>
+            <ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
+              <li>Keep your browser and security software updated</li>
+              <li>Use strong, unique passwords for different websites</li>
+              <li>Enable two-factor authentication when available</li>
+              <li>Be careful when clicking on links in emails or messages</li>
+              <li>Check website URLs before entering personal information</li>
+            </ul>
+            <p><strong>Even on safe websites, always be mindful of the information you share online.</strong></p>
+          `;
+        }
+        
+        educationContent.innerHTML = educationalHTML;
       }
       
-      // New analysis button
       newAnalysisButton.addEventListener('click', () => {
         urlInput.value = '';
         resultsContainer.style.display = 'none';
@@ -566,7 +922,6 @@
         urlInput.focus();
       });
       
-      // Allow Enter key to submit
       urlInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
           analyzeButton.click();
