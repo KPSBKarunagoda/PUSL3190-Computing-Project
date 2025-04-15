@@ -28,7 +28,7 @@
     }
     
     .top-header-content {
-      max-width: 1200px;
+      max-width: 1400px;  /* Increased from 1200px */
       margin: 0 auto;
       display: flex;
       align-items: center;
@@ -98,7 +98,7 @@
     }
     
     .dashboard-container {
-      max-width: 1200px;
+      max-width: 1400px;  /* Increased from 1200px */
       margin: 0 auto;
       padding: 20px;
     }
@@ -137,6 +137,55 @@
     .user-info #username {
       font-weight: 500;
       color: var(--primary-color);
+    }
+    
+    /* Two-column layout */
+    .dashboard-content {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 25px;
+    }
+    
+    .main-column {
+      grid-column: 1;
+    }
+    
+    .side-column {
+      grid-column: 2;
+    }
+    
+    /* Adjust security score card for sidebar */
+    .security-score-card.widget {
+      flex-direction: column;
+      height: fit-content;
+      position: sticky;
+      top: 80px;
+    }
+    
+    .security-score-card.widget .security-score-visual {
+      margin: 0 auto 20px;
+    }
+    
+    /* Responsive layout */
+    @media (max-width: 992px) {
+      .dashboard-content {
+        grid-template-columns: 1fr;
+      }
+      
+      .main-column, .side-column {
+        grid-column: 1;
+      }
+      
+      .security-score-card.widget {
+        position: static;
+        flex-direction: row;
+      }
+      
+      @media (max-width: 768px) {
+        .security-score-card.widget {
+          flex-direction: column;
+        }
+      }
     }
     
     .welcome-section {
@@ -514,134 +563,139 @@
       </div>
     </div>
     
-    <div class="welcome-section">
-      <h2>Welcome <span id="welcome-message">User</span></h2>
-      <p>Your account is ready. Start protecting yourself from phishing attacks with our powerful tools and advanced detection technology.</p>
+    <div class="dashboard-content">
+      <div class="main-column">
+        <div class="welcome-section">
+          <h2>Welcome <span id="welcome-message">User</span></h2>
+          <p>Your account is ready. Start protecting yourself from phishing attacks with our powerful tools and advanced detection technology.</p>
+        </div>
+        
+        <section class="dashboard-section">
+          <h2><i class="fas fa-chart-line"></i> Your Activity Overview</h2>
+          <div class="stats-container">
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-search"></i></div>
+              <div class="stat-value" id="total-scans">0</div>
+              <div class="stat-label">URLs Analyzed</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-bug"></i></div>
+              <div class="stat-value" id="threats-detected">0</div>
+              <div class="stat-label">Threats Detected</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+              <div class="stat-value" id="safe-sites">0</div>
+              <div class="stat-label">Safe Sites</div>
+            </div>
+          </div>
+        </section>
+        
+        <section class="dashboard-section">
+          <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+          <div class="quick-actions">
+            <a href="analyze.html" class="action-card">
+              <div class="action-icon"><i class="fas fa-search"></i></div>
+              <div class="action-text">Analyze URL</div>
+            </a>
+            <a href="reports.html" class="action-card">
+              <div class="action-icon"><i class="fas fa-flag"></i></div>
+              <div class="action-text">My Reports</div>
+            </a>
+            <a href="settings.html" class="action-card">
+              <div class="action-icon"><i class="fas fa-cog"></i></div>
+              <div class="action-text">Account Settings</div>
+            </a>
+            <a href="education.html" class="action-card">
+              <div class="action-icon"><i class="fas fa-book"></i></div>
+              <div class="action-text">Learn More</div>
+            </a>
+            <a href="password-health.html" class="action-card">
+              <div class="action-icon"><i class="fas fa-key"></i></div>
+              <div class="action-text">Password Health</div>
+            </a>
+          </div>
+        </section>
+        
+        <section class="dashboard-section">
+          <h2><i class="fas fa-shield-alt"></i> Security Tips</h2>
+          <div class="security-tips-carousel">
+            <div class="tip-card active">
+              <h3>Check the URL</h3>
+              <p>Always check the URL in your browser address bar. Phishing sites often use misspelled domain names.</p>
+            </div>
+            <div class="tip-card">
+              <h3>Be Cautious with Attachments</h3>
+              <p>Don't open email attachments from unknown senders as they could contain malware.</p>
+            </div>
+            <div class="tip-card">
+              <h3>Use Two-Factor Authentication</h3>
+              <p>Enable 2FA on your important accounts for an extra layer of security.</p>
+            </div>
+            <div class="carousel-controls">
+              <button class="carousel-prev"><i class="fas fa-chevron-left"></i></button>
+              <div class="carousel-indicators">
+                <span class="indicator active"></span>
+                <span class="indicator"></span>
+                <span class="indicator"></span>
+              </div>
+              <button class="carousel-next"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </section>
+        
+        <section class="dashboard-section">
+          <h2><i class="fas fa-history"></i> Recent Scan History</h2>
+          <div class="scan-history" id="scan-history">
+            <div class="history-placeholder">
+              <p>Your recent URL scan results will appear here after analysis</p>
+            </div>
+            <!-- Scan history will be populated by JavaScript -->
+          </div>
+        </section>
+      </div>
+      
+      <div class="side-column">
+        <div class="security-score-card widget">
+          <div class="security-score-visual">
+            <div class="score-circle circle-background"></div>
+            <div class="score-circle circle-progress" id="score-progress"></div>
+            <div class="score-circle">
+              <div class="score-value" id="security-score">0%</div>
+            </div>
+          </div>
+          <div class="security-score-details">
+            <div class="security-score-title">
+              <i class="fas fa-shield-alt"></i> Your Security Score
+            </div>
+            <p>Complete the following security checklist to improve your protection:</p>
+            <div class="score-items" id="security-checklist">
+              <div class="score-item">
+                <div class="score-item-icon score-item-incomplete">
+                  <i class="fas fa-key"></i>
+                </div>
+                <div class="score-item-text">Run a password health check</div>
+                <div class="score-item-status">Pending</div>
+              </div>
+              <div class="score-item">
+                <div class="score-item-icon score-item-incomplete">
+                  <i class="fas fa-search"></i>
+                </div>
+                <div class="score-item-text">Perform your first URL analysis</div>
+                <div class="score-item-status">Pending</div>
+              </div>
+              <div class="score-item">
+                <div class="score-item-icon score-item-incomplete">
+                  <i class="fas fa-book"></i>
+                </div>
+                <div class="score-item-text">Review security education materials</div>
+                <div class="score-item-status">Pending</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    
-    <!-- Security Score Widget -->
-    <div class="security-score-card">
-      <div class="security-score-visual">
-        <div class="score-circle circle-background"></div>
-        <div class="score-circle circle-progress" id="score-progress"></div>
-        <div class="score-circle">
-          <div class="score-value" id="security-score">0%</div>
-        </div>
-      </div>
-      <div class="security-score-details">
-        <div class="security-score-title">
-          <i class="fas fa-shield-alt"></i> Your Security Score
-        </div>
-        <p>Complete the following security checklist to improve your protection:</p>
-        <div class="score-items" id="security-checklist">
-          <div class="score-item">
-            <div class="score-item-icon score-item-incomplete">
-              <i class="fas fa-key"></i>
-            </div>
-            <div class="score-item-text">Run a password health check</div>
-            <div class="score-item-status">Pending</div>
-          </div>
-          <div class="score-item">
-            <div class="score-item-icon score-item-incomplete">
-              <i class="fas fa-search"></i>
-            </div>
-            <div class="score-item-text">Perform your first URL analysis</div>
-            <div class="score-item-status">Pending</div>
-          </div>
-          <div class="score-item">
-            <div class="score-item-icon score-item-incomplete">
-              <i class="fas fa-book"></i>
-            </div>
-            <div class="score-item-text">Review security education materials</div>
-            <div class="score-item-status">Pending</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <section class="dashboard-section">
-      <h2><i class="fas fa-chart-line"></i> Your Activity Overview</h2>
-      <div class="stats-container">
-        <div class="stat-card">
-          <div class="stat-icon"><i class="fas fa-search"></i></div>
-          <div class="stat-value" id="total-scans">0</div>
-          <div class="stat-label">URLs Analyzed</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon"><i class="fas fa-bug"></i></div>
-          <div class="stat-value" id="threats-detected">0</div>
-          <div class="stat-label">Threats Detected</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-          <div class="stat-value" id="safe-sites">0</div>
-          <div class="stat-label">Safe Sites</div>
-        </div>
-      </div>
-    </section>
-    
-    <section class="dashboard-section">
-      <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
-      <div class="quick-actions">
-        <a href="analyze.html" class="action-card">
-          <div class="action-icon"><i class="fas fa-search"></i></div>
-          <div class="action-text">Analyze URL</div>
-        </a>
-        <a href="reports.html" class="action-card">
-          <div class="action-icon"><i class="fas fa-flag"></i></div>
-          <div class="action-text">My Reports</div>
-        </a>
-        <a href="settings.html" class="action-card">
-          <div class="action-icon"><i class="fas fa-cog"></i></div>
-          <div class="action-text">Account Settings</div>
-        </a>
-        <a href="education.html" class="action-card">
-          <div class="action-icon"><i class="fas fa-book"></i></div>
-          <div class="action-text">Learn More</div>
-        </a>
-        <a href="password-health.html" class="action-card">
-          <div class="action-icon"><i class="fas fa-key"></i></div>
-          <div class="action-text">Password Health</div>
-        </a>
-      </div>
-    </section>
-    
-    <section class="dashboard-section">
-      <h2><i class="fas fa-shield-alt"></i> Security Tips</h2>
-      <div class="security-tips-carousel">
-        <div class="tip-card active">
-          <h3>Check the URL</h3>
-          <p>Always check the URL in your browser address bar. Phishing sites often use misspelled domain names.</p>
-        </div>
-        <div class="tip-card">
-          <h3>Be Cautious with Attachments</h3>
-          <p>Don't open email attachments from unknown senders as they could contain malware.</p>
-        </div>
-        <div class="tip-card">
-          <h3>Use Two-Factor Authentication</h3>
-          <p>Enable 2FA on your important accounts for an extra layer of security.</p>
-        </div>
-        <div class="carousel-controls">
-          <button class="carousel-prev"><i class="fas fa-chevron-left"></i></button>
-          <div class="carousel-indicators">
-            <span class="indicator active"></span>
-            <span class="indicator"></span>
-            <span class="indicator"></span>
-          </div>
-          <button class="carousel-next"><i class="fas fa-chevron-right"></i></button>
-        </div>
-      </div>
-    </section>
-    
-    <section class="dashboard-section">
-      <h2><i class="fas fa-history"></i> Recent Scan History</h2>
-      <div class="scan-history" id="scan-history">
-        <div class="history-placeholder">
-          <p>Your recent URL scan results will appear here after analysis</p>
-        </div>
-        <!-- Scan history will be populated by JavaScript -->
-      </div>
-    </section>
   </div>
 
   <script src="js/dashboard.js"></script>
@@ -800,3 +854,4 @@
   </script>
 </body>
 </html>
+``` 
