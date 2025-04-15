@@ -90,6 +90,7 @@ async function initializeServer() {
   const adminRouter = require('./routes/admin')(pool);
   const userRouter = require('./routes/user')(pool);
   const votesRouter = require('./routes/votes')(pool);
+  const passwordCheckRouter = require('./routes/password-check')(pool); // Add this line
 
   // Mount routes
   app.use('/api/auth', authRouter);
@@ -99,7 +100,8 @@ async function initializeServer() {
   app.use('/api/user', userRouter);
   app.use('/api/votes', votesRouter);
   app.use('/api/reports', require('./routes/reports')(pool));
-  
+  app.use('/api/check-password', passwordCheckRouter); // Add this line
+
   // ADDED: Admin reports endpoint that uses admin authentication middleware
   app.use('/api/admin/reports', require('./routes/admin-reports')(pool));
 
