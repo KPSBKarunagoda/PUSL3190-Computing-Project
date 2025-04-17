@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detailed Analysis - PhishGuard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body.dark-theme {
+      padding-top: 80px;
+      padding-bottom: 80px;
+    }
+    
+    /* Header Navigation Styles */
+    .top-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      padding: 0 30px;
+      height: 60px;
+    }
+    
+    .top-header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    
+    .logo i {
+      font-size: 1.4rem;
+    }
+    
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .header-nav-item {
+      color: var(--text-primary);
+      text-decoration: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .header-nav-item:hover {
+      background-color: rgba(61, 133, 198, 0.1);
+      color: var(--primary-color);
+    }
+    
+    .header-nav-item.active {
+      color: var(--primary-color);
+      background-color: rgba(61, 133, 198, 0.1);
+    }
+    
+    /* Analysis details page specific styles */
+    .analysis-wrapper {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .analysis-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
+    }
+    
+    .analysis-header:after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      border-radius: 3px;
+      box-shadow: 0 1px 3px rgba(61, 133, 198, 0.3);
+    }
+    
+    .analysis-header h1 {
+      font-size: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0;
+      color: var(--text-primary);
+    }
+    
+    .analysis-header h1 i {
+      color: var(--primary-color);
+      filter: drop-shadow(0 2px 4px rgba(61, 133, 198, 0.2));
+    }
+    
+    .btn-action {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn-action:hover {
+      background-color: var(--secondary-color);
+    }
+    
+    .btn-action:active {
+      transform: translateY(1px);
+    }
+    
+    .btn-secondary {
+      background-color: rgba(0, 0, 0, 0.2);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    
+    .btn-secondary:hover {
+      background-color: rgba(0, 0, 0, 0.3);
+    }
+    
+    .analysis-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    
+    .analysis-url {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      background: linear-gradient(145deg, rgba(61, 133, 198, 0.1), rgba(61, 133, 198, 0.05));
+      border-radius: 10px;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      max-width: 600px;
+      word-break: break-all;
+      border: 1px solid rgba(61, 133, 198, 0.15);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+    }
+    
+    .analysis-url:hover {
+      border-color: rgba(61, 133, 198, 0.3);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.12);
+      transform: translateY(-2px);
+    }
+    
+    .analysis-url i {
+      color: var(--primary-color);
+      font-size: 1.1rem;
+    }
+    
+    .analysis-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 50px;
+    }
+    
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-left-color: var(--primary-color);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .error-container {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    
+    .error-icon {
+      font-size: 48px;
+      color: var(--danger-color);
+      margin-bottom: 20px;
+    }
+    
+    /* Dashboard-style score circle */
+    .risk-score-container {
+      display: flex;
+      justify-content: center;
+      margin: 30px 0;
+    }
+    
+    .security-score-visual {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      flex-shrink: 0;
+    }
+    
+    .score-circle {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.8s ease;
+    }
+    
+    .circle-background {
+      border: 15px solid rgba(61, 133, 198, 0.1);
+    }
+    
+    .circle-progress {
+      border: 15px solid transparent;
+      border-top: 15px solid var(--accent-color);
+      border-right: 15px solid var(--accent-color);
+      transform: rotate(0deg);
+    }
+    
+    .score-value {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: var(--accent-color);
+      transition: all 0.5s;
+    }
+    
+    .score-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 500;
+    }
+
+    /* Responsive styling */
+    @media (max-width: 768px) {
+      .analysis-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+      
+      .analysis-info {
+        flex-direction: column;
+      }
+      
+      .analysis-url {
+        width: 100%;
+      }
+      
+      .analysis-actions {
+        justify-content: space-between;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <header class="top-header">
+    <div class="top-header-content">
+      <div class="logo-container">
+        <a href="index.html" class="logo">
+          <i class="fas fa-shield-alt"></i>
+          <span>PhishGuard</span>
+        </a>
+      </div>
+      <nav class="header-nav">
+        <a href="dashboard.html" class="header-nav-item">
+          <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="analyze.html" class="header-nav-item active">
+          <i class="fas fa-search"></i> Analyze
+        </a>
+        <a href="settings.html" class="header-nav-item">
+          <i class="fas fa-cog"></i> Settings
+        </a>
+      </nav>
+    </div>
+  </header>
+  <div class="analysis-wrapper">
+    <div class="analysis-header">
+      <h1><i class="fas fa-chart-bar"></i> Detailed Analysis</h1>
+      <a href="analyze.html" class="btn-action btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Analysis
+      </a>
+    </div>
+    <div class="analysis-info">
+      <div id="analyzed-url" class="analysis-url">
+        <i class="fas fa-globe"></i>
+        <span>Loading URL...</span>
+      </div>
+      <div class="analysis-actions">
+        <a id="analyze-new-btn" href="analyze.html" class="btn-action">
+          <i class="fas fa-search"></i> Analyze New URL
+        </a>
+        <button id="report-btn" class="btn-action btn-secondary">
+          <i class="fas fa-flag"></i> Report Website
+        </button>
+      </div>
+    </div>
+    <div id="loading-container" class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading detailed analysis...</p>
+    </div>
+    <div id="analysis-content" style="display: none;">
+      <!-- The enhanced ML feature explainer content will be inserted here -->
+    </div>
+  </div>
+  <script src="js/ml-feature-explainer.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check if user is logged in
+      const token = localStorage.getItem('phishguardToken');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      const loadingContainer = document.getElementById('loading-container');
+      const analysisContent = document.getElementById('analysis-content');
+      const analyzedUrlElement = document.getElementById('analyzed-url');
+      const reportBtn = document.getElementById('report-btn');
+      
+      try {
+        const analysisDataString = sessionStorage.getItem('analysisData');
+        if (!analysisDataString) {
+          throw new Error('No analysis data available');
+        }
+        
+        const analysisData = JSON.parse(analysisDataString);
+        const { url, features, result } = analysisData;
+        
+        // Update URL display with proper truncation
+        const displayUrl = url.length > 60 ? url.substring(0, 57) + '...' : url;
+        analyzedUrlElement.innerHTML = `
+          <i class="fas fa-globe"></i>
+          <span title="${url}">${displayUrl}</span>
+        `;
+        
+        // Initialize the feature explainer
+        const featureExplainer = new MLFeatureExplainer();
+        
+        // Generate the detailed HTML content
+        const detailedHtml = featureExplainer.generateTransparentHTML(features, url, result);
+        
+        // Insert the content
+        analysisContent.innerHTML = detailedHtml;
+        
+        // Directly animate the score circle without inserting a new one
+        setTimeout(() => {
+          animateScoreCircle(result.risk_score);
+        }, 200);
+        
+        // Function to animate score circle
+        function animateScoreCircle(score) {
+          const scoreValue = document.getElementById('risk-score-value');
+          const scoreProgress = document.getElementById('risk-score-progress');
+          
+          if (!scoreValue || !scoreProgress) {
+            console.error('Score ring elements not found');
+            return;
+          }
+          
+          let current = 0;
+          const to = score;
+          const duration = 1500;
+          const interval = 20;
+          const steps = duration / interval;
+          const increment = to / steps;
+          
+          // Animate score number
+          const timer = setInterval(() => {
+            current += increment;
+            if (current >= to) {
+              current = to;
+              clearInterval(timer);
+            }
+            
+            scoreValue.textContent = Math.round(current);
+            
+            // Animate circle progress
+            const angle = 3.6 * Math.round(current); // 3.6 degrees per percentage
+            scoreProgress.style.transform = `rotate(${angle}deg)`;
+            
+            // Change color based on score
+            if (current < 30) {
+              scoreProgress.style.borderTopColor = '#4caf50';
+              scoreProgress.style.borderRightColor = '#4caf50';
+              scoreValue.style.color = '#4caf50';
+            } else if (current < 70) {
+              scoreProgress.style.borderTopColor = '#ff9800';
+              scoreProgress.style.borderRightColor = '#ff9800';
+              scoreValue.style.color = '#ff9800';
+            } else {
+              scoreProgress.style.borderTopColor = '#f44336';
+              scoreProgress.style.borderRightColor = '#f44336';
+              scoreValue.style.color = '#f44336';
+            }
+          }, interval);
+        }
+        
+        // Show the content
+        loadingContainer.style.display = 'none';
+        analysisContent.style.display = 'block';
+        
+        // Activate expandable sections with toggle functionality
+        setTimeout(() => {
+          const expandableSections = document.querySelectorAll('.expandable');
+          expandableSections.forEach(section => {
+            const header = section.querySelector('.expandable-header');
+            if (header) {
+              header.addEventListener('click', () => {
+                section.classList.toggle('open');
+              });
+            }
+          });
+        }, 100);
+      } catch (error) {
+        console.error('Error loading analysis data:', error);
+        analysisContent.innerHTML = `
+          <div class="error-container">
+            <i class="fas fa-exclamation-circle error-icon"></i>
+            <h2>Analysis Data Not Found</h2>
+            <p>We couldn't load the analysis data. This may happen if you access this page directly without first analyzing a URL.</p>
+            <a href="analyze.html" class="btn-action" style="display: inline-flex; margin-top: 20px;">
+              <i class="fas fa-search"></i> Go to URL Analysis
+            </a>
+          </div>
+        `;
+        loadingContainer.style.display = 'none';
+        analysisContent.style.display = 'block';
+      }
+      
+      // Handle report button click
+      reportBtn.addEventListener('click', () => {
+        try {
+          const analysisData = JSON.parse(sessionStorage.getItem('analysisData'));
+          const url = analysisData.url;
+          const confirmed = confirm(`Do you want to report "${url}" as a phishing website?`);
+          if (confirmed) {
+            fetch('http://localhost:3000/api/reports/create', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-auth-token': token,
+              },
+              body: JSON.stringify({
+                url: url,
+                reason: 'Suspected phishing'
+              })
+            })
+            .then(response => {
+              if (response.ok) {
+                return response.json();
+              } else {
+                throw new Error('Failed to report website');
+              }
+            })
+            .then(data => {
+              console.log('Report submitted:', data);
+              alert('Thank you for reporting this website. Our team will review it shortly.');
+            })
+            .catch(err => {
+              console.error('Error reporting website:', err);
+              alert('Unable to submit report. Please try again later.');
+            });
+          }
+        } catch (error) {
+          console.error('Error reporting website:', error);
+          alert('Unable to report website. Please try again later.');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

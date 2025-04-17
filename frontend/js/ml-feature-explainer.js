@@ -7,6 +7,92 @@
  */
 class MLFeatureExplainer {
   constructor() {
+    // Define all feature weights and their meanings
+    this.weights = {
+      'qty_dot_url': 0.05,          // Number of dots in URL
+      'qty_hyphen_url': 0.05,       // Number of hyphens in URL
+      'length_url': 0.1,            // Length of the URL
+      'qty_at_url': 0.1,            // Number of @ symbols 
+      'domain_in_ip': 0.35,         // IP address instead of domain name (major flag)
+      'tls_ssl_certificate': -0.15, // HTTPS/SSL reduces risk (negative weight)
+      'url_google_index': -0.1,     // Google indexed site reduces risk
+      'domain_google_index': -0.1,  // Google indexed domain reduces risk
+      'qty_redirects': 0.1,         // More redirects increase risk
+      'time_domain_activation': -0.1, // Older domains reduce risk
+      'qty_ip_resolved': -0.05,     // Number of IPs a domain resolves to
+      'domain_spf': -0.05,          // SPF record for email security
+      'asn_ip': -0.05               // Autonomous System Number
+    };
+    
+    // Feature display names for better readability
+    this.featureNames = {
+      'qty_dot_url': 'Number of Dots in URL',
+      'qty_hyphen_url': 'Number of Hyphens in URL',
+      'length_url': 'URL Length',
+      'qty_at_url': 'Number of @ Symbols',
+      'domain_in_ip': 'IP Address Used as Domain',
+      'tls_ssl_certificate': 'SSL/TLS Certificate',
+      'url_google_index': 'URL Indexed by Google',
+      'domain_google_index': 'Domain Indexed by Google',
+      'qty_redirects': 'Number of Redirects',
+      'time_domain_activation': 'Domain Age',
+      'qty_ip_resolved': 'Number of IP Addresses',
+      'domain_spf': 'Domain SPF Record',
+      'asn_ip': 'Autonomous System Number'
+    };
+    
+    // Feature explanations
+    this.featureExplanations = {
+      'qty_dot_url': 'Multiple dots may indicate subdomain abuse or complex URL structure',
+      'qty_hyphen_url': 'Multiple hyphens often appear in deceptive look-alike domains',
+      'length_url': 'Excessively long URLs can hide malicious code or redirect destinations',
+      'qty_at_url': 'The @ symbol in URLs can be used to hide the true destination',
+      'domain_in_ip': 'Using an IP address instead of a domain name is a common phishing technique',
+      'tls_ssl_certificate': 'HTTPS encryption protects data transmission and verifies site identity',
+      'url_google_index': 'Legitimate sites are typically indexed by search engines',
+      'domain_google_index': 'Domains not indexed by search engines may be newly created for phishing',
+      'qty_redirects': 'Multiple redirects can mask the true destination of a URL',
+      'time_domain_activation': 'Newer domains are more likely to be used for phishing',
+      'qty_ip_resolved': 'Multiple IP addresses may indicate fast-flux hosting (evasion technique)',
+      'domain_spf': 'SPF records help prevent email spoofing',
+      'asn_ip': 'ASN identifies the network where a site is hosted'
+    };
+    
+    // Feature risk thresholds - when a feature becomes concerning
+    this.riskThresholds = {
+      'qty_dot_url': 5,
+      'qty_hyphen_url': 3,
+      'length_url': 70,
+      'qty_at_url': 1,
+      'domain_in_ip': 0.5,
+      'tls_ssl_certificate': 0.5,  // Below this is risky (no SSL)
+      'url_google_index': 0.5,     // Below this is risky (not indexed)
+      'domain_google_index': 0.5,  // Below this is risky (not indexed)
+      'qty_redirects': 2,
+      'time_domain_activation': 30, // Below this is risky (new domain)
+      'qty_ip_resolved': 5,        // Above this is suspicious
+      'domain_spf': 0.5,           // Below this is risky (no SPF)
+      'asn_ip': 0                  // Default
+    };
+
+    // Feature impact levels
+    this.featureImpacts = {
+      'domain_in_ip': 'High',
+      'tls_ssl_certificate': 'High',
+      'qty_at_url': 'High',
+      'length_url': 'Medium',
+      'qty_redirects': 'Medium',
+      'url_google_index': 'Medium',
+      'domain_google_index': 'Medium',
+      'time_domain_activation': 'Medium',
+      'qty_dot_url': 'Low',
+      'qty_hyphen_url': 'Low',
+      'qty_ip_resolved': 'Low',
+      'url_shortened': 'High',
+      'domain_spf': 'Low',
+      'asn_ip': 'Low'
+    };
+    
     this.featureDescriptions = {
       // SSL Certificate
       'tls_ssl_certificate': {
@@ -155,405 +241,1166 @@ class MLFeatureExplainer {
       }
     };
   }
-  
+
   /**
-   * Analyze ML features and generate explanations
-   * @param {Object} features - ML features from analysis
-   * @param {string} url - The URL being analyzed
-   * @returns {Object} Educational content based on features
+   * Generate transparent HTML for the risk explanation - Summary Version
+   * This generates a simplified version for the main analysis page
    */
-  explainFeatures(features, url = '') {
-    if (!features || Object.keys(features).length === 0) {
-      return {
-        riskFactors: [],
-        safeFactors: [],
-        summary: "No detailed features were available for analysis."
-      };
-    }
-    
-    const riskFactors = [];
-    const safeFactors = [];
-    const allFactors = []; // To track all factors in order of importance
-    
-    // Special check for IP address in URL
-    if (url && this.isIpAddress(url)) {
-      riskFactors.push({
-        name: 'IP Address in URL',
-        value: true,
-        explanation: "This site uses a numeric IP address instead of a domain name. This is a strong indicator of a phishing site as legitimate websites almost always use proper domain names.",
-        impact: "critical"
-      });
-      
-      // If domain_in_ip isn't in features, add it
-      if (!features.hasOwnProperty('domain_in_ip')) {
-        features.domain_in_ip = 1;
-      }
-    }
-    
-    // Process each feature
-    Object.entries(features).forEach(([key, value]) => {
-      // Skip irrelevant features
-      if (key === '__class__' || value === undefined || !this.featureDescriptions[key]) {
-        return;
-      }
-      
-      const featureInfo = this.featureDescriptions[key];
-      
-      // Format value if formatter exists
-      const formattedValue = featureInfo.valueFormatter ? featureInfo.valueFormatter(value) : value;
-      
-      // Check if this feature indicates risk
-      if (featureInfo.dangerous(value)) {
-        // Handle explanation function or string
-        let explanation = featureInfo.explanation.risky;
-        if (typeof explanation === 'function') {
-          explanation = explanation(value);
-        }
-        
-        const factor = {
-          name: featureInfo.name,
-          value: formattedValue,
-          rawValue: value,
-          explanation: explanation,
-          impact: featureInfo.impact || "medium"
-        };
-        
-        riskFactors.push(factor);
-        allFactors.push({...factor, isRisk: true});
-      } else {
-        // Handle explanation function or string
-        let explanation = featureInfo.explanation.safe;
-        if (typeof explanation === 'function') {
-          explanation = explanation(value);
-        }
-        
-        const factor = {
-          name: featureInfo.name,
-          value: formattedValue,
-          rawValue: value,
-          explanation: explanation,
-          impact: featureInfo.impact || "low"
-        };
-        
-        safeFactors.push(factor);
-        allFactors.push({...factor, isRisk: false});
-      }
-    });
-    
-    // Sort factors by impact for display
-    const impactOrder = {"critical": 0, "high": 1, "medium": 2, "low": 3};
-    riskFactors.sort((a, b) => impactOrder[a.impact] - impactOrder[b.impact]);
-    allFactors.sort((a, b) => {
-      // First prioritize risk factors
-      if (a.isRisk && !b.isRisk) return -1;
-      if (!a.isRisk && b.isRisk) return 1;
-      // Then sort by impact
-      return impactOrder[a.impact] - impactOrder[b.impact];
-    });
-    
-    // Generate a summary
-    let summary = "";
-    if (riskFactors.length > 0) {
-      const criticalFactors = riskFactors.filter(f => f.impact === "critical");
-      const highFactors = riskFactors.filter(f => f.impact === "high");
-      
-      if (criticalFactors.length > 0) {
-        summary = `Critical security concerns detected, including ${criticalFactors.map(f => f.name.toLowerCase()).join(" and ")}.`;
-      } else if (highFactors.length > 0) {
-        summary = `Significant security concerns detected, including ${highFactors.slice(0, 2).map(f => f.name.toLowerCase()).join(" and ")}.`;
-      } else if (riskFactors.length > 2) {
-        summary = `Multiple security concerns were detected, including ${riskFactors.slice(0, 2).map(f => f.name.toLowerCase()).join(" and ")}.`;
-      } else {
-        summary = `Security concerns detected: ${riskFactors.map(f => f.name.toLowerCase()).join(" and ")}.`;
-      }
-    } else if (safeFactors.length > 0) {
-      summary = "No concerning features were detected in this URL.";
-    } else {
-      summary = "Unable to perform detailed feature analysis.";
-    }
-    
-    return {
-      riskFactors,
-      safeFactors,
-      allFactors,
-      summary
-    };
-  }
-  
-  /**
-   * Generate transparent HTML content for display
-   * @param {Object} features - ML features from analysis
-   * @param {string} url - The URL being analyzed
-   * @param {Object} scanResult - Full scan result including risk score
-   * @returns {string} HTML content explaining features with transparency
-   */
-  generateTransparentHTML(features, url = '', scanResult = {}) {
-    console.log("Generating transparent HTML for features:", features);
-    
+  generateSummaryHTML(features, url, result) {
     try {
-      const analysis = this.explainFeatures(features || {}, url);
+      const riskScore = result.risk_score;
+      const isPhishing = result.is_phishing;
       let html = '';
       
-      // Add scan summary header - simplified design
+      // Add security overview section
       html += `<div class="scan-summary">
         <h3>Security Analysis</h3>
         <div class="risk-score">
-          <span class="risk-score-label">Risk Score:</span>
-          <span class="${this.getRiskClass(scanResult.risk_score || 0)}">${scanResult.risk_score || 0}/100</span>
-        </div>
-      </div>`;
+          <div class="risk-score-label">Risk Score:</div>
+          <span class="${riskScore > 60 ? 'high-risk' : riskScore > 30 ? 'medium-risk' : 'low-risk'}">${riskScore}/100</span>
+        </div>`;
       
-      // Add factors section with cleaner design
-      html += '<div class="factors-section">';
+      // Display overall assessment
+      if (isPhishing || riskScore > 80) {
+        html += `<p><strong>High-Risk Features Detected</strong><br>
+        This URL displays multiple characteristics commonly associated with phishing sites.</p>`;
+      } else if (riskScore > 60) {
+        html += `<p><strong>Suspicious URL Detected</strong><br>
+        This URL has some concerning characteristics that warrant caution.</p>`;
+      } else if (riskScore > 30) {
+        html += `<p><strong>Some Caution Advised</strong><br>
+        While not clearly malicious, this site has some minor risk factors.</p>`;
+      } else {
+        html += `<p><strong>No Security Issues Detected</strong><br>
+        Our analysis did not find any significant security concerns with this URL. Always continue practicing safe browsing habits.</p>`;
+      }
       
-      // Add risk factors section if any exist
-      if (analysis.riskFactors && analysis.riskFactors.length > 0) {
-        html += `
-          <div class="section-title">
-            <i class="fas fa-exclamation-circle"></i>
-            Security Issues Detected
-          </div>
+      html += `</div>`;
+      
+      // Calculate the contribution each feature made to the final score
+      const contributions = {};
+      Object.keys(this.weights).forEach(feature => {
+        if (typeof features[feature] !== 'undefined') {
+          contributions[feature] = features[feature] * this.weights[feature];
+        }
+      });
+      
+      // Sort features by absolute contribution value
+      const sortedFeatures = Object.keys(contributions)
+        .sort((a, b) => Math.abs(contributions[b]) - Math.abs(contributions[a]));
+        
+      // Generate positive and negative contributors
+      const positiveContributors = sortedFeatures.filter(f => contributions[f] > 0);
+      const negativeContributors = sortedFeatures.filter(f => contributions[f] < 0);
+      
+      // Start risk factors section - show only top 2 factors for summary
+      if (positiveContributors.length > 0) {
+        html += `<div class="factors-section">
+          <div class="section-title"><i class="fas fa-exclamation-triangle"></i> Risk Factors</div>
           <div class="risk-factors-list">`;
-        
-        analysis.riskFactors.forEach(factor => {
-          html += `<div class="factor-card ${factor.impact}">
+          
+        // Display the top risk contributors  
+        for (const feature of positiveContributors.slice(0, 2)) {
+          const impact = this.featureImpacts[feature] || 'Medium';
+          const impactClass = impact === 'High' ? 'high' : impact === 'Medium' ? 'medium' : 'low';
+          const displayValue = this.formatFeatureValue(feature, features[feature]);
+          
+          html += `<div class="factor-card ${impactClass}">
             <div class="factor-header">
-              <span class="factor-name">${factor.name}</span>
-              <span class="impact-badge ${factor.impact}">${this.capitalizeFirst(factor.impact)}</span>
+              <div class="factor-name">${this.featureNames[feature] || this.formatFeatureName(feature)}</div>
+              <div class="factor-impact">
+                <span class="impact-badge ${impactClass}">${impact}</span>
+              </div>
             </div>
-            <p class="factor-explanation">${factor.explanation}</p>
-            ${factor.value !== undefined && factor.value !== true ? 
-              `<p class="factor-value">Found: ${factor.value}</p>` : ''}
+            <p class="factor-explanation">${this.featureExplanations[feature] || ''}</p>
+            <p class="factor-value">Value: ${displayValue}</p>
           </div>`;
-        });
+        }
         
-        html += '</div>';
-      } else {
-        html += `
-          <div class="section-title">
-            <i class="fas fa-check-circle"></i>
-            No Security Issues Detected
-          </div>
-          <div class="factor-card safe">
-            <p class="factor-explanation">Our analysis did not find any significant security concerns with this URL. Always continue practicing safe browsing habits.</p>
-          </div>`;
+        html += `</div></div>`;
       }
       
-      // Add safe factors section if any exist and risk score is under threshold
-      if (analysis.safeFactors && analysis.safeFactors.length > 0 && (scanResult.risk_score || 0) < 60) {
-        html += `
-          <div class="section-title">
-            <i class="fas fa-shield-alt"></i>
-            Positive Security Signals
-          </div>
+      // Add positive security factors - show only top 1 factor for summary
+      if (negativeContributors.length > 0) {
+        html += `<div class="factors-section">
+          <div class="section-title"><i class="fas fa-shield-alt"></i> Positive Security Signals</div>
           <div class="safe-factors-list">`;
+          
+        for (const feature of negativeContributors.slice(0, 1)) {
+          const displayValue = this.formatFeatureValue(feature, features[feature]);
+          
+          html += `<div class="factor-card safe">
+            <div class="factor-header">
+              <div class="factor-name">${this.featureNames[feature] || this.formatFeatureName(feature)}</div>
+              <div class="factor-impact">
+                <span class="impact-badge low" style="background-color:#4caf50;">Positive</span>
+              </div>
+            </div>
+            <p class="factor-explanation">${this.featureExplanations[feature] || ''}</p>
+            <p class="factor-value">Value: ${displayValue}</p>
+          </div>`;
+        }
         
-        // Display up to 2 most important safe factors
-        analysis.safeFactors
-          .sort((a, b) => this.getImpactWeight(a.impact) - this.getImpactWeight(b.impact))
-          .slice(0, 2)
-          .forEach(factor => {
-            html += `<div class="factor-card safe">
-              <span class="factor-name">${factor.name}</span>
-              <p class="factor-explanation">${factor.explanation}</p>
-            </div>`;
-          });
-        
-        html += '</div>';
+        html += `</div></div>`;
       }
       
-      html += '</div>';
-      
-      // Add technical details section (collapsible) - cleaner design
-      html += `<div class="technical-section" id="technical-details">
-        <div class="technical-header" onclick="document.getElementById('technical-details').classList.toggle('expanded')">
-          <h4><i class="fas fa-code"></i> Technical Details</h4>
-          <span class="toggle-icon">+</span>
-        </div>
-        <div class="technical-content">
-          <table class="features-table">
-            <tr>
-              <th>Feature</th>
-              <th>Value</th>
-              <th>Impact</th>
-            </tr>`;
-      
-      // Make sure allFactors exists before trying to iterate over it
-      if (analysis.allFactors && Array.isArray(analysis.allFactors)) {
-        // Show analyzed features
-        analysis.allFactors.forEach(factor => {
-          html += `<tr class="${factor.isRisk ? 'risk' : 'safe'}">
-            <td>${factor.name}</td>
-            <td>${factor.value !== undefined ? factor.value : (factor.rawValue !== undefined ? factor.rawValue : 'N/A')}</td>
-            <td class="impact ${factor.impact}">${this.capitalizeFirst(factor.impact)}</td>
-          </tr>`;
-        });
-      } else {
-        // Fallback if allFactors is missing
-        Object.entries(features || {}).forEach(([key, value]) => {
-          if (this.featureDescriptions[key]) {
-            const featureInfo = this.featureDescriptions[key];
-            const isRisky = featureInfo.dangerous(value);
-            html += `<tr class="${isRisky ? 'risk' : 'safe'}">
-              <td>${featureInfo.name || key}</td>
-              <td>${value}</td>
-              <td class="impact ${featureInfo.impact || 'medium'}">${this.capitalizeFirst(featureInfo.impact || 'medium')}</td>
-            </tr>`;
-          }
-        });
-      }
-      
-      html += `</table>
-          <p class="table-note">
-            These features were analyzed by our machine learning model to determine the risk score.
-          </p>
-        </div>
+      // Add "View Detailed Analysis" button
+      html += `<div style="text-align: center; margin-top: 20px;">
+        <a href="analysis-details.html" 
+           onclick="sessionStorage.setItem('analysisData', JSON.stringify({url: '${encodeURIComponent(url)}', features: ${JSON.stringify(features)}, result: ${JSON.stringify(result)}}));"
+           class="btn-primary" style="display: inline-flex; text-decoration: none;">
+          <i class="fas fa-chart-bar"></i> View Detailed Analysis
+        </a>
       </div>`;
       
-      // Add recommendations section - improved design
+      // Recommendations section (simplified for summary)
       html += `<div class="recommendations-section">
-        <h4 class="recommendations-title"><i class="fas fa-lightbulb"></i> Recommendations</h4>`;
-      
-      // Add advice based on risk level
-      if (scanResult.risk_score > 70) {
-        html += `<div class="security-advice high-risk">
-          <p>We recommend that you do not proceed to this website or enter any personal information.</p>
-        </div>`;
-      } else if (scanResult.risk_score > 30) {
-        html += `<div class="security-advice medium-risk">
-          <p>Exercise caution with this website. If you proceed, be vigilant about sharing any information.</p>
-        </div>`;
-      } else {
-        html += `<div class="security-advice">
-          <p>This website appears to be legitimate, but always maintain good security practices.</p>
-        </div>`;
-      }
-      
-      // Add specific advice based on risk factors
-      html += '<ul class="safety-tips">';
-      
-      // Always show general safety tip
-      html += '<li>Always verify the website address before entering personal information</li>';
-      
-      // Show specific advice for detected risks
-      if (analysis.riskFactors.some(f => f.name === "SSL Certificate Status")) {
-        html += '<li>Never enter sensitive information on websites without HTTPS encryption</li>';
-      }
-      
-      if (analysis.riskFactors.some(f => f.name === "IP Address Used as Domain" || f.name === "IP Address in URL")) {
-        html += '<li>Legitimate websites almost never use IP addresses instead of domain names</li>';
-      }
-      
-      if (analysis.riskFactors.some(f => f.name === "URL Shortening")) {
-        html += '<li>Use URL expansion services to check the real destination of shortened links</li>';
-      }
-      
-      html += '</ul></div>';
+        <div class="recommendations-title"><i class="fas fa-lightbulb"></i> Recommendations</div>
+        <div class="security-advice ${riskScore > 60 ? 'high-risk' : riskScore > 30 ? 'medium-risk' : ''}">
+          <p>${this.getRecommendation(riskScore, isPhishing)}</p>
+        </div>
+      </div>`;
       
       return html;
     } catch (error) {
-      console.error("Error in generateTransparentHTML:", error);
-      
-      // Provide a fallback simple explanation when the full analysis fails
-      return `
-        <div class="scan-summary">
-          <h3>Security Analysis</h3>
-          <div class="risk-score">
-            <span class="risk-score-label">Risk Score:</span>
-            <span class="${this.getRiskClass(scanResult.risk_score || 0)}">${scanResult.risk_score || 0}/100</span>
-          </div>
-        </div>
-        <div class="factor-card ${scanResult.risk_score > 60 ? 'high' : scanResult.risk_score > 30 ? 'medium' : 'safe'}">
-          <p class="factor-explanation">We encountered an issue while analyzing this URL's detailed features. The risk score is still accurate, but detailed explanation is not available.</p>
-          ${this.isIpAddress(url) ? '<p class="factor-explanation"><strong>Note:</strong> This URL uses an IP address instead of a domain name, which is a common characteristic of phishing sites.</p>' : ''}
-        </div>
-      `;
+      console.error('Error generating summary HTML:', error);
+      return `<p>An error occurred while generating the summary report. Risk score: ${result.risk_score}/100</p>`;
     }
   }
-  
+
   /**
-   * Generate older/simple HTML content for display (backward compatibility)
-   * @param {Object} features - ML features from analysis
-   * @param {string} url - The URL being analyzed
-   * @returns {string} HTML content explaining features
+   * Generate transparent HTML for the risk explanation - FULL Version
    */
-  generateHTML(features, url = '') {
-    const analysis = this.explainFeatures(features, url);
-    let html = '<ul class="feature-list">';
-    
-    if (analysis.riskFactors.length > 0) {
-      analysis.riskFactors.forEach(factor => {
-        html += `<li><strong>${factor.name}:</strong> ${factor.explanation}</li>`;
-      });
-    } else if (analysis.safeFactors.length > 0) {
-      analysis.safeFactors.forEach(factor => {
-        html += `<li><strong>${factor.name}:</strong> ${factor.explanation}</li>`;
-      });
-    } else if (url && this.isIpAddress(url)) {
-      // Special case for IP addresses when no features were detected
-      html = '<li><strong>IP Address in URL:</strong> This website uses a numeric IP address instead of a domain name, which is a strong indicator of a phishing attempt.</li>';
-    } else {
-      html = '<li>No specific feature information available for this URL.</li>';
-    }
-    
-    html += '</ul>';
-    return html;
-  }
-  
-  /**
-   * Helper: Get risk class for CSS styling
-   */
-  getRiskClass(score) {
-    if (score > 70) return "high-risk";
-    if (score > 30) return "medium-risk";
-    return "low-risk";
-  }
-  
-  /**
-   * Helper: Get numeric weight for impact sorting
-   */
-  getImpactWeight(impact) {
-    const weights = {"critical": 0, "high": 1, "medium": 2, "low": 3};
-    return weights[impact] || 4;
-  }
-  
-  /**
-   * Helper: Capitalize first letter
-   */
-  capitalizeFirst(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
-  
-  /**
-   * Check if a URL contains an IP address as the hostname
-   */
-  isIpAddress(url) {
+  generateTransparentHTML(features, url, result) {
     try {
-      let hostname = url;
-      // Try to extract hostname using URL API
-      try {
-        const urlObj = new URL(url);
-        hostname = urlObj.hostname;
-      } catch (e) {
-        // If URL parsing fails, try to extract the hostname manually
-        hostname = hostname.replace(/^(https?:\/\/)/, '');
-        hostname = hostname.split('/')[0];
+      // Make sure we have a numeric risk score between 0-100
+      let riskScore = result.risk_score;
+      if (typeof riskScore === 'string') {
+        riskScore = parseFloat(riskScore);
+      }
+      // If the score is in decimal (0-1 range), convert to 0-100 scale
+      if (riskScore <= 1.0 && riskScore > 0) {
+        riskScore = riskScore * 100;
+      }
+      // Round to 1 decimal place for display
+      riskScore = Math.round(riskScore * 10) / 10;
+      
+      const isPhishing = result.is_phishing;
+      const baseScore = 50; // Start from a base of 50
+      
+      // Add styles for modern UI
+      let html = `<style>
+        /* Modern UI Styles */
+        .analysis-details-container {
+          font-family: var(--font-main);
+          max-width: 1000px;
+          margin: 0 auto;
+        }
+        
+        .details-header {
+          position: relative;
+          padding: 35px;
+          margin-bottom: 30px;
+          border-radius: 16px;
+          overflow: hidden;
+          background: linear-gradient(145deg, var(--card-bg) 0%, rgba(35, 35, 45, 0.95) 100%);
+          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .details-header::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 300px;
+          height: 100%;
+          background-image: radial-gradient(circle at 80% 40%, rgba(61, 133, 198, 0.1) 0%, transparent 60%);
+          z-index: 0;
+        }
+        
+        .details-title {
+          position: relative;
+          font-size: 28px;
+          font-weight: 700;
+          margin-bottom: 15px;
+          color: var(--text-primary);
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          z-index: 1;
+        }
+        
+        .details-description {
+          position: relative;
+          color: var(--text-secondary);
+          font-size: 16px;
+          max-width: 650px;
+          line-height: 1.6;
+          z-index: 1;
+          margin-bottom: 25px;
+        }
+        
+        .details-meta {
+          position: relative;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-top: 25px;
+          z-index: 1;
+        }
+        
+        .meta-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          color: var(--text-secondary);
+          background-color: rgba(255, 255, 255, 0.05);
+          padding: 8px 16px;
+          border-radius: 30px;
+          border: 1px solid rgba(255, 255, 255, 0.03);
+          transition: all 0.2s ease;
+        }
+        
+        .meta-item:hover {
+          background-color: rgba(255, 255, 255, 0.08);
+          transform: translateY(-2px);
+        }
+        
+        .meta-item i {
+          color: var(--primary-color);
+        }
+        
+        .score-ring-container {
+          position: absolute;
+          top: 35px;
+          right: 35px;
+          width: 140px;
+          height: 140px;
+          z-index: 2;
+          filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.2));
+        }
+        
+        .score-ring {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          transform-style: preserve-3d;
+          transform: perspective(1000px) rotateY(-10deg);
+        }
+        
+        .score-circle {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background: conic-gradient(
+            ${riskScore > 60 ? '#f44336' : riskScore > 30 ? '#ff9800' : '#4caf50'} 
+            0% ${riskScore}%, 
+            rgba(255, 255, 255, 0.1) ${riskScore}% 100%
+          );
+          box-shadow: 0 0 30px rgba(
+            ${riskScore > 60 ? '244, 67, 54' : riskScore > 30 ? '255, 152, 0' : '76, 175, 80'}, 0.2);
+          transform: rotate(-90deg);
+        }
+        
+        .score-inner {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          right: 10px;
+          bottom: 10px;
+          background-color: var(--card-bg);
+          border-radius: 50%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .score-value {
+          font-size: 26px;
+          font-weight: 700;
+          color: ${riskScore > 60 ? '#f44336' : riskScore > 30 ? '#ff9800' : '#4caf50'};
+        }
+        
+        .score-label {
+          font-size: 12px;
+          color: var(--text-tertiary);
+          margin-top: 3px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        /* Main layout */
+        .details-grid {
+          display: grid;
+          grid-template-columns: repeat(12, 1fr);
+          gap: 20px;
+        }
+        
+        /* Cards */
+        .details-card {
+          background-color: var(--card-bg);
+          border-radius: 16px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+          overflow: hidden;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          margin-bottom: 20px;
+        }
+        
+        .details-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+          padding: 20px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .card-title {
+          font-size: 18px;
+          font-weight: 600;
+          color: var(--text-primary);
+          margin: 0;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        
+        .card-icon {
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          background-color: rgba(61, 133, 198, 0.1);
+          color: var(--primary-color);
+        }
+        
+        .card-danger .card-icon {
+          background-color: rgba(244, 67, 54, 0.1);
+          color: #f44336;
+        }
+        
+        .card-warning .card-icon {
+          background-color: rgba(255, 152, 0, 0.1);
+          color: #ff9800;
+        }
+        
+        .card-success .card-icon {
+          background-color: rgba(76, 175, 80, 0.1);
+          color: #4caf50;
+        }
+        
+        .card-content {
+          padding: 20px;
+        }
+        
+        /* Feature cards grid */
+        .features-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 15px;
+        }
+        
+        .feature-card {
+          background-color: rgba(255, 255, 255, 0.02);
+          border-radius: 12px;
+          padding: 15px;
+          position: relative;
+          overflow: hidden;
+          border-left: 3px solid transparent;
+        }
+        
+        .feature-card.risky {
+          border-left-color: #f44336;
+        }
+        
+        .feature-card.safe {
+          border-left-color: #4caf50;
+        }
+        
+        .feature-title {
+          font-weight: 600;
+          font-size: 15px;
+          margin: 0 0 5px 0;
+          color: var(--text-primary);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        
+        .feature-badge {
+          font-size: 11px;
+          padding: 3px 8px;
+          border-radius: 12px;
+          background-color: rgba(244, 67, 54, 0.1);
+          color: #f44336;
+        }
+        
+        .feature-badge.safe {
+          background-color: rgba(76, 175, 80, 0.1);
+          color: #4caf50;
+        }
+        
+        .feature-description {
+          color: var(--text-secondary);
+          font-size: 13px;
+          line-height: 1.5;
+          margin: 8px 0;
+        }
+        
+        .feature-meta {
+          display: flex;
+          justify-content: space-between;
+          color: var(--text-tertiary);
+          font-size: 12px;
+          margin-top: 10px;
+        }
+        
+        /* Score breakdown */
+        .score-breakdown {
+          margin: 20px 0;
+        }
+        
+        .score-bar-container {
+          height: 60px;
+          background-color: rgba(255, 255, 255, 0.05);
+          border-radius: 8px;
+          position: relative;
+          display: flex;
+          overflow: visible;
+        }
+        
+        .score-segment {
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 13px;
+          font-weight: 600;
+          position: relative;
+          min-width: 2px;
+          transition: width 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+        
+        .score-segment.base {
+          background-color: #5c6bc0;
+          border-radius: 8px 0 0 8px;
+        }
+        
+        .score-segment.positive {
+          background-color: #f44336;
+        }
+        
+        .score-segment.negative {
+          background-color: #4caf50;
+        }
+        
+        .score-label {
+          position: absolute;
+          top: -25px;
+          transform: translateX(-50%);
+          white-space: nowrap;
+          font-size: 12px;
+          font-weight: 500;
+        }
+        
+        .final-score-pointer {
+          position: absolute;
+          top: -15px;
+          width: 3px;
+          height: 80px;
+          background-color: rgba(255, 255, 255, 0.8);
+          border-radius: 3px;
+          z-index: 10;
+          transition: left 1s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+        
+        .final-score-pointer::after {
+          content: 'Final: ${Math.round(riskScore)}';
+          position: absolute;
+          bottom: -25px;
+          left: 50%;
+          transform: translateX(-50%);
+          background-color: #333;
+          color: white;
+          padding: 3px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          white-space: nowrap;
+        }
+        
+        .score-legend {
+          display: flex;
+          justify-content: center;
+          gap: 20px;
+          margin-top: 40px;
+        }
+        
+        .legend-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          color: var(--text-secondary);
+        }
+        
+        .legend-color {
+          width: 12px;
+          height: 12px;
+          border-radius: 3px;
+        }
+        
+        .legend-base {
+          background-color: #5c6bc0;
+        }
+        
+        .legend-positive {
+          background-color: #f44336;
+        }
+        
+        .legend-negative {
+          background-color: #4caf50;
+        }
+        
+        /* Tables */
+        .details-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        
+        .details-table th {
+          text-align: left;
+          padding: 12px;
+          background-color: rgba(255, 255, 255, 0.02);
+          color: var(--text-secondary);
+          font-weight: 500;
+          font-size: 14px;
+        }
+        
+        .details-table td {
+          padding: 12px;
+          border-top: 1px solid rgba(255, 255, 255, 0.05);
+          font-size: 14px;
+        }
+        
+        .details-table tr:hover td {
+          background-color: rgba(255, 255, 255, 0.02);
+        }
+        
+        .details-table .risky {
+          color: #f44336;
+        }
+        
+        .details-table .safe {
+          color: #4caf50;
+        }
+        
+        /* Expandable sections */
+        .expandable {
+          margin-bottom: 15px;
+        }
+        
+        .expandable-header {
+          padding: 15px;
+          background-color: rgba(255, 255, 255, 0.02);
+          border-radius: 8px;
+          cursor: pointer;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          user-select: none;
+        }
+        
+        .expandable-title {
+          font-weight: 600;
+          font-size: 15px;
+          margin: 0;
+          color: var(--text-primary);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .expandable-toggle {
+          color: var(--text-tertiary);
+          transition: transform 0.3s ease;
+        }
+        
+        .expandable-content {
+          background-color: rgba(255, 255, 255, 0.01);
+          border-radius: 0 0 8px 8px;
+          margin-top: 2px;
+          padding: 20px;
+          max-height: 0;
+          overflow: hidden;
+          opacity: 0;
+          transition: all 0.3s ease;
+        }
+        
+        .expandable.open .expandable-toggle {
+          transform: rotate(180deg);
+        }
+        
+        .expandable.open .expandable-content {
+          max-height: 2000px;
+          opacity: 1;
+        }
+        
+        /* Recommendations section */
+        .recommendations {
+          padding: 25px;
+          background: linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, rgba(76, 175, 80, 0.01) 100%);
+          border-radius: 16px;
+          border-left: 4px solid #4caf50;
+        }
+        
+        .recommendations.high-risk {
+          background: linear-gradient(135deg, rgba(244, 67, 54, 0.05) 0%, rgba(244, 67, 54, 0.01) 100%);
+          border-left: 4px solid #f44336;
+        }
+        
+        .recommendations.medium-risk {
+          background: linear-gradient(135deg, rgba(255, 152, 0, 0.05) 0%, rgba(255, 152, 0, 0.01) 100%);
+          border-left: 4px solid #ff9800;
+        }
+        
+        .rec-title {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 18px;
+          font-weight: 600;
+          margin-bottom: 15px;
+          color: var(--text-primary);
+        }
+        
+        .rec-icon {
+          color: #4caf50;
+        }
+        
+        .recommendations.high-risk .rec-icon {
+          color: #f44336;
+        }
+        
+        .recommendations.medium-risk .rec-icon {
+          color: #ff9800;
+        }
+        
+        .rec-message {
+          color: var(--text-secondary);
+          font-size: 16px;
+          margin-bottom: 20px;
+          line-height: 1.6;
+        }
+        
+        .safety-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 15px;
+          list-style-type: none;
+          padding: 0;
+          margin: 0;
+        }
+        
+        .safety-item {
+          display: flex;
+          gap: 10px;
+          align-items: flex-start;
+          color: var(--text-secondary);
+          font-size: 14px;
+        }
+        
+        .safety-item i {
+          color: var(--primary-color);
+          margin-top: 3px;
+        }
+        
+        /* Footer */
+        .details-footer {
+          margin-top: 40px;
+          padding: 20px;
+          text-align: center;
+          color: var(--text-tertiary);
+          font-size: 13px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 960px) {
+          .score-ring-container {
+            position: relative;
+            top: auto;
+            right: auto;
+            margin: 20px auto;
+          }
+          
+          .details-grid {
+            grid-template-columns: 1fr;
+          }
+          
+          .features-grid {
+            grid-template-columns: 1fr;
+          }
+          
+          .safety-list {
+            grid-template-columns: 1fr;
+          }
+        }
+      </style>`;
+
+      // Begin main container
+      html += `<div class="analysis-details-container">
+        <!-- Header with URL and score -->
+        <div class="details-header">
+          <div class="url-badge">${url}</div>
+          <h1 class="details-title">
+            ${isPhishing || riskScore > 80 
+              ? 'High-Risk Website Detected' 
+              : riskScore > 60 
+                ? 'Suspicious Website Detected' 
+                : riskScore > 30 
+                  ? 'Some Caution Advised' 
+                  : 'No Major Security Concerns'}
+          </h1>
+          <p class="details-description">
+            ${isPhishing || riskScore > 80 
+              ? 'Our analysis detected multiple high-risk factors typically associated with phishing websites. Proceed with extreme caution.' 
+              : riskScore > 60 
+                ? 'This website displays some suspicious characteristics that warrant your attention.' 
+                : riskScore > 30 
+                  ? 'While not clearly malicious, this website has some minor risk factors to be aware of.' 
+                  : 'Our analysis did not find significant security concerns with this website, but always practice safe browsing habits.'}
+          </p>
+          <div class="details-meta">
+            <div class="meta-item">
+              <i class="fas fa-calendar-alt"></i>
+              <span>Analyzed ${new Date().toLocaleDateString()}</span>
+            </div>
+            <div class="meta-item">
+              <i class="fas ${isPhishing ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+              <span>Risk Level: ${riskScore > 80 ? 'Very High' : riskScore > 60 ? 'High' : riskScore > 30 ? 'Moderate' : 'Low'}</span>
+            </div>
+          </div>
+          
+          <!-- Circular score indicator -->
+          <div class="score-ring-container">
+            <div class="score-ring">
+              <div class="score-circle"></div>
+              <div class="score-inner">
+                <div class="score-value">${Math.round(riskScore)}</div>
+                <div class="score-label">Risk Score</div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      // Calculate the contribution each feature made to the final score
+      const contributions = {};
+      let totalContribution = 0;
+      let totalPositive = 0;
+      let totalNegative = 0;
+      
+      Object.keys(this.weights).forEach(feature => {
+        if (features[feature] !== undefined) {
+          // Ensure numeric values for calculation
+          let value = features[feature];
+          if (typeof value === 'boolean') value = value ? 1 : 0;
+          if (typeof value === 'string' && !isNaN(value)) value = parseFloat(value);
+          
+          contributions[feature] = value * this.weights[feature];
+          totalContribution += contributions[feature];
+          
+          if (contributions[feature] > 0) {
+            totalPositive += contributions[feature];
+          } else {
+            totalNegative += Math.abs(contributions[feature]);
+          }
+        }
+      });
+      
+      // Sort features by absolute contribution value
+      const sortedFeatures = Object.keys(contributions)
+        .sort((a, b) => Math.abs(contributions[b]) - Math.abs(contributions[a]));
+        
+      // Generate positive and negative contributors
+      const positiveContributors = sortedFeatures.filter(f => contributions[f] > 0);
+      const negativeContributors = sortedFeatures.filter(f => contributions[f] < 0);
+
+      // Risk factors card
+      if (positiveContributors.length > 0) {
+        html += `
+          <!-- Risk Factors Card -->
+          <div class="details-card card-danger">
+            <div class="card-header">
+              <h2 class="card-title">
+                <span class="card-icon"><i class="fas fa-exclamation-triangle"></i></span>
+                Risk Factors
+              </h2>
+              <span>${positiveContributors.length} detected</span>
+            </div>
+            <div class="card-content">
+              <div class="features-grid">`;
+        
+        // Add each risk factor as a card
+        positiveContributors.forEach(feature => {
+          const impact = this.featureImpacts[feature] || 'Medium';
+          const displayValue = this.formatFeatureValue(feature, features[feature]);
+          
+          html += `
+            <div class="feature-card risky">
+              <div class="feature-title">
+                ${this.featureNames[feature] || this.formatFeatureName(feature)}
+                <span class="feature-badge">${impact} Impact</span>
+              </div>
+              <div class="feature-description">
+                ${this.featureExplanations[feature] || 'This feature indicates potential risk.'}
+              </div>
+              <div class="feature-meta">
+                <div>Value: ${displayValue}</div>
+                <div>Contribution: +${contributions[feature].toFixed(2)} pts</div>
+              </div>
+            </div>`;
+        });
+              
+        html += `
+              </div>
+            </div>
+          </div>`;
+      }
+
+      // Positive security factors card
+      if (negativeContributors.length > 0) {
+        html += `
+          <!-- Positive Security Signals Card -->
+          <div class="details-card card-success">
+            <div class="card-header">
+              <h2 class="card-title">
+                <span class="card-icon"><i class="fas fa-shield-alt"></i></span>
+                Security Strengths
+              </h2>
+              <span>${negativeContributors.length} detected</span>
+            </div>
+            <div class="card-content">
+              <div class="features-grid">`;
+        
+        // Add each security strength as a card
+        negativeContributors.forEach(feature => {
+          const displayValue = this.formatFeatureValue(feature, features[feature]);
+          
+          html += `
+            <div class="feature-card safe">
+              <div class="feature-title">
+                ${this.featureNames[feature] || this.formatFeatureName(feature)}
+                <span class="feature-badge safe">Positive</span>
+              </div>
+              <div class="feature-description">
+                ${this.featureExplanations[feature] || 'This feature indicates good security practice.'}
+              </div>
+              <div class="feature-meta">
+                <div>Value: ${displayValue}</div>
+                <div>Contribution: ${contributions[feature].toFixed(2)} pts</div>
+              </div>
+            </div>`;
+        });
+              
+        html += `
+              </div>
+            </div>
+          </div>`;
+      }
+
+      // Score visualization card
+      const finalScore = Math.max(0, Math.min(100, baseScore + totalContribution));
+      html += `
+        <!-- Score Breakdown Card -->
+        <div class="details-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon"><i class="fas fa-chart-bar"></i></span>
+              Score Calculation
+            </h2>
+          </div>
+          <div class="card-content">
+            <p>Risk scores start from a base of 50 points. Features with positive values increase the risk, while negative values decrease it.</p>
+            
+            <!-- Visual score bar -->
+            <div class="score-breakdown">
+              <div class="score-bar-container">
+                <!-- Base score segment -->
+                <div class="score-segment base" style="width: ${baseScore}%;">
+                  <span class="score-label">Base: 50</span>
+                </div>
+                
+                <!-- Risk factors segment -->
+                <div class="score-segment positive" style="width: ${totalPositive}%;">
+                  <span class="score-label">+${totalPositive.toFixed(1)}</span>
+                </div>
+                
+                <!-- Safety factors segment -->
+                <div class="score-segment negative" style="width: ${totalNegative}%;">
+                  <span class="score-label">${totalNegative ? '-' + totalNegative.toFixed(1) : ''}</span>
+                </div>
+                
+                <!-- Final score marker - explicitly calculate position -->
+                <div class="final-score-pointer" style="left: ${finalScore}%;">
+                  <div class="marker-line"></div>
+                  <div class="marker-label">Final: ${finalScore.toFixed(1)}</div>
+                </div>
+              </div>
+              
+              <div class="score-legend">
+                <div class="legend-item">
+                  <div class="legend-color legend-base"></div>
+                  <span>Base Score (50)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color legend-positive"></div>
+                  <span>Risk Factors (+${totalPositive.toFixed(1)})</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color legend-negative"></div>
+                  <span>Safety Factors (-${totalNegative.toFixed(1)})</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Expandable detailed calculation -->
+            <div class="expandable" id="calculation-details">
+              <div class="expandable-header" onclick="document.getElementById('calculation-details').classList.toggle('open')">
+                <h3 class="expandable-title">
+                  <i class="fas fa-table"></i>
+                  Detailed Calculation
+                </h3>
+                <span class="expandable-toggle">
+                  <i class="fas fa-chevron-down"></i>
+                </span>
+              </div>
+              <div class="expandable-content">
+                <table class="details-table">
+                  <thead>
+                    <tr>
+                      <th>Feature</th>
+                      <th>Weight</th>
+                      <th>Value</th>
+                      <th>Impact</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>Base Score</strong></td>
+                      <td>-</td>
+                      <td>-</td>
+                      <td>+50.00</td>
+                    </tr>`;
+      
+      // Add individual feature calculations
+      sortedFeatures.forEach(feature => {
+        const weight = this.weights[feature];
+        const value = features[feature];
+        const contribution = contributions[feature];
+        const isRisk = contribution > 0;
+        
+        html += `
+                    <tr>
+                      <td class="${isRisk ? 'risky' : 'safe'}">${this.featureNames[feature] || this.formatFeatureName(feature)}</td>
+                      <td>${weight > 0 ? '+' + weight : weight}</td>
+                      <td>${this.formatFeatureValue(feature, value)}</td>
+                      <td class="${isRisk ? 'risky' : 'safe'}">${contribution > 0 ? '+' + contribution.toFixed(2) : contribution.toFixed(2)}</td>
+                    </tr>`;
+      });
+      
+      // Add total row
+      html += `
+                    <tr style="font-weight: bold;">
+                      <td colspan="3">Final Score</td>
+                      <td>${finalScore.toFixed(1)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      // Technical details card with all features
+      html += `
+        <!-- All Features Card -->
+        <div class="details-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon"><i class="fas fa-code"></i></span>
+              Technical Details
+            </h2>
+          </div>
+          <div class="card-content">
+            <div class="expandable open" id="all-features">
+              <div class="expandable-header" onclick="document.getElementById('all-features').classList.toggle('open')">
+                <h3 class="expandable-title">
+                  <i class="fas fa-list"></i>
+                  All Detected Features
+                </h3>
+                <span class="expandable-toggle">
+                  <i class="fas fa-chevron-down"></i>
+                </span>
+              </div>
+              <div class="expandable-content">
+                <table class="details-table">
+                  <thead>
+                    <tr>
+                      <th>Feature</th>
+                      <th>Value</th>
+                      <th>Description</th>
+                      <th>Risk Level</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+      
+      // Add all features from weights dictionary
+      for (const feature of Object.keys(this.weights)) {
+        const value = typeof features[feature] !== 'undefined' ? features[feature] : 'Not detected';
+        const displayValue = this.formatFeatureValue(feature, value);
+        const impact = this.featureImpacts[feature] || 'Medium';
+        
+        // Determine if this is a risk feature
+        let isRisk = false;
+        if (typeof features[feature] !== 'undefined') {
+          if (features[feature] * this.weights[feature] > 0) {
+            isRisk = true;
+          }
+        }
+        
+        html += `
+                    <tr>
+                      <td class="${typeof features[feature] !== 'undefined' ? (isRisk ? 'risky' : 'safe') : ''}">${this.featureNames[feature] || this.formatFeatureName(feature)}</td>
+                      <td>${displayValue}</td>
+                      <td>${this.featureExplanations[feature] || 'No description available'}</td>
+                      <td>${impact}</td>
+                    </tr>`;
       }
       
-      // Check for IPv4 pattern
-      const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
-      return ipPattern.test(hostname);
-    } catch (e) {
-      return false;
+      html += `
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      // Recommendations section
+      html += `
+        <!-- Recommendations -->
+        <div class="recommendations ${riskScore > 60 ? 'high-risk' : riskScore > 30 ? 'medium-risk' : ''}">
+          <div class="rec-title">
+            <i class="fas fa-lightbulb rec-icon"></i>
+            Recommendations
+          </div>
+          <div class="rec-message">
+            ${this.getRecommendation(riskScore, isPhishing)}
+          </div>
+          <ul class="safety-list">
+            <li class="safety-item">
+              <i class="fas fa-check-circle"></i>
+              <span>Always verify the website address before entering personal information</span>
+            </li>
+            <li class="safety-item">
+              <i class="fas fa-check-circle"></i>
+              <span>Check for HTTPS and valid certificates before sharing sensitive data</span>
+            </li>
+            <li class="safety-item">
+              <i class="fas fa-check-circle"></i>
+              <span>Use unique passwords for different websites</span>
+            </li>
+            <li class="safety-item">
+              <i class="fas fa-check-circle"></i>
+              <span>Enable two-factor authentication when available</span>
+            </li>
+          </ul>
+        </div>
+        
+        <!-- Footer -->
+        <div class="details-footer">
+          Analysis performed by PhishGuard using machine learning and security heuristics
+        </div>
+      </div>
+
+      <script>
+        // Initialize expandable sections
+        document.addEventListener('DOMContentLoaded', function() {
+          // Make calculation details initially open
+          document.getElementById('calculation-details').classList.add('open');
+          
+          // Animation for score segments
+          setTimeout(() => {
+            document.querySelectorAll('.score-segment').forEach(el => {
+              el.style.width = el.getAttribute('data-width') + '%';
+            });
+          }, 500);
+        });
+      </script>`;
+      
+      return html;
+    } catch (error) {
+      console.error('Error generating transparent HTML:', error);
+      return `<p>An error occurred while generating the detailed report. Risk score: ${result.risk_score}/100</p>`;
+    }
+  }
+
+  /**
+   * Format feature value for display
+   */
+  formatFeatureValue(feature, value) {
+    if (value === 'Not detected') return value;
+    
+    if (feature === 'domain_in_ip') {
+      return value === 1 || value === true ? "Yes" : "No";
+    } else if (feature === 'tls_ssl_certificate') {
+      return value === 1 ? "Secure (HTTPS)" : "Missing";
+    } else if (feature === 'url_google_index' || feature === 'domain_google_index') {
+      return value === 1 ? "Yes" : "No";
+    } else if (feature === 'domain_spf') {
+      return value === 1 ? "Present" : "Missing";
+    } else if (feature === 'time_domain_activation') {
+      return value === 0 ? "Unknown" : `${value} days`;
+    } else if (feature === 'length_url') {
+      return `${value} characters`;
+    }
+    
+    return value;
+  }
+  
+  /**
+   * Format feature names for display
+   */
+  formatFeatureName(name) {
+    // Replace underscores with spaces and capitalize each word
+    return name
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, c => c.toUpperCase());
+  }
+  
+  /**
+   * Get recommendation based on risk score
+   */
+  getRecommendation(score, isPhishing) {
+    if (isPhishing || score > 80) {
+      return 'This URL is high risk. We strongly recommend not proceeding to this website.';
+    } else if (score > 60) {
+      return 'Exercise significant caution with this website. We recommend verifying its legitimacy through other sources before proceeding.';
+    } else if (score > 30) {
+      return 'Exercise caution with this website. If you proceed, be vigilant about sharing any information.';
+    } else {
+      return 'This URL appears to be safe, but always follow good security practices when browsing.';
     }
   }
 }
 
-// Export the class for use in both browser and Node.js environments
-try {
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = MLFeatureExplainer;
-  }
-} catch (e) {
-  // Browser environment - ignore export error
+// Make sure the script can be imported in Node and browsers
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = MLFeatureExplainer;
 }
