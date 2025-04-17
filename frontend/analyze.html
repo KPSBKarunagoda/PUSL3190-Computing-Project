@@ -337,7 +337,7 @@
       100% { width: 100%; }
     }
     
-    /* Results Section */
+    /* Enhanced Results Section - Simplified for Summary View */
     .result-section {
       padding: 0;
     }
@@ -363,229 +363,154 @@
       box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
     }
     
-    .result-icon-container.icon-safe {
-      background: linear-gradient(145deg, #4caf50, #2e7d32);
-      color: white;
-    }
-    
-    .result-icon-container.icon-warning {
-      background: linear-gradient(145deg, #ff9800, #f57c00);
-      color: white;
-    }
-    
-    .result-icon-container.icon-danger {
-      background: linear-gradient(145deg, #f44336, #c62828);
-      color: white;
-    }
-    
-    .result-header-content {
-      flex-grow: 1;
-    }
-    
-    .result-header-content h2 {
-      margin: 0 0 5px 0;
-      font-size: 1.8rem;
-    }
-    
-    .analyzed-url {
-      color: var(--text-secondary);
-      font-family: monospace;
-      font-size: 1rem;
-      padding: 5px 0;
-      word-break: break-all;
-    }
-    
-    .result-details {
-      padding: 30px;
-    }
-    
-    /* Score Visualization */
-    .score-container {
-      margin-bottom: 30px;
-    }
-    
-    .score-header {
+    /* Updated Score Display for Simplified View */
+    .score-summary {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 15px;
-    }
-    
-    .score-title {
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    
-    .score-value {
-      font-size: 1.4rem;
-      font-weight: 700;
-    }
-    
-    .score-meter {
-      height: 12px;
-      background-color: rgba(255, 255, 255, 0.1);
-      border-radius: 6px;
-      overflow: hidden;
-      position: relative;
-    }
-    
-    .score-fill {
-      height: 100%;
-      width: 0%;
-      border-radius: 6px;
-      transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    
-    .score-fill-safe {
-      background: linear-gradient(90deg, #43a047, #66bb6a);
-    }
-    
-    .score-fill-medium {
-      background: linear-gradient(90deg, #fb8c00, #ffa726);
-    }
-    
-    .score-fill-danger {
-      background: linear-gradient(90deg, #e53935, #ef5350);
-    }
-    
-    .score-markers {
-      display: flex;
       justify-content: space-between;
-      color: var(--text-tertiary);
-      font-size: 0.8rem;
-      padding-top: 8px;
-    }
-    
-    .result-explanation {
-      color: var(--text-secondary);
-      line-height: 1.6;
-      margin-bottom: 30px;
-    }
-    
-    /* Result Sections */
-    .result-sections {
-      display: flex;
-      flex-direction: column;
-      gap: 25px;
-    }
-    
-    .result-summary {
-      background-color: rgba(255, 255, 255, 0.03);
+      background: rgba(0, 0, 0, 0.1);
       border-radius: 12px;
-      padding: 25px;
-      border: 1px solid var(--border-color);
+      padding: 20px;
+      margin-bottom: 20px;
     }
     
-    .result-summary-header {
+    .score-ring {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: conic-gradient(var(--primary-color) 0%, transparent 0%);
       display: flex;
+      justify-content: center;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 15px;
-      font-size: 1.3rem;
+      transition: all 1s ease;
+    }
+    
+    .score-ring::before {
+      content: "";
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background-color: var(--card-bg);
+    }
+    
+    .score-value-container {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+    }
+    
+    .score-value-large {
+      font-size: 2.2rem;
+      font-weight: bold;
       color: var(--text-primary);
     }
     
-    .result-summary-header i {
-      color: var(--primary-color);
+    .score-label {
+      font-size: 0.8rem;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
     
-    .result-summary-content {
-      color: var(--text-secondary);
-      line-height: 1.6;
+    .score-interpretation {
+      flex-grow: 1;
+      padding-left: 20px;
     }
     
-    .warning-message {
-      background-color: rgba(244, 67, 54, 0.1);
-      color: #f44336;
-      padding: 12px 15px;
-      border-radius: 8px;
-      margin-top: 15px;
+    .score-interpretation h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 1.6rem;
       display: flex;
       align-items: center;
       gap: 10px;
     }
     
-    .warning-message::before {
-      content: '\f071';
-      font-family: 'Font Awesome 5 Free';
-      font-weight: 900;
+    .score-interpretation p {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 10px;
     }
     
-    /* Result Footer */
-    .result-footer {
-      margin-top: 30px;
-      display: flex;
-      gap: 15px;
-      flex-wrap: wrap;
-      justify-content: space-between;
-    }
-    
-    .btn-new-analysis, .btn-learn-more, .btn-view-details {
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.3s;
-      text-decoration: none;
-    }
-    
-    .btn-new-analysis {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: var(--text-primary);
+    /* Key Findings Section */
+    .key-findings {
+      background-color: rgba(255, 255, 255, 0.02);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
       border: 1px solid var(--border-color);
     }
     
-    .btn-new-analysis:hover {
-      background-color: rgba(255, 255, 255, 0.15);
+    .key-findings h3 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     
-    .btn-learn-more {
-      background: linear-gradient(90deg, #4a6fa1, #5b8dbe);
-      color: white;
-      border: none;
-      box-shadow: 0 4px 10px rgba(61, 133, 198, 0.2);
-      font-weight: 600;
-      letter-spacing: 0.2px;
-      position: relative;
-      overflow: hidden;
-      z-index: 1;
+    .findings-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
     }
     
-    .btn-learn-more::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: left 0.7s ease;
-      z-index: -1;
+    .findings-list li {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      color: var(--text-secondary);
     }
     
-    .btn-learn-more:hover {
-      background: linear-gradient(90deg, #5b8dbe, #4a6fa1);
-      transform: translateY(-3px);
-      box-shadow: 0 6px 15px rgba(61, 133, 198, 0.3);
+    .findings-list li:last-child {
+      border-bottom: none;
     }
     
-    .btn-learn-more:hover::before {
-      left: 100%;
+    .findings-list i {
+      margin-top: 3px;
     }
     
-    .btn-learn-more:active {
-      transform: translateY(-1px);
-      box-shadow: 0 3px 8px rgba(61, 133, 198, 0.2);
+    .item-high i {
+      color: #f44336;
+    }
+    
+    .item-medium i {
+      color: #ff9800;
+    }
+    
+    .item-low i {
+      color: #4caf50;
+    }
+    
+    /* Action Buttons */
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      margin-top: 25px;
     }
     
     .btn-view-details {
       background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
       color: white;
       border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: all 0.3s ease;
     }
     
     .btn-view-details:hover {
@@ -594,302 +519,45 @@
       box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
     }
     
-    /* Educational Section */
-    .education-container {
-      background-color: var(--card-bg);
-      border-radius: 16px;
+    .btn-new-analysis {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
       border: 1px solid var(--border-color);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-    }
-    
-    .education-header {
-      background: linear-gradient(145deg, rgba(61, 133, 198, 0.1), rgba(0, 0, 0, 0.05));
-      padding: 20px 30px;
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 1rem;
+      cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 12px;
-      border-bottom: 1px solid var(--border-color);
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: all 0.3s ease;
     }
     
-    .education-header i {
-      font-size: 1.4rem;
-      color: var(--primary-color);
-    }
-    
-    .education-header h2 {
-      margin: 0;
-      font-size: 1.4rem;
-      color: var(--text-primary);
-    }
-    
-    .education-content {
-      padding: 30px;
-    }
-    
-    .education-placeholder {
-      text-align: center;
-      color: var(--text-tertiary);
-      padding: 20px 0;
-    }
-    
-    .education-placeholder i {
-      font-size: 2.5rem;
-      margin-bottom: 15px;
-      background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    
-    .education-placeholder h3 {
-      margin-top: 0;
-      color: var(--text-primary);
-    }
-    
-    .education-placeholder p {
-      max-width: 500px;
-      margin: 10px auto;
+    .btn-new-analysis:hover {
+      background-color: rgba(255, 255, 255, 0.15);
     }
     
     /* Responsive Adjustments */
     @media (max-width: 768px) {
-      .result-header-banner {
+      .score-summary {
         flex-direction: column;
         text-align: center;
       }
       
-      .result-icon-container {
-        margin: 0 auto;
+      .score-interpretation {
+        padding-left: 0;
+        padding-top: 20px;
       }
       
-      .score-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-      }
-      
-      .result-footer {
-        flex-direction: column;
-      }
-      
-      .btn-new-analysis, .btn-learn-more, .btn-view-details {
-        width: 100%;
+      .score-interpretation h3 {
         justify-content: center;
       }
       
-      .analyze-btn {
-        position: relative;
-        right: auto;
-        top: auto;
-        transform: none;
-        width: 100%;
-        margin-top: 20px;
-        justify-content: center;
+      .action-buttons {
+        flex-direction: column;
       }
-      
-      .url-input-field {
-        padding-right: 20px;
-      }
-    }
-
-    /* Enhanced Transparency Report Styling */
-    .transparent-report {
-      font-family: var(--font-main);
-      color: var(--text-primary);
-      line-height: 1.6;
-    }
-    
-    .scan-summary {
-      margin-bottom: 20px;
-      border-radius: 10px;
-      padding: 20px;
-      background-color: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border-color);
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    }
-    
-    .scan-summary h3 {
-      margin-top: 0;
-      margin-bottom: 15px;
-      font-size: 1.4rem;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    
-    .scan-summary h3::before {
-      content: "\f201";
-      font-family: "Font Awesome 5 Free";
-      font-weight: 900;
-      font-size: 18px;
-      color: var(--primary-color);
-    }
-    
-    .risk-score {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      margin-bottom: 15px;
-    }
-    
-    .risk-score-label {
-      font-size: 16px;
-      color: var(--text-secondary);
-    }
-    
-    .risk-score span {
-      font-size: 24px;
-      font-weight: 700;
-    }
-    
-    .risk-score span.high-risk {
-      color: #f44336;
-    }
-    
-    .risk-score span.medium-risk {
-      color: #ff9800;
-    }
-    
-    .risk-score span.low-risk {
-      color: #4caf50;
-    }
-    
-    .factors-section {
-      margin-bottom: 25px;
-    }
-    
-    .section-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 15px;
-      color: var(--text-primary);
-    }
-    
-    .section-title i {
-      color: var(--primary-color);
-    }
-    
-    .risk-factors-list, .safe-factors-list {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-    
-    .factor-card {
-      background-color: rgba(255, 255, 255, 0.03);
-      border-radius: 10px;
-      padding: 15px 20px;
-      border-left: 4px solid transparent;
-    }
-    
-    .factor-card.high {
-      border-left-color: #f44336;
-    }
-    
-    .factor-card.medium {
-      border-left-color: #ff9800;
-    }
-    
-    .factor-card.low {
-      border-left-color: #ffc107;
-    }
-    
-    .factor-card.safe {
-      border-left-color: #4caf50;
-    }
-    
-    .factor-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    
-    .factor-name {
-      font-weight: 600;
-      font-size: 16px;
-      color: var(--text-primary);
-    }
-    
-    .factor-impact {
-      font-size: 13px;
-    }
-    
-    .impact-badge {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-weight: 600;
-      font-size: 12px;
-      text-transform: uppercase;
-    }
-    
-    .impact-badge.high {
-      background-color: rgba(244, 67, 54, 0.15);
-      color: #f44336;
-    }
-    
-    .impact-badge.medium {
-      background-color: rgba(255, 152, 0, 0.15);
-      color: #ff9800;
-    }
-    
-    .impact-badge.low {
-      background-color: rgba(255, 235, 59, 0.15);
-      color: #ffd600;
-    }
-    
-    .factor-explanation {
-      color: var(--text-secondary);
-      margin-bottom: 10px;
-    }
-    
-    .factor-value {
-      font-size: 13px;
-      color: var(--text-tertiary);
-    }
-    
-    .recommendations-section {
-      margin-top: 25px;
-      background-color: rgba(255, 255, 255, 0.03);
-      border-radius: 10px;
-      padding: 20px;
-      border: 1px solid var(--border-color);
-    }
-    
-    .recommendations-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 15px;
-    }
-    
-    .recommendations-title i {
-      color: var(--primary-color);
-    }
-    
-    .security-advice {
-      background-color: rgba(76, 175, 80, 0.05);
-      border-left: 4px solid #4caf50;
-      padding: 15px 20px;
-      border-radius: 8px;
-    }
-    
-    .security-advice.high-risk {
-      background-color: rgba(244, 67, 54, 0.05);
-      border-left: 4px solid #f44336;
-    }
-    
-    .security-advice.medium-risk {
-      background-color: rgba(255, 152, 0, 0.05);
-      border-left: 4px solid #ff9800;
     }
   </style>
 </head>
@@ -962,81 +630,72 @@
         </div>
       </div>
 
-      <!-- Results Section -->
+      <!-- Results Section - Simplified -->
       <div id="results-container" class="result-section" style="display: none;">
         <div class="result-header-banner">
           <div id="result-icon-container" class="result-icon-container icon-safe">
             <i id="result-icon" class="fas fa-shield-check"></i>
           </div>
           <div class="result-header-content">
-            <h2 id="result-title">Analysis Complete</h2>
+            <h2 id="result-title">Analysis Results</h2>
             <div id="analyzed-url" class="analyzed-url">URL: https://example.com</div>
           </div>
         </div>
               
         <div class="result-details">
-          <div class="score-container">
-            <div class="score-header">
-              <div class="score-title">Risk Score</div>
-              <div id="risk-score-value" class="score-value">0/100</div>
+          <!-- Simplified Score Display -->
+          <div class="score-summary">
+            <div class="score-ring" id="score-ring">
+              <div class="score-value-container">
+                <div id="risk-score-value" class="score-value-large">0</div>
+                <div class="score-label">Risk Score</div>
+              </div>
             </div>
-            <div class="score-meter">
-              <div id="score-fill" class="score-fill score-fill-safe" style="width: 0%"></div>
-            </div>
-            <div class="score-markers">
-              <span>Low Risk</span>
-              <span>Medium Risk</span>
-              <span>High Risk</span>
-            </div>
-          </div>
-          
-          <div id="risk-explanation" class="result-explanation">
-            <!-- ML feature explainer content will be inserted here -->
-          </div>
-          
-          <div class="result-summary">
-            <div class="result-summary-header">
-              <i class="fas fa-clipboard-list"></i>
-              <h3>Analysis Summary</h3>
-            </div>
-            <div class="result-summary-content" id="analysis-summary">
-              <!-- Summary content will be inserted here by JavaScript -->
+            
+            <div class="score-interpretation">
+              <h3 id="result-interpretation">Analyzing Results...</h3>
+              <p id="result-description">We're evaluating the security characteristics of this URL.</p>
+              <p id="recommendation-text">View the detailed report for more information.</p>
             </div>
           </div>
           
-          <div class="result-footer">
+          <!-- Key Findings Section -->
+          <div class="key-findings">
+            <h3><i class="fas fa-exclamation-circle"></i> Key Findings</h3>
+            <ul id="findings-list" class="findings-list">
+              <!-- Findings will be populated by JavaScript -->
+            </ul>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="action-buttons">
             <button id="new-analysis" class="btn-new-analysis">
               <i class="fas fa-redo-alt"></i> New Analysis
             </button>
-            <a id="learn-more" href="education.html" class="btn-learn-more">
-              <i class="fas fa-book"></i> Learn About Phishing
-            </a>
             <a id="view-details" href="analysis-details.html" class="btn-view-details">
-              <i class="fas fa-chart-bar"></i> View Detailed Report
+              <i class="fas fa-chart-bar"></i> View Detailed Analysis
             </a>
           </div>
         </div>
       </div>
     </div>
     
-    <!-- Educational Resources Section -->
+    <!-- Educational Resources Section - Simplified -->
     <div class="education-container">
       <div class="education-header">
         <i class="fas fa-graduation-cap"></i>
-        <h2>Phishing Prevention</h2>
+        <h2>Phishing Prevention Tips</h2>
       </div>
       <div class="education-content">
         <div id="education-content" class="education-placeholder">
           <i class="fas fa-shield-alt"></i>
-          <h3>URL Analysis & Protection</h3>
-          <p>Complete a URL analysis to get personalized security insights and learn how to protect yourself from the latest phishing techniques.</p>
+          <h3>Stay Protected Online</h3>
+          <p>Always verify website URLs before entering sensitive information. Look for HTTPS, check domain names carefully, and be cautious with unfamiliar sites.</p>
         </div>
       </div>
     </div>
   </div>
   
-  <!-- Add script tags -->
-  <script src="js/ml-feature-explainer.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Check if user is logged in
@@ -1056,10 +715,12 @@
       const resultIconContainer = document.getElementById('result-icon-container');
       const resultTitle = document.getElementById('result-title');
       const analyzedUrl = document.getElementById('analyzed-url');
-      const scoreFill = document.getElementById('score-fill');
+      const scoreRing = document.getElementById('score-ring');
       const riskScoreValue = document.getElementById('risk-score-value');
-      const riskExplanation = document.getElementById('risk-explanation');
-      const analysisSummary = document.getElementById('analysis-summary');
+      const resultInterpretation = document.getElementById('result-interpretation');
+      const resultDescription = document.getElementById('result-description');
+      const recommendationText = document.getElementById('recommendation-text');
+      const findingsList = document.getElementById('findings-list');
       const newAnalysisButton = document.getElementById('new-analysis');
       const viewDetailsButton = document.getElementById('view-details');
       
@@ -1122,7 +783,7 @@
         }
       });
       
-      // Display analysis results
+      // Display simplified analysis results
       function displayResults(url, result) {
         analyzedUrl.textContent = `URL: ${url}`;
         
@@ -1133,228 +794,168 @@
           score = result.risk_score * 100;
         }
         
-        const displayScore = Math.round(score * 10) / 10;
-        riskScoreValue.textContent = `${displayScore}/100`;
+        const displayScore = Math.round(score);
+        riskScoreValue.textContent = displayScore;
         
         const isHighRisk = score > 60;
         const isMediumRisk = score > 30;
         const mlPrediction = result.ml_result?.prediction || 0;
         
+        // Update result icon and title
         if (result.is_phishing || (isHighRisk && mlPrediction === 1)) {
           resultIcon.className = 'fas fa-exclamation-triangle';
           resultIconContainer.className = 'result-icon-container icon-danger';
           resultTitle.textContent = 'Phishing Detected!';
           resultTitle.style.color = '#f44336';
-          scoreFill.className = 'score-fill score-fill-danger';
+          resultInterpretation.textContent = 'High Risk Detected';
+          resultInterpretation.style.color = '#f44336';
+          resultDescription.textContent = 'This URL shows multiple characteristics associated with phishing websites.';
+          recommendationText.textContent = 'We strongly recommend avoiding this website.';
+          animateScoreRing(score, '#f44336');
         } else if (isMediumRisk || mlPrediction === 1) {
           resultIcon.className = 'fas fa-exclamation-circle';
           resultIconContainer.className = 'result-icon-container icon-warning';
           resultTitle.textContent = 'Caution Advised';
           resultTitle.style.color = '#ff9800';
-          scoreFill.className = 'score-fill score-fill-medium';
+          resultInterpretation.textContent = 'Suspicious URL';
+          resultInterpretation.style.color = '#ff9800';
+          resultDescription.textContent = 'This URL has some suspicious characteristics that warrant caution.';
+          recommendationText.textContent = 'Exercise caution if you choose to visit this website.';
+          animateScoreRing(score, '#ff9800');
         } else {
           resultIcon.className = 'fas fa-shield-check';
           resultIconContainer.className = 'result-icon-container icon-safe';
           resultTitle.textContent = 'Likely Safe';
           resultTitle.style.color = '#4caf50';
-          scoreFill.className = 'score-fill score-fill-safe';
+          resultInterpretation.textContent = 'Low Risk';
+          resultInterpretation.style.color = '#4caf50';
+          resultDescription.textContent = 'No major phishing indicators were detected for this URL.';
+          recommendationText.textContent = 'This URL appears to be legitimate based on our analysis.';
+          animateScoreRing(score, '#4caf50');
         }
         
-        setTimeout(() => {
-          scoreFill.style.width = `${score}%`;
-        }, 300);
+        // Generate key findings - extract features from different possible locations
+        let features = {};
         
-        try {
-          const featureExplainer = new MLFeatureExplainer();
-          
-          // Extract features from all possible locations
-          let features = {};
-          
-          if (result.features && typeof result.features === 'object') {
-            features = result.features;
-          }
-          
-          if (result.ml_result && result.ml_result.features) {
-            features = {...features, ...result.ml_result.features};
-          }
-          
-          // Extract specific known features that might be at the top level
-          const topLevelFeatures = [
-            'domain_in_ip', 'tls_ssl_certificate', 'length_url', 'qty_dot_url', 
-            'qty_hyphen_url', 'qty_at_url', 'domain_google_index', 
-            'url_google_index', 'qty_redirects', 'time_domain_activation', 
-            'url_shortened', 'qty_ip_resolved', 'domain_spf', 'asn_ip'
-          ];
-          
-          topLevelFeatures.forEach(feature => {
-            if (result[feature] !== undefined) {
-              features[feature] = result[feature];
-            }
-          });
-          
-          // Special handling for IP address
-          if (features.domain_in_ip === undefined && /\d+\.\d+\.\d+\.\d+/.test(url)) {
-            features.domain_in_ip = 1;
-          }
-          
-          // Handle SSL certificate
-          if (features.tls_ssl_certificate === undefined) {
-            features.tls_ssl_certificate = url.startsWith('https:') ? 1 : 0;
-          }
-          
-          // Make sure URL length is included
-          if (features.length_url === undefined) {
-            features.length_url = url.length;
-          }
-          
-          // Store complete analysis data for the details page
-          sessionStorage.setItem('analysisData', JSON.stringify({
-            url: url,
-            features: features,
-            result: {
-              risk_score: displayScore,
-              is_phishing: result.is_phishing
-            }
-          }));
-          
-          // Use the summary HTML generator
-          const summaryHTML = featureExplainer.generateSummaryHTML(features, url, {
+        if (result.features && typeof result.features === 'object') {
+          features = result.features;
+        }
+        
+        if (result.ml_result && result.ml_result.features) {
+          features = {...features, ...result.ml_result.features};
+        }
+        
+        generateKeyFindings(findingsList, features, url);
+        
+        // Store complete analysis data for the details page
+        sessionStorage.setItem('analysisData', JSON.stringify({
+          url: url,
+          features: features,
+          result: {
             risk_score: displayScore,
             is_phishing: result.is_phishing
-          });
-          
-          riskExplanation.innerHTML = summaryHTML;
-          riskExplanation.className = 'result-explanation transparent-report';
-        } catch (error) {
-          console.error('Error generating explanation:', error);
-          riskExplanation.textContent = result.risk_explanation || 'No detailed explanation available.';
-        }
-        
-        // Generate summary
-        let summaryHTML = '';
-        
-        if (result.is_phishing || (isHighRisk && mlPrediction === 1)) {
-          summaryHTML = `
-            <p><strong>High Risk Detected:</strong> Our analysis indicates this URL has multiple 
-            characteristics commonly associated with phishing websites. The risk score 
-            of ${displayScore}/100 suggests this may be an attempt to steal sensitive information.</p>
-            
-            ${result.safe_browsing_result?.threats ? '<p class="warning-message">Google Safe Browsing has flagged this website as dangerous.</p>' : ''}
-            
-            <p>View the detailed report for a comprehensive breakdown of all detected risk factors.</p>
-          `;
-        } else if (isMediumRisk) {
-          summaryHTML = `
-            <p><strong>Moderate Risk Detected:</strong> This URL shows some suspicious characteristics
-            but may not be a confirmed phishing site. The risk score of ${displayScore}/100 indicates
-            caution is advised when interacting with this website.</p>
-            
-            <p>Check the detailed report for a complete analysis of the potential concerns.</p>
-          `;
-        } else {
-          summaryHTML = `
-            <p><strong>Low Risk Detected:</strong> Our analysis indicates this URL appears to be legitimate
-            with a low risk score of ${displayScore}/100. No major phishing indicators were detected.</p>
-            
-            <p>For additional confidence, view the detailed report to see all security checks performed.</p>
-          `;
-        }
-        
-        analysisSummary.innerHTML = summaryHTML;
-        loadEducationalContent(result, displayScore);
+          }
+        }));
         
         loadingContainer.style.display = 'none';
         resultsContainer.style.display = 'block';
       }
       
-      function loadEducationalContent(analysisResult, displayScore) {
-        const educationContent = document.getElementById('education-content');
-        const features = analysisResult.ml_result?.features || {};
+      // Generate key findings list
+      function generateKeyFindings(container, features, url) {
+        container.innerHTML = '';
+        const findings = [];
         
-        // Determine risk level
-        const riskLevel = analysisResult.is_phishing ? 'high' : 
-                         (displayScore > 60) ? 'high' :
-                         (displayScore > 30) ? 'medium' : 'low';
-        
-        // Build a list of security issues based on features
-        const securityIssues = [];
-        
-        // Check for common issues
-        if (features.domain_in_ip === 1 || features.domain_in_ip === true || features.domain_in_ip === 1.0) {
-          securityIssues.push("IP address used instead of domain name");
+        // Check for common issues and add them to findings
+        if (features.domain_in_ip === 1 || /\d+\.\d+\.\d+\.\d+/.test(url)) {
+          findings.push({
+            text: 'IP address used instead of domain name',
+            severity: 'high'
+          });
         }
         
-        if (features.tls_ssl_certificate === 0 || features.tls_ssl_certificate === false || features.tls_ssl_certificate === 0.0) {
-          securityIssues.push("Missing SSL/TLS security certificate");
+        if (features.tls_ssl_certificate === 0 || url.startsWith('http:')) {
+          findings.push({
+            text: 'Missing SSL/TLS security certificate',
+            severity: 'high'
+          });
         }
         
-        if (features.url_shortened === 1 || features.url_shortened === true || features.url_shortened === 1.0) {
-          securityIssues.push("URL shortening service used");
+        if (features.url_shortened === 1) {
+          findings.push({
+            text: 'URL shortening service used',
+            severity: 'medium'
+          });
+        }
+        
+        if (features.time_domain_activation < 30 && features.time_domain_activation > 0) {
+          findings.push({
+            text: `Very new domain (only ${features.time_domain_activation} days old)`,
+            severity: 'high'
+          });
         }
         
         if (features.qty_redirects > 1) {
-          securityIssues.push(`${features.qty_redirects} redirects detected`);
+          findings.push({
+            text: `Multiple redirects detected (${features.qty_redirects})`,
+            severity: 'medium'
+          });
         }
         
-        if (features.time_domain_activation < 30 && features.time_domain_activation !== 0) {
-          securityIssues.push(`Very new domain (only ${features.time_domain_activation} days old)`);
+        if (features.length_url > 75) {
+          findings.push({
+            text: 'Unusually long URL',
+            severity: 'medium'
+          });
         }
         
-        // Generate educational content
-        let educationalHTML = '';
-        
-        if (riskLevel === 'high') {
-          educationalHTML = `
-            <h3>Understanding High-Risk Phishing Sites</h3>
-            <p>This URL shows multiple indicators commonly associated with phishing attacks:</p>
-            ${securityIssues.length > 0 ? 
-              `<ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
-                ${securityIssues.map(issue => `<li>${issue}</li>`).join('')}
-              </ul>` : ''}
-            
-            <p>Phishing sites often:</p>
-            <ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
-              <li>Mimic legitimate websites to steal your credentials</li>
-              <li>Create a false sense of urgency to prompt immediate action</li>
-              <li>Use suspicious domain names that look similar to legitimate sites</li>
-              <li>Request sensitive personal information</li>
-            </ul>
-            <p><strong>Always verify a website's legitimacy before entering personal information.</strong></p>
+        // If no specific findings were detected
+        if (findings.length === 0) {
+          container.innerHTML = `
+            <li class="item-low">
+              <i class="fas fa-check-circle"></i>
+              <span>No significant risk factors detected</span>
+            </li>
           `;
-        } else if (riskLevel === 'medium') {
-          educationalHTML = `
-            <h3>Understanding Medium-Risk Websites</h3>
-            <p>This URL has some suspicious characteristics that warrant caution:</p>
-            ${securityIssues.length > 0 ? 
-              `<ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
-                ${securityIssues.map(issue => `<li>${issue}</li>`).join('')}
-              </ul>` : ''}
-            
-            <p>When dealing with medium-risk sites:</p>
-            <ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
-              <li>Verify the website's identity through other channels</li>
-              <li>Check for HTTPS security and a valid certificate</li>
-              <li>Be cautious about sharing personal information</li>
-              <li>Look for contact information and legitimate privacy policies</li>
-            </ul>
-            <p><strong>Use caution and your best judgment when interacting with this site.</strong></p>
-          `;
-        } else {
-          educationalHTML = `
-            <h3>Safe Browsing Practices</h3>
-            <p>This URL appears to be safe, but it's always good to follow these secure browsing habits:</p>
-            <ul style="padding-left: 20px; margin: 15px 0; color: var(--text-secondary);">
-              <li>Keep your browser and security software updated</li>
-              <li>Use strong, unique passwords for different websites</li>
-              <li>Enable two-factor authentication when available</li>
-              <li>Be careful when clicking on links in emails or messages</li>
-              <li>Check website URLs before entering personal information</li>
-            </ul>
-            <p><strong>Even on safe websites, always be mindful of the information you share online.</strong></p>
-          `;
+          return;
         }
         
-        educationContent.innerHTML = educationalHTML;
+        // Add findings to the list (limit to top 5)
+        findings.slice(0, 5).forEach(finding => {
+          const iconClass = finding.severity === 'high' ? 'fas fa-exclamation-triangle' : 
+                          finding.severity === 'medium' ? 'fas fa-exclamation-circle' : 
+                          'fas fa-info-circle';
+          
+          container.innerHTML += `
+            <li class="item-${finding.severity}">
+              <i class="${iconClass}"></i>
+              <span>${finding.text}</span>
+            </li>
+          `;
+        });
+        
+        // If there are more findings than we're showing
+        if (findings.length > 5) {
+          container.innerHTML += `
+            <li>
+              <i class="fas fa-ellipsis-h"></i>
+              <span>${findings.length - 5} more risk factors - see detailed report</span>
+            </li>
+          `;
+        }
+      }
+      
+      // Animate score ring based on risk level
+      function animateScoreRing(score, color) {
+        const percent = Math.min(100, Math.max(0, score));
+        
+        // Update the conic gradient based on percentage
+        setTimeout(() => {
+          scoreRing.style.background = `conic-gradient(
+            ${color} 0% ${percent}%, 
+            rgba(255, 255, 255, 0.1) ${percent}% 100%
+          )`;
+        }, 300);
       }
       
       // Handle new analysis button click
@@ -1377,4 +978,3 @@
   </script>
 </body>
 </html>
-`
