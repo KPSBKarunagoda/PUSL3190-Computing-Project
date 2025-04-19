@@ -337,226 +337,592 @@
       100% { width: 100%; }
     }
     
-    /* Enhanced Results Section - Simplified for Summary View */
-    .result-section {
-      padding: 0;
-    }
-    
-    .result-header-banner {
-      background: linear-gradient(145deg, rgba(61, 133, 198, 0.1), rgba(0, 0, 0, 0.1));
-      padding: 25px 30px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      border-bottom: 1px solid var(--border-color);
-    }
-    
-    .result-icon-container {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.8rem;
-      flex-shrink: 0;
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-    }
-    
-    /* Updated Score Display for Simplified View */
-    .score-summary {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(0, 0, 0, 0.1);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    
-    .score-ring {
+    /* Updated Risk Score Display */
+    .score-bar-container {
+      width: 100%;
+      background-color: rgba(0, 0, 0, 0.2);
+      height: 25px; /* Changed from 40px to 25px */
+      border-radius: 12px; /* Changed from 20px to 12px for proportional sizing */
+      margin: 15px 0;
       position: relative;
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      background: conic-gradient(var(--primary-color) 0%, transparent 0%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      transition: all 1s ease;
+      overflow: hidden;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(0, 0, 0, 0.2);
     }
     
-    .score-ring::before {
-      content: "";
+    .score-bar {
+      height: 100%;
+      border-radius: 12px; /* Changed from 20px to 12px to match container */
+      transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1), background 1s ease;
+      position: relative;
+      width: 0;
+      background: linear-gradient(90deg, #4caf50, #4caf50);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .score-bar-high {
+      background: linear-gradient(90deg, #ff5252, #f44336);
+    }
+    
+    .score-bar-medium {
+      background: linear-gradient(90deg, #ffb74d, #ff9800);
+    }
+    
+    .score-bar-low {
+      background: linear-gradient(90deg, #81c784, #4caf50);
+    }
+    
+    .score-marker {
       position: absolute;
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      background-color: var(--card-bg);
+      top: -10px;
+      width: 2px;
+      height: 45px; /* Changed from 60px to 45px */
+      background-color: rgba(255, 255, 255, 0.5);
+      transform: translateX(-50%);
+      z-index: 1;
     }
     
-    .score-value-container {
-      position: relative;
-      z-index: 2;
-      text-align: center;
+    .score-marker-30 {
+      left: 30%;
     }
     
-    .score-value-large {
-      font-size: 2.2rem;
-      font-weight: bold;
-      color: var(--text-primary);
+    .score-marker-70 {
+      left: 70%;
     }
     
-    .score-label {
-      font-size: 0.8rem;
+    .score-marker-text {
+      position: absolute;
+      bottom: -25px;
+      transform: translateX(-50%);
       color: var(--text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      font-size: 0.8rem;
     }
     
-    .score-interpretation {
-      flex-grow: 1;
-      padding-left: 20px;
+    .score-value-display {
+      position: absolute;
+      top: 0;
+      left: 20px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      font-size: 1rem; /* Changed from 1.2rem for better fit in smaller bar */
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
     
-    .score-interpretation h3 {
-      margin-top: 0;
-      margin-bottom: 10px;
-      font-size: 1.6rem;
+    .risk-levels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      color: var(--text-tertiary);
+      font-size: 0.85rem;
+      padding: 0 5px;
+    }
+    
+    /* Updated Results Container */
+    .result-header-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 25px 30px;
+      border-bottom: 1px solid var(--border-color);
+      background: linear-gradient(145deg, rgba(61, 133, 198, 0.05), rgba(0, 0, 0, 0.05));
+    }
+    
+    .result-header-content {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .analyzed-url {
+      padding: 8px 12px;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 6px;
+      font-family: monospace;
+      word-break: break-all;
+      max-width: 600px;
+      margin-top: 10px;
+      border-left: 3px solid var(--primary-color);
+    }
+    
+    /* New findings cards design */
+    .findings-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .finding-card {
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      padding: 15px;
+      border-left: 4px solid transparent;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .finding-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .finding-card.high-risk {
+      border-left-color: #f44336;
+    }
+    
+    .finding-card.medium-risk {
+      border-left-color: #ff9800;
+    }
+    
+    .finding-card.low-risk {
+      border-left-color: #4caf50;
+    }
+    
+    .finding-header {
       display: flex;
       align-items: center;
       gap: 10px;
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .finding-card.high-risk .finding-header i {
+      color: #f44336;
+    }
+    
+    .finding-card.medium-risk .finding-header i {
+      color: #ff9800;
+    }
+    
+    .finding-card.low-risk .finding-header i {
+      color: #4caf50;
+    }
+    
+    /* Enhanced Result Section Styles */
+    .result-section {
+      animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .result-header-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 30px;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      background: linear-gradient(145deg, rgba(61, 133, 198, 0.1), rgba(0, 0, 0, 0.1));
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .result-header-banner::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    }
+    
+    .result-header-content {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    .result-icon-container {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      font-size: 1.8rem;
+      color: var(--primary-color);
+    }
+    
+    .icon-danger {
+      color: #f44336;
+    }
+    
+    .icon-warning {
+      color: #ff9800;
+    }
+    
+    .icon-safe {
+      color: #4caf50;
+    }
+    
+    .analyzed-url {
+      margin-top: 12px;
+      padding: 10px 15px;
+      background-color: rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      font-family: monospace;
+      word-break: break-all;
+      border-left: 4px solid var(--primary-color);
+      font-size: 0.95rem;
+      max-width: 600px;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    
+    .analyzed-url:hover {
+      background-color: rgba(0, 0, 0, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-section {
+      padding: 30px;
+      position: relative;
+    }
+    
+    .score-interpretation {
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 30px;
+    }
+    
+    .score-interpretation h3 {
+      font-size: 1.8rem;
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .score-interpretation h3::before {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 1.8rem;
+      background: linear-gradient(to bottom, var(--primary-color), var(--accent-color));
+      border-radius: 3px;
     }
     
     .score-interpretation p {
       color: var(--text-secondary);
+      font-size: 1.1rem;
       line-height: 1.6;
-      margin-bottom: 10px;
+      margin-bottom: 0;
     }
     
-    /* Key Findings Section */
-    .key-findings {
-      background-color: rgba(255, 255, 255, 0.02);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
+    /* Score Container Enhancement */
+    .score-container {
+      background: linear-gradient(145deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.05));
+      padding: 25px;
+      border-radius: 15px;
+      margin: 30px 0;
+      position: relative;
       border: 1px solid var(--border-color);
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
     }
     
-    .key-findings h3 {
-      margin-top: 0;
-      margin-bottom: 15px;
-      font-size: 1.3rem;
-      color: var(--text-primary);
+    .risk-levels {
       display: flex;
-      align-items: center;
-      gap: 10px;
+      justify-content: space-between;
+      margin: 25px 5px 15px;
+      color: var(--text-tertiary);
+      font-size: 0.9rem;
+      font-weight: 500;
     }
     
-    .findings-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    
-    .findings-list li {
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      color: var(--text-secondary);
-    }
-    
-    .findings-list li:last-child {
-      border-bottom: none;
-    }
-    
-    .findings-list i {
-      margin-top: 3px;
-    }
-    
-    .item-high i {
-      color: #f44336;
-    }
-    
-    .item-medium i {
-      color: #ff9800;
-    }
-    
-    .item-low i {
+    .risk-levels span:first-child {
       color: #4caf50;
     }
     
-    /* Action Buttons */
+    .risk-levels span:nth-child(2) {
+      color: #ff9800;
+    }
+    
+    .risk-levels span:last-child {
+      color: #f44336;
+    }
+    
+    #recommendation-text {
+      text-align: center;
+      margin: 15px 0 0;
+      padding: 10px;
+      border-radius: 8px;
+      background-color: rgba(0, 0, 0, 0.1);
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    
+    /* Findings Cards Enhancement */
+    .findings-section-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+    
+    .findings-section-header h3 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+    
+    .findings-section-header i {
+      font-size: 1.4rem;
+      color: var(--primary-color);
+    }
+    
+    .findings-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin: 20px 0 30px;
+    }
+    
+    .finding-card {
+      background: linear-gradient(145deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.08));
+      border-radius: 12px;
+      padding: 20px;
+      border-left: 5px solid transparent;
+      transition: all 0.3s ease;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .finding-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 60px;
+      height: 60px;
+      background-color: rgba(0, 0, 0, 0.05);
+      border-radius: 0 0 0 100%;
+    }
+    
+    .finding-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .finding-card.high-risk {
+      border-left-color: #f44336;
+    }
+    
+    .finding-card.medium-risk {
+      border-left-color: #ff9800;
+    }
+    
+    .finding-card.low-risk {
+      border-left-color: #4caf50;
+    }
+    
+    .finding-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 15px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: var(--text-primary);
+    }
+    
+    .finding-card.high-risk .finding-header i {
+      color: #f44336;
+      font-size: 1.3rem;
+      text-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
+    }
+    
+    .finding-card.medium-risk .finding-header i {
+      color: #ff9800;
+      font-size: 1.3rem;
+      text-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
+    }
+    
+    .finding-card.low-risk .finding-header i {
+      color: #4caf50;
+      font-size: 1.3rem;
+      text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+    }
+    
+    .finding-card p {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+    
+    /* Action Buttons Enhancement */
     .action-buttons {
       display: flex;
       gap: 15px;
-      margin-top: 25px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .btn-new-analysis, 
+    .btn-view-details {
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-new-analysis {
+      background-color: rgba(0, 0, 0, 0.2);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
     }
     
     .btn-view-details {
-      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
       color: white;
       border: none;
-      border-radius: 8px;
-      padding: 12px 20px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      flex-grow: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      text-decoration: none;
-      transition: all 0.3s ease;
+    }
+    
+    .btn-new-analysis:hover {
+      background-color: rgba(0, 0, 0, 0.25);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
     }
     
     .btn-view-details:hover {
       filter: brightness(110%);
       transform: translateY(-2px);
-      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 6px 15px rgba(61, 133, 198, 0.25);
     }
     
-    .btn-new-analysis {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: var(--text-primary);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 12px 20px;
-      font-size: 1rem;
-      cursor: pointer;
+    .btn-new-analysis:active,
+    .btn-view-details:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Risk Summary Callout */
+    .risk-summary {
+      background: linear-gradient(145deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.05));
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .risk-summary-safe {
+      border-left: 5px solid #4caf50;
+    }
+    
+    .risk-summary-warning {
+      border-left: 5px solid #ff9800;
+    }
+    
+    .risk-summary-danger {
+      border-left: 5px solid #f44336;
+    }
+    
+    .risk-summary-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .risk-summary-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      text-decoration: none;
-      transition: all 0.3s ease;
+      font-size: 1.5rem;
+      background-color: rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
     
-    .btn-new-analysis:hover {
-      background-color: rgba(255, 255, 255, 0.15);
+    .risk-summary-safe .risk-summary-icon {
+      color: #4caf50;
     }
     
-    /* Responsive Adjustments */
+    .risk-summary-warning .risk-summary-icon {
+      color: #ff9800;
+    }
+    
+    .risk-summary-danger .risk-summary-icon {
+      color: #f44336;
+    }
+    
+    .risk-summary-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    
+    .risk-summary-safe .risk-summary-title {
+      color: #4caf50;
+    }
+    
+    .risk-summary-warning .risk-summary-title {
+      color: #ff9800;
+    }
+    
+    .risk-summary-danger .risk-summary-title {
+      color: #f44336;
+    }
+    
+    .risk-summary-content {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      padding-left: 65px;
+    }
+
+    /* Responsive adjustments */
     @media (max-width: 768px) {
-      .score-summary {
+      .result-header-banner {
         flex-direction: column;
-        text-align: center;
+        align-items: flex-start;
+        gap: 20px;
+        padding: 20px;
       }
       
-      .score-interpretation {
-        padding-left: 0;
-        padding-top: 20px;
+      .score-container {
+        padding: 20px 15px;
       }
       
-      .score-interpretation h3 {
-        justify-content: center;
+      .findings-cards {
+        grid-template-columns: 1fr;
       }
       
       .action-buttons {
         flex-direction: column;
+        width: 100%;
+      }
+      
+      .btn-new-analysis, 
+      .btn-view-details {
+        width: 100%;
+        justify-content: center;
       }
     }
   </style>
@@ -630,44 +996,70 @@
         </div>
       </div>
 
-      <!-- Results Section - Simplified -->
+      <!-- Results Section - Redesigned with Score Bar -->
       <div id="results-container" class="result-section" style="display: none;">
         <div class="result-header-banner">
-          <div id="result-icon-container" class="result-icon-container icon-safe">
-            <i id="result-icon" class="fas fa-shield-check"></i>
-          </div>
           <div class="result-header-content">
-            <h2 id="result-title">Analysis Results</h2>
-            <div id="analyzed-url" class="analyzed-url">URL: https://example.com</div>
+            <div id="result-icon-container" class="result-icon-container">
+              <i id="result-icon" class="fas fa-shield-check"></i>
+            </div>
+            <div>
+              <h2 id="result-title">Analysis Results</h2>
+              <div id="analyzed-url" class="analyzed-url">URL: https://example.com</div>
+            </div>
           </div>
         </div>
-              
-        <div class="result-details">
-          <!-- Simplified Score Display -->
-          <div class="score-summary">
-            <div class="score-ring" id="score-ring">
-              <div class="score-value-container">
-                <div id="risk-score-value" class="score-value-large">0</div>
-                <div class="score-label">Risk Score</div>
+            
+        <div class="card-section">
+          <div class="score-interpretation">
+            <h3 id="result-interpretation">Analyzing Results...</h3>
+            <p id="result-description">We're evaluating the security characteristics of this URL.</p>
+          </div>
+          
+          <!-- New Risk Summary Section -->
+          <div id="risk-summary" class="risk-summary risk-summary-safe">
+            <div class="risk-summary-header">
+              <div class="risk-summary-icon">
+                <i id="summary-icon" class="fas fa-shield-check"></i>
+              </div>
+              <h4 id="summary-title" class="risk-summary-title">Low Risk</h4>
+            </div>
+            <div id="summary-content" class="risk-summary-content">
+              This URL appears to be safe based on our analysis. No significant security concerns were detected.
+            </div>
+          </div>
+          
+          <!-- Enhanced Score Bar -->
+          <div class="score-container">
+            <div class="score-bar-container">
+              <div class="score-bar" id="score-bar">
+                <div class="score-value-display" id="risk-score-value">0</div>
+              </div>
+              <div class="score-marker score-marker-30">
+                <span class="score-marker-text">30</span>
+              </div>
+              <div class="score-marker score-marker-70">
+                <span class="score-marker-text">70</span>
               </div>
             </div>
-            
-            <div class="score-interpretation">
-              <h3 id="result-interpretation">Analyzing Results...</h3>
-              <p id="result-description">We're evaluating the security characteristics of this URL.</p>
-              <p id="recommendation-text">View the detailed report for more information.</p>
+            <div class="risk-levels">
+              <span>Low Risk</span>
+              <span>Medium Risk</span>
+              <span>High Risk</span>
             </div>
+            <p id="recommendation-text">View the detailed report for more information.</p>
           </div>
           
-          <!-- Key Findings Section -->
-          <div class="key-findings">
-            <h3><i class="fas fa-exclamation-circle"></i> Key Findings</h3>
-            <ul id="findings-list" class="findings-list">
-              <!-- Findings will be populated by JavaScript -->
-            </ul>
+          <!-- Key Findings Section with Enhanced Cards -->
+          <div class="findings-section-header">
+            <i class="fas fa-exclamation-circle"></i>
+            <h3>Key Findings</h3>
+          </div>
+          <div class="findings-cards" id="findings-cards">
+            <!-- Finding cards will be populated by JavaScript -->
           </div>
           
-          <!-- Action Buttons -->
+          <!-- Enhanced Action Buttons -->
           <div class="action-buttons">
             <button id="new-analysis" class="btn-new-analysis">
               <i class="fas fa-redo-alt"></i> New Analysis
@@ -715,12 +1107,12 @@
       const resultIconContainer = document.getElementById('result-icon-container');
       const resultTitle = document.getElementById('result-title');
       const analyzedUrl = document.getElementById('analyzed-url');
-      const scoreRing = document.getElementById('score-ring');
+      const scoreBar = document.getElementById('score-bar');
       const riskScoreValue = document.getElementById('risk-score-value');
       const resultInterpretation = document.getElementById('result-interpretation');
       const resultDescription = document.getElementById('result-description');
       const recommendationText = document.getElementById('recommendation-text');
-      const findingsList = document.getElementById('findings-list');
+      const findingsCards = document.getElementById('findings-cards');
       const newAnalysisButton = document.getElementById('new-analysis');
       const viewDetailsButton = document.getElementById('view-details');
       
@@ -783,7 +1175,7 @@
         }
       });
       
-      // Display simplified analysis results
+      // Display simplified analysis results with new bar design
       function displayResults(url, result) {
         analyzedUrl.textContent = `URL: ${url}`;
         
@@ -811,7 +1203,7 @@
           resultInterpretation.style.color = '#f44336';
           resultDescription.textContent = 'This URL shows multiple characteristics associated with phishing websites.';
           recommendationText.textContent = 'We strongly recommend avoiding this website.';
-          animateScoreRing(score, '#f44336');
+          animateScoreBar(score, '#f44336');
         } else if (isMediumRisk || mlPrediction === 1) {
           resultIcon.className = 'fas fa-exclamation-circle';
           resultIconContainer.className = 'result-icon-container icon-warning';
@@ -821,7 +1213,7 @@
           resultInterpretation.style.color = '#ff9800';
           resultDescription.textContent = 'This URL has some suspicious characteristics that warrant caution.';
           recommendationText.textContent = 'Exercise caution if you choose to visit this website.';
-          animateScoreRing(score, '#ff9800');
+          animateScoreBar(score, '#ff9800');
         } else {
           resultIcon.className = 'fas fa-shield-check';
           resultIconContainer.className = 'result-icon-container icon-safe';
@@ -831,7 +1223,32 @@
           resultInterpretation.style.color = '#4caf50';
           resultDescription.textContent = 'No major phishing indicators were detected for this URL.';
           recommendationText.textContent = 'This URL appears to be legitimate based on our analysis.';
-          animateScoreRing(score, '#4caf50');
+          animateScoreBar(score, '#4caf50');
+        }
+        
+        // Update risk summary section based on risk level
+        const riskSummary = document.getElementById('risk-summary');
+        const summaryIcon = document.getElementById('summary-icon');
+        const summaryTitle = document.getElementById('summary-title');
+        const summaryContent = document.getElementById('summary-content');
+        
+        riskSummary.className = 'risk-summary';
+        
+        if (result.is_phishing || (isHighRisk && mlPrediction === 1)) {
+          riskSummary.classList.add('risk-summary-danger');
+          summaryIcon.className = 'fas fa-exclamation-triangle';
+          summaryTitle.textContent = 'High Risk Detected';
+          summaryContent.textContent = 'This URL shows multiple characteristics commonly associated with phishing attempts. We strongly advise against visiting this site or providing any personal information.';
+        } else if (isMediumRisk || mlPrediction === 1) {
+          riskSummary.classList.add('risk-summary-warning');
+          summaryIcon.className = 'fas fa-exclamation-circle';
+          summaryTitle.textContent = 'Medium Risk Detected';
+          summaryContent.textContent = 'This URL has suspicious characteristics that warrant caution. While not definitively malicious, we recommend verifying its legitimacy through other means before sharing sensitive information.';
+        } else {
+          riskSummary.classList.add('risk-summary-safe');
+          summaryIcon.className = 'fas fa-shield-check';
+          summaryTitle.textContent = 'Low Risk';
+          summaryContent.textContent = 'Our analysis indicates this URL is likely safe. No significant security concerns were detected, though we always recommend practicing standard online security measures.';
         }
         
         // Generate key findings - extract features from different possible locations
@@ -845,7 +1262,7 @@
           features = {...features, ...result.ml_result.features};
         }
         
-        generateKeyFindings(findingsList, features, url);
+        generateKeyFindingsCards(findingsCards, features, url);
         
         // Store complete analysis data for the details page
         sessionStorage.setItem('analysisData', JSON.stringify({
@@ -861,8 +1278,8 @@
         resultsContainer.style.display = 'block';
       }
       
-      // Generate key findings list
-      function generateKeyFindings(container, features, url) {
+      // Generate key findings with new card design
+      function generateKeyFindingsCards(container, features, url) {
         container.innerHTML = '';
         const findings = [];
         
@@ -912,49 +1329,56 @@
         // If no specific findings were detected
         if (findings.length === 0) {
           container.innerHTML = `
-            <li class="item-low">
-              <i class="fas fa-check-circle"></i>
-              <span>No significant risk factors detected</span>
-            </li>
+            <div class="finding-card low-risk">
+              <div class="finding-header">
+                <i class="fas fa-check-circle"></i>
+                <span>No significant risk factors detected</span>
+              </div>
+              <p>Good news! We didn't find any major security concerns with this URL.</p>
+            </div>
           `;
           return;
         }
         
-        // Add findings to the list (limit to top 5)
+        // Add findings as cards (limit to top 5)
         findings.slice(0, 5).forEach(finding => {
           const iconClass = finding.severity === 'high' ? 'fas fa-exclamation-triangle' : 
-                          finding.severity === 'medium' ? 'fas fa-exclamation-circle' : 
-                          'fas fa-info-circle';
+                           finding.severity === 'medium' ? 'fas fa-exclamation-circle' : 
+                           'fas fa-info-circle';
           
           container.innerHTML += `
-            <li class="item-${finding.severity}">
-              <i class="${iconClass}"></i>
-              <span>${finding.text}</span>
-            </li>
+            <div class="finding-card ${finding.severity}-risk">
+              <div class="finding-header">
+                <i class="${iconClass}"></i>
+                <span>${finding.text}</span>
+              </div>
+              <p>${finding.description || 'This factor contributes to the overall risk assessment.'}</p>
+            </div>
           `;
         });
         
         // If there are more findings than we're showing
         if (findings.length > 5) {
           container.innerHTML += `
-            <li>
-              <i class="fas fa-ellipsis-h"></i>
-              <span>${findings.length - 5} more risk factors - see detailed report</span>
-            </li>
+            <div class="finding-card">
+              <div class="finding-header">
+                <i class="fas fa-ellipsis-h"></i>
+                <span>${findings.length - 5} more risk factors</span>
+              </div>
+              <p>See the detailed report for complete analysis of all detected issues.</p>
+            </div>
           `;
         }
       }
       
-      // Animate score ring based on risk level
-      function animateScoreRing(score, color) {
+      // Animate score bar based on risk level
+      function animateScoreBar(score, color) {
         const percent = Math.min(100, Math.max(0, score));
         
-        // Update the conic gradient based on percentage
+        // Update the score bar width and color
         setTimeout(() => {
-          scoreRing.style.background = `conic-gradient(
-            ${color} 0% ${percent}%, 
-            rgba(255, 255, 255, 0.1) ${percent}% 100%
-          )`;
+          scoreBar.style.width = `${percent}%`;
+          scoreBar.style.background = color;
         }, 300);
       }
       
@@ -978,3 +1402,4 @@
   </script>
 </body>
 </html>
+`
