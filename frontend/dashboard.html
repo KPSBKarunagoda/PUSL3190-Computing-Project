@@ -28,7 +28,7 @@
     }
     
     .top-header-content {
-      max-width: 1400px;  /* Increased from 1200px */
+      max-width: 1200px;
       margin: 0 auto;
       display: flex;
       align-items: center;
@@ -98,7 +98,7 @@
     }
     
     .dashboard-container {
-      max-width: 1400px;  /* Increased from 1200px */
+      max-width: 1200px;
       margin: 0 auto;
       padding: 20px;
     }
@@ -139,10 +139,9 @@
       color: var(--primary-color);
     }
     
-    /* Two-column layout */
     .dashboard-content {
       display: grid;
-      grid-template-columns: 1fr 300px;
+      grid-template-columns: 1fr 350px;
       gap: 25px;
     }
     
@@ -154,19 +153,17 @@
       grid-column: 2;
     }
     
-    /* Adjust security score card for sidebar */
-    .security-score-card.widget {
+    /* Make the security score card vertical for sidebar */
+    .security-score-card {
       flex-direction: column;
-      height: fit-content;
-      position: sticky;
-      top: 80px;
+      height: 100%;
     }
     
-    .security-score-card.widget .security-score-visual {
+    .security-score-visual {
       margin: 0 auto 20px;
     }
     
-    /* Responsive layout */
+    /* Responsive adjustments */
     @media (max-width: 992px) {
       .dashboard-content {
         grid-template-columns: 1fr;
@@ -176,15 +173,14 @@
         grid-column: 1;
       }
       
-      .security-score-card.widget {
-        position: static;
+      .security-score-card {
         flex-direction: row;
       }
-      
-      @media (max-width: 768px) {
-        .security-score-card.widget {
-          flex-direction: column;
-        }
+    }
+    
+    @media (max-width: 768px) {
+      .security-score-card {
+        flex-direction: column;
       }
     }
     
@@ -618,33 +614,6 @@
         </section>
         
         <section class="dashboard-section">
-          <h2><i class="fas fa-shield-alt"></i> Security Tips</h2>
-          <div class="security-tips-carousel">
-            <div class="tip-card active">
-              <h3>Check the URL</h3>
-              <p>Always check the URL in your browser address bar. Phishing sites often use misspelled domain names.</p>
-            </div>
-            <div class="tip-card">
-              <h3>Be Cautious with Attachments</h3>
-              <p>Don't open email attachments from unknown senders as they could contain malware.</p>
-            </div>
-            <div class="tip-card">
-              <h3>Use Two-Factor Authentication</h3>
-              <p>Enable 2FA on your important accounts for an extra layer of security.</p>
-            </div>
-            <div class="carousel-controls">
-              <button class="carousel-prev"><i class="fas fa-chevron-left"></i></button>
-              <div class="carousel-indicators">
-                <span class="indicator active"></span>
-                <span class="indicator"></span>
-                <span class="indicator"></span>
-              </div>
-              <button class="carousel-next"><i class="fas fa-chevron-right"></i></button>
-            </div>
-          </div>
-        </section>
-        
-        <section class="dashboard-section">
           <h2><i class="fas fa-history"></i> Recent Scan History</h2>
           <div class="scan-history" id="scan-history">
             <div class="history-placeholder">
@@ -656,7 +625,8 @@
       </div>
       
       <div class="side-column">
-        <div class="security-score-card widget">
+        <!-- Security Score Widget moved to sidebar -->
+        <div class="security-score-card">
           <div class="security-score-visual">
             <div class="score-circle circle-background"></div>
             <div class="score-circle circle-progress" id="score-progress"></div>
@@ -694,6 +664,34 @@
             </div>
           </div>
         </div>
+        
+        <!-- Security Tips section moved to sidebar -->
+        <section class="dashboard-section">
+          <h2><i class="fas fa-shield-alt"></i> Security Tips</h2>
+          <div class="security-tips-carousel">
+            <div class="tip-card active">
+              <h3>Check the URL</h3>
+              <p>Always check the URL in your browser address bar. Phishing sites often use misspelled domain names.</p>
+            </div>
+            <div class="tip-card">
+              <h3>Be Cautious with Attachments</h3>
+              <p>Don't open email attachments from unknown senders as they could contain malware.</p>
+            </div>
+            <div class="tip-card">
+              <h3>Use Two-Factor Authentication</h3>
+              <p>Enable 2FA on your important accounts for an extra layer of security.</p>
+            </div>
+            <div class="carousel-controls">
+              <button class="carousel-prev"><i class="fas fa-chevron-left"></i></button>
+              <div class="carousel-indicators">
+                <span class="indicator active"></span>
+                <span class="indicator"></span>
+                <span class="indicator"></span>
+              </div>
+              <button class="carousel-next"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -854,4 +852,3 @@
   </script>
 </body>
 </html>
-``` 
