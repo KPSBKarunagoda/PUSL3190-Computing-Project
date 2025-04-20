@@ -1,0 +1,139 @@
+/* Footer Specific Styles */
+.pg-footer {
+  background-color: var(--card-bg);
+  border-top: 1px solid var(--border-color);
+  padding: 40px 0 20px;
+  margin-top: auto;
+  width: 100%;
+}
+
+.pg-footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+.pg-footer-column {
+  flex: 1;
+  min-width: 200px;
+}
+
+.pg-footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.pg-footer-logo i {
+  font-size: 1.8rem;
+  color: var(--primary-color);
+}
+
+.pg-footer-logo h3 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.pg-footer-description {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.pg-footer-social {
+  display: flex;
+  gap: 12px;
+}
+
+.pg-footer-social a {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(61, 133, 198, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  transition: all 0.3s;
+}
+
+.pg-footer-social a:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-3px);
+}
+
+.pg-footer-links h4 {
+  color: var(--text-primary);
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.pg-footer-links h4::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 30px;
+  height: 2px;
+  background-color: var(--primary-color);
+}
+
+.pg-footer-links ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.pg-footer-links ul li {
+  margin-bottom: 10px;
+}
+
+.pg-footer-links ul li a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pg-footer-links ul li a:hover {
+  color: var(--primary-color);
+  transform: translateX(3px);
+}
+
+.pg-footer-links ul li a i {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.pg-footer-copyright {
+  width: 100%;
+  text-align: center;
+  padding-top: 20px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .pg-footer-container {
+    flex-direction: column;
+  }
+  
+  .pg-footer-column {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+}

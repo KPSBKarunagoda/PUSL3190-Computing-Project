@@ -84,9 +84,15 @@
     
     /* Analysis Container */
     .analysis-container {
-      max-width: 1000px;
+      max-width: 1150px !important;
       margin: 0 auto;
       padding: 20px;
+    }
+    
+    /* Ensure container width works correctly with footer */
+    body.dark-theme .analysis-container {
+      max-width: 1150px !important;
+      width: 100%;
     }
     
     .analysis-header {
@@ -895,6 +901,7 @@
       padding-left: 65px;
     }
   </style>
+  <link rel="stylesheet" href="footer-styles.css">
 </head>
 <body class="dark-theme">
   <header class="top-header">
@@ -1058,17 +1065,17 @@
   </div>
 
   <!-- Footer Section -->
-  <footer class="footer">
-    <div class="footer-container">
-      <div class="footer-column">
-        <div class="footer-logo">
+  <footer class="pg-footer">
+    <div class="pg-footer-container">
+      <div class="pg-footer-column">
+        <div class="pg-footer-logo">
           <i class="fas fa-shield-alt"></i>
           <h3>PhishGuard</h3>
         </div>
-        <p class="footer-description">
+        <p class="pg-footer-description">
           Protecting users against phishing attacks with advanced detection technology and security education.
         </p>
-        <div class="footer-social">
+        <div class="pg-footer-social">
           <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
           <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
           <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
@@ -1076,7 +1083,7 @@
         </div>
       </div>
       
-      <div class="footer-column footer-links">
+      <div class="pg-footer-column pg-footer-links">
         <h4>Quick Links</h4>
         <ul>
           <li><a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
@@ -1086,7 +1093,7 @@
         </ul>
       </div>
       
-      <div class="footer-column footer-links">
+      <div class="pg-footer-column pg-footer-links">
         <h4>Resources</h4>
         <ul>
           <li><a href="education.html"><i class="fas fa-book"></i> Phishing Education</a></li>
@@ -1096,7 +1103,7 @@
         </ul>
       </div>
       
-      <div class="footer-column footer-links">
+      <div class="pg-footer-column pg-footer-links">
         <h4>Legal</h4>
         <ul>
           <li><a href="#"><i class="fas fa-shield-alt"></i> Privacy Policy</a></li>
@@ -1107,7 +1114,7 @@
       </div>
     </div>
     
-    <div class="footer-copyright">
+    <div class="pg-footer-copyright">
       <p>&copy; 2025 PhishGuard</p>
     </div>
   </footer>
