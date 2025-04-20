@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const EducationService = require('../services/education-service');
 
-module.exports = function(dbConnection) {
+module.exports = function(pool) {
+    const educationService = new EducationService(pool);
+
     // POST /api/education/generate - Generate educational content
     router.post('/generate', async (req, res) => {
         try {
@@ -66,6 +69,67 @@ module.exports = function(dbConnection) {
             res.status(500).json({ 
                 success: false, 
                 message: 'Failed to generate educational content' 
+            });
+        }
+    });
+
+    // Add new endpoint for key findings
+    router.post('/key-findings', async (req, res) => {
+        try {
+            const { url, analysisResult } = req.body;
+            
+            if (!url || !analysisResult) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Missing required parameters: url and analysisResult' 
+                });
+            }
+            
+            const findings = educationService.generateKeyFindings(analysisResult, url);
+            
+            return res.json({
+                success: true,
+                findings
+            });
+        } catch (error) {
+            console.error('Error generating key findings:', error);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Error generating key findings',
+                error: error.message
+            });
+        }
+    });
+
+    // Add this route for the extension
+    router.post('/extension-findings', async (req, res) => {
+        try {
+            const { url, analysisResult } = req.body;
+            
+            if (!url || !analysisResult) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Missing required parameters'
+                });
+            }
+            
+            // Get findings
+            const findings = educationService.generateKeyFindings(analysisResult, url);
+            
+            // Format findings for extension display
+            const html = educationService.formatFindingsForExtension(findings);
+            
+            return res.json({
+                success: true,
+                findings,
+                html
+            });
+        } catch (error) {
+            console.error('Error generating extension findings:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Error generating findings',
+                error: error.message
             });
         }
     });

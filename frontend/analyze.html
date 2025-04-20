@@ -1221,7 +1221,7 @@
         }
         
         // Generate key findings with a more robust approach
-        generateImprovedKeyFindings(findingsCards, result, url);
+        displayKeyFindings(findingsCards, result, url);
         
         // Store complete analysis data for the details page
         sessionStorage.setItem('analysisData', JSON.stringify({
@@ -1238,169 +1238,72 @@
         resultsContainer.style.display = 'block';
       }
 
-      // New improved function that works even with minimal data
-      function generateImprovedKeyFindings(container, result, url) {
-        container.innerHTML = '';
-        const findings = [];
+      // New improved function to fetch key findings from the backend
+      async function displayKeyFindings(container, result, url) {
+        container.innerHTML = '<div class="loading-findings">Loading key findings...</div>';
         
-        console.log("Generating findings from:", JSON.stringify(result, null, 2));
-          
-        // Always check URL characteristics regardless of feature availability
-        if (/\d+\.\d+\.\d+\.\d+/.test(url)) {
-          findings.push({
-            text: 'IP address used instead of domain name',
-            description: 'This is the HIGHEST risk indicator in our analysis. Legitimate sites use domain names, not raw IP addresses.',
-            severity: 'high'
-          });
-        }
-        
-        if (url.startsWith('http:')) {
-          findings.push({
-            text: 'Missing SSL/TLS security certificate',
-            description: 'This site does not use HTTPS encryption, which is a major security concern.',
-            severity: 'high'
-          });
-        }
-        
-        // CRITICAL ADDITION: Always check for common phishing indicators
-        // Specifically add these findings if this appears to be a new domain
-        if (url.includes('startup') || url.includes('new') || url.includes('2023') || result.risk_score > 40) {
-          // Force include these critical security indicators - they should be shown for suspicious domains
-          findings.push({
-            text: 'Domain not indexed by Google',
-            description: 'Legitimate websites are typically indexed by search engines. New or malicious sites often aren\'t indexed.',
-            severity: 'medium'
+        try {
+          // Call the backend API for key findings
+          const response = await fetch('/api/education/key-findings', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url, analysisResult: result })
           });
           
-          findings.push({
-            text: 'Page not indexed by Google',
-            description: 'This specific page isn\'t in Google\'s index, which could indicate it\'s new or intentionally hidden.',
-            severity: 'medium'
-          });
-          
-          findings.push({
-            text: 'Missing SPF email security records',
-            description: 'This domain lacks SPF records that help prevent email spoofing, suggesting less security consciousness.',
-            severity: 'medium'
-          });
-        }
-        
-        // Calculate domain age (if it's a new domain)
-        if (url.includes('startup') || url.includes('new') || url.includes('2023')) {
-          findings.push({
-            text: 'Potentially new domain',
-            description: 'This appears to be a new domain. New domains have a higher risk of being used for phishing.',
-            severity: 'medium'
-          });
-        }
-        
-        // Check URL length
-        if (url.length > 75) {
-          findings.push({
-            text: 'Unusually long URL',
-            description: 'This URL is longer than typical legitimate URLs, which can be a sign of obfuscation.',
-            severity: 'medium'
-          });
-        }
-        
-        // Try to process features if they exist
-        if (result.features && typeof result.features === 'object' && Object.keys(result.features).length > 0) {
-          processFeatures(result.features);
-        }
-        
-        // Helper function to process features object
-        function processFeatures(features) {
-          // Helper function to check if a value is effectively zero
-          function isEffectivelyZero(value) {
-            if (value === undefined || value === null) return false;
-            return Number(value) === 0;
+          if (!response.ok) {
+            throw new Error('Failed to fetch key findings');
           }
           
-          // Only add these if they weren't already added above
-          // Check for the existence of specific features
-          if (isEffectivelyZero(features.domain_google_index)) {
-            // Check if we don't already have this finding
-            if (!findings.some(f => f.text === 'Domain not indexed by Google')) {
-              findings.push({
-                text: 'Domain not indexed by Google',
-                description: 'Legitimate websites are typically indexed by search engines. New or malicious sites often aren\'t indexed.',
-                severity: 'medium'
-              });
-            }
+          const data = await response.json();
+          const findings = data.findings || [];
+          
+          // Clear the container
+          container.innerHTML = '';
+          
+          // If no findings, show a default message
+          if (findings.length === 0) {
+            container.innerHTML = `
+              <div class="finding-card low-risk">
+                <div class="finding-header">
+                  <i class="fas fa-check-circle"></i>
+                  <span>No significant risk factors detected</span>
+                </div>
+                <p>Good news! We didn't find any major security concerns with this URL.</p>
+              </div>
+            `;
+            return;
           }
           
-          if (isEffectivelyZero(features.url_google_index)) {
-            if (!findings.some(f => f.text === 'Page not indexed by Google')) {
-              findings.push({
-                text: 'Page not indexed by Google',
-                description: 'This specific page isn\'t in Google\'s index, which could indicate it\'s new or intentionally hidden.',
-                severity: 'medium'
-              });
-            }
-          }
-          
-          if (isEffectivelyZero(features.domain_spf)) {
-            if (!findings.some(f => f.text === 'Missing SPF email security records')) {
-              findings.push({
-                text: 'Missing SPF email security records',
-                description: 'This domain lacks SPF records that help prevent email spoofing, suggesting less security consciousness.',
-                severity: 'medium'
-              });
-            }
-          }
-          
-          if (features.asn_ip !== undefined) {
-            if (Number(features.asn_ip) > 0.5) {
-              findings.push({
-                text: 'Suspicious hosting network detected',
-                description: 'This website is hosted on a network that has been associated with malicious activities.',
-                severity: 'high'
-              });
-            } else if (isEffectivelyZero(features.asn_ip)) {
-              findings.push({
-                text: 'Unknown network information',
-                description: 'We couldn\'t determine information about the hosting network, which can be suspicious for very new or obscure domains.',
-                severity: 'low'
-              });
-            }
-          }
-        }
-        
-        // Log found issues for debugging
-        console.log(`Found ${findings.length} issues:`, findings.map(f => f.text));
-        
-        // If no specific findings were detected
-        if (findings.length === 0) {
+          // Add all findings to the container
+          findings.forEach(finding => {
+            const iconClass = finding.severity === 'high' ? 'fas fa-exclamation-triangle' : 
+                             finding.severity === 'medium' ? 'fas fa-exclamation-circle' : 
+                             'fas fa-info-circle';
+            
+            container.innerHTML += `
+              <div class="finding-card ${finding.severity}-risk">
+                <div class="finding-header">
+                  <i class="${iconClass}"></i>
+                  <span>${finding.text}</span>
+                </div>
+                <p>${finding.description || 'This factor contributes to the overall risk assessment.'}</p>
+              </div>
+            `;
+          });
+        } catch (error) {
+          console.error('Error displaying key findings:', error);
           container.innerHTML = `
-            <div class="finding-card low-risk">
+            <div class="finding-card medium-risk">
               <div class="finding-header">
-                <i class="fas fa-check-circle"></i>
-                <span>No significant risk factors detected</span>
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Error loading findings</span>
               </div>
-              <p>Good news! We didn't find any major security concerns with this URL.</p>
+              <p>We encountered an error while loading the key findings. Please try again later.</p>
             </div>
           `;
-          return;
         }
-        
-        // Add ALL findings for complete visibility
-        findings.forEach(finding => {
-          const iconClass = finding.severity === 'high' ? 'fas fa-exclamation-triangle' : 
-                           finding.severity === 'medium' ? 'fas fa-exclamation-circle' : 
-                           'fas fa-info-circle';
-          
-          container.innerHTML += `
-            <div class="finding-card ${finding.severity}-risk">
-              <div class="finding-header">
-                <i class="${iconClass}"></i>
-                <span>${finding.text}</span>
-              </div>
-              <p>${finding.description || 'This factor contributes to the overall risk assessment.'}</p>
-            </div>
-          `;
-        });
-        
-        console.log("Key findings HTML content generated:", container.innerHTML.substring(0, 100) + "...");
       }
       
       // Animate score bar based on risk level

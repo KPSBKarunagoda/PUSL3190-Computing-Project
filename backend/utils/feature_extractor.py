@@ -9,9 +9,13 @@ import ssl
 import OpenSSL
 import concurrent.futures
 import ipaddress
+import os
+from dotenv import load_dotenv
+import sys
 
 class URLFeatureExtractor:
     def __init__(self):
+        load_dotenv()  # Load environment variables
         self.features = {}
         
     def count_chars(self, text, char):
@@ -352,13 +356,73 @@ class URLFeatureExtractor:
         
     def get_google_index_features(self, url, domain):
         features = {}
-        # Note: Real Google indexing check requires API usage
-        # This is a simplified version that won't make actual API calls
-        
-        # For legitimate URLs, we assume they're more likely to be indexed
-        # In a production system, this would use Google's indexing API
         try:
-            # Check domain age as proxy for indexing likelihood
+            # Get API credentials from environment variables
+            api_key = os.getenv('GOOGLE_CSE_API_KEY')
+            cse_id = os.getenv('GOOGLE_CSE_ID')
+            
+            # If credentials are available, use Google API
+            if api_key and cse_id:
+                print(f"Checking Google indexing for {domain} using CSE API", file=sys.stderr)
+                
+                # Check domain indexing first
+                domain_query = f"site:{domain}"
+                domain_search_url = f"https://www.googleapis.com/customsearch/v1?key={api_key}&cx={cse_id}&q={domain_query}"
+                
+                try:
+                    domain_response = requests.get(domain_search_url, timeout=5)
+                    if domain_response.status_code == 200:
+                        domain_data = domain_response.json()
+                        total_results = int(domain_data.get('searchInformation', {}).get('totalResults', 0))
+                        print(f"Domain {domain}: {total_results} results found", file=sys.stderr)
+                        features['domain_google_index'] = 1 if total_results > 0 else 0
+                        
+                        # If domain is indexed, check specific URL indexing
+                        if features['domain_google_index'] == 1:
+                            # For URL check, use a specific query
+                            escaped_url = url.replace(':', '%3A').replace('/', '%2F')
+                            url_query = f"inurl:{escaped_url}"
+                            url_search_url = f"https://www.googleapis.com/customsearch/v1?key={api_key}&cx={cse_id}&q={url_query}"
+                            
+                            try:
+                                url_response = requests.get(url_search_url, timeout=5)
+                                if url_response.status_code == 200:
+                                    url_data = url_response.json()
+                                    url_total_results = int(url_data.get('searchInformation', {}).get('totalResults', 0))
+                                    print(f"URL {url}: {url_total_results} results found", file=sys.stderr)
+                                    features['url_google_index'] = 1 if url_total_results > 0 else 0
+                                else:
+                                    print(f"URL API error: {url_response.status_code}, using fallback for URL indexing", file=sys.stderr)
+                                    features['url_google_index'] = 0
+                            except Exception as e:
+                                print(f"URL API request error: {str(e)}", file=sys.stderr)
+                                features['url_google_index'] = 0
+                        else:
+                            # If domain isn't indexed, URL can't be indexed
+                            features['url_google_index'] = 0
+                            
+                        # Successfully used API, return the features
+                        return features
+                        
+                    else:
+                        print(f"Domain API error: {domain_response.status_code}, falling back to proxy method", file=sys.stderr)
+                        # Fall back to domain age proxy
+                        return self._fallback_google_index(domain)
+                except Exception as e:
+                    print(f"API request error: {str(e)}, falling back to proxy method", file=sys.stderr)
+                    return self._fallback_google_index(domain)
+            else:
+                print("Google API credentials not found, using domain age proxy", file=sys.stderr)
+                return self._fallback_google_index(domain)
+                
+        except Exception as e:
+            print(f"Error checking Google indexing: {str(e)}", file=sys.stderr)
+            return self._fallback_google_index(domain)
+
+    def _fallback_google_index(self, domain):
+        """Fallback method using domain age as a proxy for indexing"""
+        features = {}
+        try:
             w = whois.whois(domain)
             creation_date = w.creation_date
             
@@ -377,8 +441,8 @@ class URLFeatureExtractor:
             else:
                 features['domain_google_index'] = 0
                 features['url_google_index'] = 0
-                
-        except:
+        except Exception as e:
+            print(f"Fallback method error: {str(e)}", file=sys.stderr)
             features['domain_google_index'] = 0
             features['url_google_index'] = 0
             

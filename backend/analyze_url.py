@@ -131,10 +131,12 @@ class URLAnalyzer:
             'qty_at_url': 0.1, 
             'domain_in_ip': 0.35,         # Significantly increased weight for IP addresses 
             'tls_ssl_certificate': -0.15,
-            'url_google_index': -0.1,
+            'domain_google_index': -0.15,  # NEW: Strong negative weight (reduces risk) when domain is indexed
+            'url_google_index': -0.1,      # Increased impact when the URL is indexed
             'qty_redirects': 0.1,
             'time_domain_activation': -0.1,
-            'qty_ip_resolved': -0.05
+            'qty_ip_resolved': -0.05,
+            'domain_spf': -0.05           # NEW: Minor negative weight when SPF is present
         }
 
     def _ml_analysis(self, features: Dict[str, Any]) -> Dict[str, Any]:
