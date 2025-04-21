@@ -36,11 +36,11 @@ router.post('/key-findings', async (req, res) => {
     if (!url || !analysisResult) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Missing required data' 
+        error: 'Missing required data - URL and analysis result are required' 
       });
     }
     
-    // Generate findings
+    // Generate findings using the education service
     const findings = educationService.generateKeyFindings(analysisResult, url);
     
     return res.json({
@@ -49,7 +49,10 @@ router.post('/key-findings', async (req, res) => {
     });
   } catch (error) {
     console.error('Error generating key findings:', error);
-    return res.status(500).json({ success: false, error: 'Server error' });
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Failed to generate key findings' 
+    });
   }
 });
 
