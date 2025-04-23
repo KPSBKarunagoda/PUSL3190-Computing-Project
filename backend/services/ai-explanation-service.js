@@ -2,11 +2,23 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const GeminiAdapter = require('./providers/gemini-adapter');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 class AIExplanationService {
   constructor() {
     this.geminiAdapter = new GeminiAdapter();
     this.promptTemplate = this._loadPromptTemplate();
+    this.cacheDir = path.join(__dirname, '..', 'data', 'ai-cache');
+    
+    // Ensure cache directory exists
+    if (!fs.existsSync(this.cacheDir)) {
+      try {
+        fs.mkdirSync(this.cacheDir, { recursive: true });
+        console.log(`Created AI cache directory: ${this.cacheDir}`);
+      } catch (error) {
+        console.error(`Failed to create cache directory: ${error.message}`);
+      }
+    }
   }
 
   _loadPromptTemplate() {
@@ -56,8 +68,43 @@ Important:
     }
 
     try {
+      // Normalize URL for consistent caching
+      const normalizedUrl = this._normalizeUrl(url);
+      
+      // Generate a consistent hash for the cache file
+      const cacheKey = crypto.createHash('md5').update(normalizedUrl).digest('hex');
+      const cacheFile = path.join(this.cacheDir, `${cacheKey}.json`);
+      
+      console.log(`Checking cache for URL: ${normalizedUrl}`);
+      console.log(`Cache key: ${cacheKey}`);
+      
+      // Check if we have a cache hit
+      if (fs.existsSync(cacheFile)) {
+        try {
+          const cacheData = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+          const cacheAge = Date.now() - new Date(cacheData.timestamp).getTime();
+          const MAX_CACHE_AGE = 60 * 60 * 1000; // 1 hour in ms 
+          
+          console.log(`Found cache file (${Math.round(cacheAge / (1000 * 60))} minutes old)`);
+          
+          if (cacheAge < MAX_CACHE_AGE) {
+            console.log('Using cached explanation');
+            return cacheData.content;
+          } else {
+            console.log('Cache expired, generating new explanation');
+            // We'll let the old cache be overwritten
+          }
+        } catch (error) {
+          console.error(`Error reading cache: ${error.message}`);
+          // Continue to generate a new explanation
+        }
+      } else {
+        console.log('No cache found, generating new explanation');
+      }
+
+      // Generate a new explanation
       const context = {
-        url,
+        url: normalizedUrl,
         result: analysisResult,
         features,
         timestamp: new Date().toISOString()
@@ -73,7 +120,25 @@ Important:
         }
       );
 
-      return this._formatExplanation(explanation);
+      const formattedExplanation = this._formatExplanation(explanation);
+      
+      // Cache the result
+      try {
+        const cacheData = {
+          timestamp: new Date().toISOString(),
+          content: formattedExplanation
+        };
+        
+        fs.writeFileSync(cacheFile, JSON.stringify(cacheData));
+        console.log(`Cached explanation to ${cacheFile}`);
+        
+        // Clean up old cache files if we have too many
+        this._cleanupOldCache();
+      } catch (error) {
+        console.error(`Failed to cache explanation: ${error.message}`);
+      }
+
+      return formattedExplanation;
     } catch (error) {
       console.error('Error generating AI explanation:', error);
       throw new Error(`Failed to generate AI explanation: ${error.message}`);
@@ -113,6 +178,89 @@ Important:
     );
     
     return formatted;
+  }
+  
+  _normalizeUrl(url) {
+    try {
+      // Create a standardized version of the URL for caching
+      let normalizedUrl = url.trim().toLowerCase();
+      
+      // Add protocol if missing
+      if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+        normalizedUrl = 'https://' + normalizedUrl;
+      }
+      
+      // Use URL parsing to handle normalization
+      const urlObj = new URL(normalizedUrl);
+      
+      // Remove www. prefix if present
+      let hostname = urlObj.hostname;
+      if (hostname.startsWith('www.')) {
+        hostname = hostname.slice(4);
+      }
+      
+      // Remove trailing slashes from pathname
+      let pathname = urlObj.pathname;
+      while (pathname.endsWith('/') && pathname.length > 1) {
+        pathname = pathname.slice(0, -1);
+      }
+      
+      // For caching purposes, we'll ignore query parameters, hash, etc.
+      // Just use the domain + path as the cache key
+      return hostname + pathname;
+    } catch (error) {
+      console.warn(`URL normalization failed: ${error.message}`);
+      return url; // Return original if normalization fails
+    }
+  }
+  
+  _cleanupOldCache() {
+    try {
+      const files = fs.readdirSync(this.cacheDir);
+      
+      // Only process if we have more than 10 cache files (changed from 100)
+      if (files.length <= 10) return;
+      
+      console.log(`Cache directory has ${files.length} files, cleaning up old files`);
+      
+      const cacheFiles = [];
+      
+      // Get stats for all cache files
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          try {
+            const filePath = path.join(this.cacheDir, file);
+            const stats = fs.statSync(filePath);
+            cacheFiles.push({
+              path: filePath,
+              filename: file,
+              mtime: stats.mtime.getTime()
+            });
+          } catch (error) {
+            console.error(`Error getting stats for ${file}: ${error.message}`);
+          }
+        }
+      }
+      
+      // Sort by modification time (oldest first)
+      cacheFiles.sort((a, b) => a.mtime - b.mtime);
+      
+      // Delete the oldest files, keeping only the 5 newest (changed from 50)
+      const filesToDelete = cacheFiles.slice(0, cacheFiles.length - 5);
+      
+      console.log(`Deleting ${filesToDelete.length} old cache files`);
+      
+      // Delete files
+      for (const file of filesToDelete) {
+        try {
+          fs.unlinkSync(file.path);
+        } catch (error) {
+          console.error(`Error deleting ${file.filename}: ${error.message}`);
+        }
+      }
+    } catch (error) {
+      console.error(`Cache cleanup error: ${error.message}`);
+    }
   }
 }
 
