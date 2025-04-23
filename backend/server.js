@@ -134,6 +134,45 @@ async function initializeServer() {
       }
     });
     
+    // Add AI explanation endpoint
+    app.post('/api/ai/explain', async (req, res) => {
+      console.log('AI explanation endpoint called');
+      try {
+        const { url, analysisResult, features } = req.body;
+        
+        if (!url || !analysisResult) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Missing required data - URL and analysis result are required' 
+          });
+        }
+        
+        // Create AI explanation service
+        const AIExplanationService = require('./services/ai-explanation-service');
+        const aiExplanationService = new AIExplanationService();
+        
+        // Generate explanation
+        console.log(`Generating AI explanation for URL: ${url}`);
+        const explanation = await aiExplanationService.generateExplanation(
+          url, 
+          analysisResult, 
+          features || {}
+        );
+        
+        return res.json({
+          success: true,
+          explanation
+        });
+      } catch (error) {
+        console.error('Error generating AI explanation:', error);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Failed to generate AI explanation',
+          message: error.message
+        });
+      }
+    });
+    
     setupRoute('/api/auth', authRouter);
     setupRoute('/api/lists', listRouter);
     setupRoute('/api/admin', adminRouter);

@@ -122,66 +122,74 @@ class GeminiAdapter {
     // Check cache first
     const cacheKey = this._getCacheKey(prompt, context, options);
     const cachedResult = this._checkCache(cacheKey);
-    
     if (cachedResult) {
-      console.log('Using cached result');
+      console.log('Using cached AI response');
       return cachedResult;
     }
     
+    // Apply rate limiting
+    await this._handleRateLimit();
+    
+    // Increment counter
+    this.rateLimiter.requestsThisMinute++;
+    this.rateLimiter.lastRequestTime = Date.now();
+    
     try {
-      console.log('GeminiAdapter: Generating completion...');
-      
-      // Limit prompt size to avoid timeouts
-      const maxPromptLength = 3000; // Characters
-      let limitedPrompt = prompt;
-      
-      if (prompt.length > maxPromptLength) {
-        console.log(`Prompt exceeds max length (${prompt.length}). Truncating to ${maxPromptLength} chars`);
-        limitedPrompt = prompt.substring(0, maxPromptLength) + 
-          "\n\n[Note: Input was truncated due to length.]";
+      // Initialize the model
+      if (!this.genAI) {
+        this._initializeClient();
       }
       
-      // Handle rate limiting
-      await this._handleRateLimit();
-      
-      // Increment request counter
-      this.rateLimiter.requestsThisMinute++;
-      this.rateLimiter.lastRequestTime = Date.now();
-      
-      // Get the model
-      const model = this.genAI.getGenerativeModel({ 
-        model: this.model
+      const genModel = this.genAI.getGenerativeModel({
+        model: this.model,
+        generationConfig: {
+          temperature: options.temperature || 0.7,
+          topK: options.topK || 40,
+          topP: options.topP || 0.95,
+          maxOutputTokens: options.maxTokens || 1024,
+        },
       });
       
-      // Configure generation parameters with adjusted token limits
-      const generationConfig = {
-        temperature: options.temperature || 0.3,
-        maxOutputTokens: 800, // Reduced from default to ensure faster response
-        topK: 40,
-        topP: 0.95,
-      };
+      // Create prompt parts
+      let parts = [
+        { text: prompt }
+      ];
       
-      // For simplicity, combine context and prompt with limited length
-      const fullPrompt = context 
-        ? `${context}\n\n${limitedPrompt}`
-        : limitedPrompt;
+      // Add context if provided
+      if (context) {
+        parts.push({ text: `\n\nAnalysis Context:\n${JSON.stringify(context, null, 2)}` });
+      }
       
-      console.log(`Generating content with ${fullPrompt.length} character prompt...`);
-      
-      const result = await model.generateContent(fullPrompt, generationConfig);
-      
-      console.log('Received response from Gemini API');
+      // Generate content
+      const result = await genModel.generateContent({
+        contents: [{ parts }],
+        generationConfig: {
+          temperature: options.temperature || 0.7,
+          topK: options.topK || 40,
+          topP: options.topP || 0.95,
+          maxOutputTokens: options.maxTokens || 1024,
+        },
+      });
       
       const response = result.response;
-      const responseText = response.text();
+      const text = response.text();
       
-      // Cache the result
-      this._saveToCache(cacheKey, responseText);
+      // Cache the result if caching is enabled
+      if (this.cacheEnabled) {
+        this._saveToCache(cacheKey, text);
+      }
       
-      return responseText;
+      return text;
     } catch (error) {
       console.error('Gemini API error:', error.message);
-      throw new Error(`Gemini API error: ${error.message}`);
+      // Enhanced error handling
+      if (error.message.includes('quota')) {
+        throw new Error('API quota exceeded. Please try again later.');
+      } else if (error.message.includes('safety')) {
+        throw new Error('Content filtered due to safety guidelines.');
+      } else {
+        throw new Error(`Gemini API error: ${error.message}`);
+      }
     }
   }
 }
