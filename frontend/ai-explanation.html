@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Explanation - PhishGuard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="footer-styles.css">
+  <style>
+    body.dark-theme {
+      padding-top: 80px;
+      padding-bottom: 80px;
+    }
+    
+    /* Header Navigation Styles */
+    .top-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      padding: 0 30px;
+      height: 60px;
+    }
+    
+    .top-header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    
+    .logo i {
+      font-size: 1.4rem;
+    }
+    
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .header-nav-item {
+      color: var(--text-primary);
+      text-decoration: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .header-nav-item:hover {
+      background-color: rgba(61, 133, 198, 0.1);
+      color: var(--primary-color);
+    }
+    
+    .header-nav-item.active {
+      color: var(--primary-color);
+      background-color: rgba(61, 133, 198, 0.1);
+    }
+    
+    /* AI Explanation Container */
+    .ai-container {
+      max-width: 1150px !important;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Ensure container width works correctly with footer */
+    body.dark-theme .ai-container {
+      max-width: 1150px !important;
+      width: 100%;
+    }
+    
+    .ai-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
+    }
+    
+    .ai-header:after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100px;
+      height: 3px;
+      background-color: var(--primary-color);
+      border-radius: 3px;
+    }
+    
+    .ai-header h1 {
+      font-size: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0;
+      color: var(--text-primary);
+    }
+    
+    .ai-header i {
+      color: var(--primary-color);
+    }
+    
+    .ai-card {
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      overflow: hidden;
+      margin-bottom: 30px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .ai-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    }
+    
+    .ai-card-header {
+      padding: 25px 30px;
+      background: linear-gradient(145deg, rgba(61, 133, 198, 0.1), rgba(0, 0, 0, 0.1));
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      position: relative;
+    }
+    
+    .ai-card-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    }
+    
+    .ai-card-header .url-badge {
+      font-family: monospace;
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 8px 15px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 60%;
+    }
+    
+    .ai-card-risk {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 6px 15px;
+      border-radius: 30px;
+      font-weight: 500;
+    }
+    
+    .ai-card-risk.high {
+      color: #f44336;
+    }
+    
+    .ai-card-risk.medium {
+      color: #ff9800;
+    }
+    
+    .ai-card-risk.low {
+      color: #4caf50;
+    }
+    
+    .ai-card-body {
+      padding: 30px;
+      position: relative;
+    }
+    
+    /* AI Content Styling */
+    .ai-content {
+      color: var(--text-primary);
+      font-size: 1rem;
+      line-height: 1.8;
+    }
+    
+    .ai-content h3 {
+      color: var(--primary-color);
+      margin-top: 25px;
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .ai-content h2 {
+      color: var(--accent-color);
+      font-size: 1.6rem;
+      margin-top: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .ai-content p {
+      margin-bottom: 15px;
+      color: var(--text-secondary);
+    }
+    
+    .ai-content ul {
+      padding-left: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .ai-content li {
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+      position: relative;
+      padding-left: 5px;
+    }
+    
+    .ai-content .highlight {
+      padding: 15px;
+      background-color: rgba(61, 133, 198, 0.1);
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color);
+      margin: 20px 0;
+    }
+    
+    .ai-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+    
+    .ai-spinner {
+      width: 80px;
+      height: 80px;
+      position: relative;
+      margin-bottom: 20px;
+    }
+    
+    .ai-spinner:before, .ai-spinner:after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 6px solid transparent;
+      border-top-color: var(--primary-color);
+    }
+    
+    .ai-spinner:before {
+      animation: spin 2s linear infinite;
+    }
+    
+    .ai-spinner:after {
+      border-top-color: var(--accent-color);
+      animation: spin 1.5s linear reverse infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .ai-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 20px;
+      overflow-x: auto;
+      padding-bottom: 1px;
+    }
+    
+    .ai-tab {
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-weight: 500;
+      position: relative;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+    }
+    
+    .ai-tab:hover {
+      color: var(--text-primary);
+    }
+    
+    .ai-tab.active {
+      color: var(--primary-color);
+    }
+    
+    .ai-tab.active:after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background-color: var(--primary-color);
+      border-radius: 3px 3px 0 0;
+    }
+    
+    .ai-panel {
+      display: none;
+    }
+    
+    .ai-panel.active {
+      display: block;
+      animation: fadeIn 0.5s;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+    
+    .btn-primary, .btn-secondary {
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+      color: white;
+      border: none;
+      box-shadow: 0 4px 10px rgba(61, 133, 198, 0.25);
+    }
+    
+    .btn-secondary {
+      background-color: rgba(0, 0, 0, 0.2);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    
+    .btn-primary:hover, .btn-secondary:hover {
+      transform: translateY(-2px);
+    }
+    
+    .btn-primary:hover {
+      box-shadow: 0 6px 15px rgba(61, 133, 198, 0.35);
+      filter: brightness(110%);
+    }
+    
+    .btn-secondary:hover {
+      background-color: rgba(0, 0, 0, 0.25);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .error-message {
+      color: var(--danger-color);
+      background-color: rgba(244, 67, 54, 0.1);
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin: 30px 0;
+    }
+    
+    .error-message i {
+      font-size: 2rem;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .ai-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      
+      .ai-card-risk {
+        margin-left: 0;
+      }
+      
+      .ai-tabs {
+        overflow-x: auto;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
+      }
+      
+      .btn-primary, .btn-secondary {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <header class="top-header">
+    <div class="top-header-content">
+      <div class="logo-container">
+        <a href="index.html" class="logo">
+          <i class="fas fa-shield-alt"></i>
+          <span>PhishGuard</span>
+        </a>
+      </div>
+      <nav class="header-nav">
+        <a href="dashboard.html" class="header-nav-item">
+          <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="analyze.html" class="header-nav-item active">
+          <i class="fas fa-search"></i> Analyze
+        </a>
+        <a href="settings.html" class="header-nav-item">
+          <i class="fas fa-cog"></i> Settings
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="ai-container">
+    <div class="ai-header">
+      <h1><i class="fas fa-robot"></i> AI Security Analysis</h1>
+      <a href="analyze.html" class="btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Analysis
+      </a>
+    </div>
+    
+    <div class="ai-card">
+      <div class="ai-card-header">
+        <i class="fas fa-link"></i>
+        <div class="url-badge" id="analyzed-url">URL: Loading...</div>
+        <div class="ai-card-risk" id="risk-level">
+          <i class="fas fa-circle-notch fa-spin"></i>
+          <span>Analyzing...</span>
+        </div>
+      </div>
+      
+      <div class="ai-tabs">
+        <button class="ai-tab active" data-panel="explanation-panel">
+          <i class="fas fa-robot"></i> AI Explanation
+        </button>
+        <button class="ai-tab" data-panel="features-panel">
+          <i class="fas fa-list-check"></i> Technical Features
+        </button>
+        <button class="ai-tab" data-panel="recommendations-panel">
+          <i class="fas fa-shield-alt"></i> Security Recommendations
+        </button>
+      </div>
+      
+      <div class="ai-card-body">
+        <!-- AI Loading Animation -->
+        <div id="ai-loading" class="ai-loading">
+          <div class="ai-spinner"></div>
+          <h3>Generating AI Analysis</h3>
+          <p>Our AI is analyzing the security characteristics of this URL...</p>
+        </div>
+        
+        <!-- AI Content Panels -->
+        <div id="ai-content">
+          <!-- Explanation Panel -->
+          <div id="explanation-panel" class="ai-panel active">
+            <div class="ai-content" id="explanation-content"></div>
+          </div>
+          
+          <!-- Features Panel -->
+          <div id="features-panel" class="ai-panel">
+            <div class="ai-content" id="features-content"></div>
+          </div>
+          
+          <!-- Recommendations Panel -->
+          <div id="recommendations-panel" class="ai-panel">
+            <div class="ai-content" id="recommendations-content"></div>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button id="copy-report" class="btn-secondary">
+            <i class="fas fa-clipboard"></i> Copy Report
+          </button>
+          <a href="analyze.html" class="btn-primary">
+            <i class="fas fa-search"></i> Analyze Another URL
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Section -->
+  <footer class="pg-footer">
+    <div class="pg-footer-container">
+      <div class="pg-footer-column">
+        <div class="pg-footer-logo">
+          <i class="fas fa-shield-alt"></i>
+          <h3>PhishGuard</h3>
+        </div>
+        <p class="pg-footer-description">
+          Protecting users against phishing attacks with advanced detection technology and security education.
+        </p>
+        <div class="pg-footer-social">
+          <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+          <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+          <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
+        </div>
+      </div>
+      
+      <div class="pg-footer-column pg-footer-links">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+          <li><a href="analyze.html"><i class="fas fa-search"></i> URL Analysis</a></li>
+          <li><a href="reports.html"><i class="fas fa-flag"></i> Reports</a></li>
+          <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+        </ul>
+      </div>
+      
+      <div class="pg-footer-column pg-footer-links">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="education.html"><i class="fas fa-book"></i> Phishing Education</a></li>
+          <li><a href="password-health.html"><i class="fas fa-key"></i> Password Health</a></li>
+          <li><a href="#"><i class="fas fa-question-circle"></i> Help Center</a></li>
+          <li><a href="#"><i class="fas fa-file-alt"></i> Blog</a></li>
+        </ul>
+      </div>
+      
+      <div class="pg-footer-column pg-footer-links">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#"><i class="fas fa-shield-alt"></i> Privacy Policy</a></li>
+          <li><a href="#"><i class="fas fa-gavel"></i> Terms of Service</a></li>
+          <li><a href="#"><i class="fas fa-cookie"></i> Cookie Policy</a></li>
+          <li><a href="#"><i class="fas fa-id-card"></i> Contact Us</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="pg-footer-copyright">
+      <p>&copy; 2025 PhishGuard</p>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check if user is logged in
+      const token = localStorage.getItem('phishguardToken');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      // Get analysis data from session storage
+      const analysisData = JSON.parse(sessionStorage.getItem('analysisData'));
+      if (!analysisData) {
+        showError('No analysis data found. Please analyze a URL first.');
+        return;
+      }
+      
+      // Set URL and risk level in header
+      document.getElementById('analyzed-url').textContent = analysisData.url;
+      
+      const riskLevel = document.getElementById('risk-level');
+      const riskScore = analysisData.result.risk_score;
+      
+      if (riskScore > 60 || analysisData.result.is_phishing) {
+        riskLevel.className = 'ai-card-risk high';
+        riskLevel.innerHTML = '<i class="fas fa-exclamation-triangle"></i> High Risk';
+      } else if (riskScore > 30) {
+        riskLevel.className = 'ai-card-risk medium';
+        riskLevel.innerHTML = '<i class="fas fa-exclamation-circle"></i> Medium Risk';
+      } else {
+        riskLevel.className = 'ai-card-risk low';
+        riskLevel.innerHTML = '<i class="fas fa-check-circle"></i> Low Risk';
+      }
+      
+      // Tab switching
+      const tabs = document.querySelectorAll('.ai-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Remove active class from all tabs
+          tabs.forEach(t => t.classList.remove('active'));
+          // Add active class to clicked tab
+          tab.classList.add('active');
+          
+          // Hide all panels
+          document.querySelectorAll('.ai-panel').forEach(panel => {
+            panel.classList.remove('active');
+          });
+          
+          // Show the selected panel
+          const panelId = tab.getAttribute('data-panel');
+          document.getElementById(panelId).classList.add('active');
+        });
+      });
+      
+      // Copy report functionality
+      document.getElementById('copy-report').addEventListener('click', () => {
+        const reportText = document.querySelector('.ai-panel.active .ai-content').innerText;
+        navigator.clipboard.writeText(reportText)
+          .then(() => {
+            const btn = document.getElementById('copy-report');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            setTimeout(() => {
+              btn.innerHTML = originalText;
+            }, 2000);
+          })
+          .catch(err => {
+            console.error('Failed to copy: ', err);
+            alert('Failed to copy to clipboard');
+          });
+      });
+      
+      // Get AI explanation from the server
+      getAiExplanation(analysisData);
+    });
+    
+    async function getAiExplanation(analysisData) {
+      const aiLoading = document.getElementById('ai-loading');
+      const aiContent = document.getElementById('ai-content');
+      
+      aiLoading.style.display = 'flex';
+      aiContent.style.display = 'none';
+      
+      try {
+        // Call AI explanation API
+        const response = await fetch('/api/ai/explain', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': localStorage.getItem('phishguardToken')
+          },
+          body: JSON.stringify({
+            url: analysisData.url,
+            analysisResult: analysisData.result,
+            features: analysisData.features
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        // Hide loading, show content
+        aiLoading.style.display = 'none';
+        aiContent.style.display = 'block';
+        
+        // Update explanation panel
+        document.getElementById('explanation-content').innerHTML = result.explanation;
+        
+        // Create features panel content
+        const featuresContent = document.getElementById('features-content');
+        featuresContent.innerHTML = createFeaturesHTML(analysisData.features);
+        
+        // Create recommendations panel
+        const recommendationsContent = document.getElementById('recommendations-content');
+        recommendationsContent.innerHTML = createRecommendationsHTML(result, analysisData.result.risk_score);
+        
+      } catch (error) {
+        console.error('AI explanation error:', error);
+        aiLoading.style.display = 'none';
+        showError(`Failed to generate AI explanation: ${error.message}`);
+      }
+    }
+    
+    function createFeaturesHTML(features) {
+      if (!features || Object.keys(features).length === 0) {
+        return '<p>No technical features available for this URL.</p>';
+      }
+      
+      let html = `
+        <h2>Technical Analysis Features</h2>
+        <p>These are the technical characteristics extracted from the URL that were used in the security analysis:</p>
+        <div class="highlight">
+          <strong>Note:</strong> This is technical information that shows what our detection system analyzed.
+        </div>
+        <table style="width:100%; border-collapse: collapse; margin: 20px 0;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <th style="text-align: left; padding: 10px; color: var(--primary-color);">Feature</th>
+              <th style="text-align: left; padding: 10px; color: var(--primary-color);">Value</th>
+              <th style="text-align: left; padding: 10px; color: var(--primary-color);">Security Impact</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      // Feature descriptions for common features
+      const featureDescriptions = {
+        domain_in_ip: "URL uses numeric IP instead of domain name",
+        tls_ssl_certificate: "Site has a valid security certificate",
+        url_shortened: "URL has been shortened",
+        domain_google_index: "Domain is indexed by search engines",
+        url_google_index: "Specific page is indexed by search engines",
+        time_domain_activation: "Domain age in days",
+        qty_dots_url: "Number of dots in the URL",
+        qty_hyphens_url: "Number of hyphens in the URL",
+        length_url: "Total URL length",
+        qty_at_url: "Contains @ symbol in URL",
+        qty_redirects: "Number of redirects",
+        domain_spf: "Domain has email security configured",
+        qty_mx_servers: "Number of mail exchange servers",
+        qty_nameservers: "Number of DNS nameservers"
+      };
+      
+      // Security impact assessments
+      function getSecurityImpact(feature, value) {
+        if (feature === 'domain_in_ip' && value === 1) 
+          return '<span style="color:#f44336">HIGH RISK - IP-based URLs are commonly used in phishing</span>';
+        if (feature === 'tls_ssl_certificate' && value === 0) 
+          return '<span style="color:#f44336">HIGH RISK - Missing HTTPS security</span>';
+        if (feature === 'url_shortened' && value === 1) 
+          return '<span style="color:#f44336">HIGH RISK - Shortening hides true destination</span>';
+        if (feature === 'domain_google_index' && value === 0) 
+          return '<span style="color:#ff9800">MEDIUM RISK - Non-indexed domains are suspicious</span>';
+        if (feature === 'time_domain_activation' && value < 30) 
+          return '<span style="color:#ff9800">MEDIUM RISK - Very new domain</span>';
+        if (feature === 'qty_redirects' && value > 1) 
+          return '<span style="color:#ff9800">MEDIUM RISK - Multiple redirects can mask destination</span>';
+        if (feature === 'length_url' && value > 75) 
+          return '<span style="color:#ff9800">MEDIUM RISK - Excessively long URL</span>';
+        if (feature === 'qty_at_url' && value > 0) 
+          return '<span style="color:#f44336">HIGH RISK - @ symbol can be used to obfuscate</span>';
+          
+        return '<span style="color:#4caf50">LOW IMPACT</span>';
+      }
+      
+      // Add rows for each feature
+      for (const feature in features) {
+        const value = features[feature];
+        const description = featureDescriptions[feature] || feature.replace(/_/g, ' ');
+        const impact = getSecurityImpact(feature, value);
+        
+        html += `
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <td style="padding: 10px; font-weight: 500;">${description}</td>
+            <td style="padding: 10px; font-family: monospace;">${value}</td>
+            <td style="padding: 10px;">${impact}</td>
+          </tr>
+        `;
+      }
+      
+      html += `
+          </tbody>
+        </table>
+        <p>These features were analyzed by our machine learning model to determine the risk level of this URL.</p>
+      `;
+      
+      return html;
+    }
+    
+    function createRecommendationsHTML(result, riskScore) {
+      const isHighRisk = riskScore > 60;
+      const isMediumRisk = riskScore > 30;
+      
+      let html = `<h2>Security Recommendations</h2>`;
+      
+      if (isHighRisk) {
+        html += `
+          <div class="highlight" style="border-left-color: #f44336;">
+            <strong>WARNING:</strong> This URL has been classified as high risk. We strongly recommend avoiding this website.
+          </div>
+          
+          <h3>Recommended Actions</h3>
+          <ul>
+            <li>Do not enter any personal information or credentials on this website</li>
+            <li>Do not download files or install software from this site</li>
+            <li>If you clicked on this URL from an email, report it as phishing to your email provider</li>
+            <li>If you've already entered sensitive information, change your passwords immediately</li>
+            <li>Consider running a malware scan on your device</li>
+          </ul>
+          
+          <h3>Why This Matters</h3>
+          <p>Phishing websites are designed to steal your personal information, account credentials, or financial details. They often appear legitimate but are actually sophisticated scams.</p>
+        `;
+      } else if (isMediumRisk) {
+        html += `
+          <div class="highlight" style="border-left-color: #ff9800;">
+            <strong>CAUTION:</strong> This URL has some suspicious characteristics. Proceed with caution if you choose to visit it.
+          </div>
+          
+          <h3>Recommended Actions</h3>
+          <ul>
+            <li>Verify the website's legitimacy through other channels before sharing sensitive information</li>
+            <li>Check for secure connection (HTTPS) before entering any credentials</li>
+            <li>Be alert for unusual behavior, poor design, or grammatical errors</li>
+            <li>Consider using a browser extension that offers additional protection</li>
+          </ul>
+          
+          <h3>Why This Matters</h3>
+          <p>Medium risk sites aren't definitively malicious but show enough suspicious characteristics to warrant caution. They could be legitimate sites with poor security practices or potential phishing attempts.</p>
+        `;
+      } else {
+        html += `
+          <div class="highlight" style="border-left-color: #4caf50;">
+            <strong>LOW RISK:</strong> Our analysis indicates this URL is likely safe, but always practice general web safety.
+          </div>
+          
+          <h3>Recommended Actions</h3>
+          <ul>
+            <li>Follow standard web safety practices even on seemingly safe sites</li>
+            <li>Ensure the connection is secure (HTTPS) before entering sensitive information</li>
+            <li>Keep your browser and security software updated</li>
+            <li>Use unique passwords for different websites</li>
+          </ul>
+          
+          <h3>Why This Matters</h3>
+          <p>Even seemingly safe websites can have vulnerabilities or could be compromised in the future. Maintaining good security habits protects you across all websites you visit.</p>
+        `;
+      }
+      
+      html += `
+        <h3>General Web Safety Tips</h3>
+        <ul>
+          <li>Use a password manager to generate and store unique passwords</li>
+          <li>Enable two-factor authentication when available</li>
+          <li>Regularly update your operating system and applications</li>
+          <li>Be cautious about clicking on links in emails or messages</li>
+          <li>Check website URLs carefully before entering sensitive information</li>
+        </ul>
+      `;
+      
+      return html;
+    }
+    
+    function showError(message) {
+      document.getElementById('ai-loading').style.display = 'none';
+      document.getElementById('ai-content').innerHTML = `
+        <div class="error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          <div>
+            <h3>Error</h3>
+            <p>${message}</p>
+            <p>Please try again later or contact support if this problem persists.</p>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <a href="analyze.html" class="btn-primary">
+            <i class="fas fa-search"></i> Back to Analysis
+          </a>
+        </div>
+      `;
+      document.getElementById('ai-content').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

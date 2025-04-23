@@ -900,121 +900,6 @@
       line-height: 1.6;
       padding-left: 65px;
     }
-
-    /* Modal Styles */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1050;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(5px);
-    }
-
-    .modal-content {
-      background-color: var(--card-bg);
-      margin: 5% auto;
-      border-radius: 16px;
-      width: 80%;
-      max-width: 800px;
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
-      animation: modalFadeIn 0.3s;
-      border: 1px solid var(--border-color);
-      max-height: 85vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    @keyframes modalFadeIn {
-      from {opacity: 0; transform: translateY(-30px);}
-      to {opacity: 1; transform: translateY(0);}
-    }
-
-    .modal-header {
-      padding: 20px 30px;
-      border-bottom: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .modal-header h2 {
-      margin: 0;
-      color: var(--primary-color);
-      font-size: 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .close-modal {
-      color: var(--text-secondary);
-      font-size: 1.8rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .close-modal:hover {
-      color: var(--danger-color);
-    }
-
-    .modal-body {
-      padding: 30px;
-      overflow-y: auto;
-    }
-
-    /* AI Content Styling */
-    .ai-content {
-      color: var(--text-primary);
-      font-size: 1rem;
-      line-height: 1.8;
-    }
-
-    .ai-content h3 {
-      color: var(--primary-color);
-      margin-top: 25px;
-      margin-bottom: 15px;
-      font-size: 1.3rem;
-    }
-
-    .ai-content p {
-      margin-bottom: 15px;
-      color: var(--text-secondary);
-    }
-
-    .ai-content ul {
-      padding-left: 20px;
-      margin-bottom: 20px;
-    }
-
-    .ai-content li {
-      margin-bottom: 8px;
-      color: var(--text-secondary);
-    }
-
-    .ai-content .highlight {
-      padding: 15px;
-      background-color: rgba(61, 133, 198, 0.1);
-      border-radius: 8px;
-      border-left: 4px solid var(--primary-color);
-      margin: 20px 0;
-    }
-
-    #ai-loading {
-      text-align: center;
-      padding: 30px;
-      color: var(--text-secondary);
-    }
-
-    .ai-spinner {
-      font-size: 3rem;
-      color: var(--primary-color);
-      margin-bottom: 20px;
-    }
   </style>
   <link rel="stylesheet" href="footer-styles.css">
 </head>
@@ -1155,9 +1040,9 @@
             <button id="new-analysis" class="btn-new-analysis">
               <i class="fas fa-redo-alt"></i> New Analysis
             </button>
-            <button id="ai-explanation" class="btn-view-details">
+            <a href="ai-explanation.html" id="ai-explanation" class="btn-view-details">
               <i class="fas fa-robot"></i> AI Explanation
-            </button>
+            </a>
           </div>
         </div>
       </div>
@@ -1175,25 +1060,6 @@
           <h3>Stay Protected Online</h3>
           <p>Always verify website URLs before entering sensitive information. Look for HTTPS, check domain names carefully, and be cautious with unfamiliar sites.</p>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- AI Explanation Modal -->
-  <div id="ai-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2><i class="fas fa-robot"></i> AI Phishing Analysis</h2>
-        <span class="close-modal">&times;</span>
-      </div>
-      <div class="modal-body">
-        <div id="ai-loading">
-          <div class="ai-spinner">
-            <i class="fas fa-circle-notch fa-spin"></i>
-          </div>
-          <p>Generating AI explanation...</p>
-        </div>
-        <div id="ai-content" class="ai-content"></div>
       </div>
     </div>
   </div>
@@ -1540,83 +1406,15 @@
       });
     });
 
-    document.addEventListener('DOMContentLoaded', function() {
-      // AI explanation button
-      const aiExplanationBtn = document.getElementById('ai-explanation');
-      const aiModal = document.getElementById('ai-modal');
-      const closeModal = document.querySelector('.close-modal');
-      const aiLoading = document.getElementById('ai-loading');
-      const aiContent = document.getElementById('ai-content');
+    document.getElementById('ai-explanation').addEventListener('click', (event) => {
+      event.preventDefault();
       
-      // Event listeners for modal
-      aiExplanationBtn.addEventListener('click', () => {
-        openAiModal();
-      });
-      
-      closeModal.addEventListener('click', () => {
-        aiModal.style.display = 'none';
-      });
-      
-      window.addEventListener('click', (event) => {
-        if (event.target === aiModal) {
-          aiModal.style.display = 'none';
-        }
-      });
-      
-      // Function to get AI explanation
-      async function openAiModal() {
-        // Show modal with loading state
-        aiModal.style.display = 'block';
-        aiLoading.style.display = 'block';
-        aiContent.style.display = 'none';
-        aiContent.innerHTML = '';
-        
-        try {
-          // Get analysis data from session storage
-          const analysisData = JSON.parse(sessionStorage.getItem('analysisData'));
-          
-          if (!analysisData) {
-            throw new Error('No analysis data found');
-          }
-          
-          // Call AI explanation API
-          const response = await fetch('/api/ai/explain', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-auth-token': localStorage.getItem('phishguardToken')
-            },
-            body: JSON.stringify({
-              url: analysisData.url,
-              analysisResult: analysisData.result,
-              features: analysisData.features
-            })
-          });
-          
-          if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
-          }
-          
-          const result = await response.json();
-          
-          // Hide loading, show content
-          aiLoading.style.display = 'none';
-          aiContent.style.display = 'block';
-          aiContent.innerHTML = result.explanation;
-          
-        } catch (error) {
-          console.error('AI explanation error:', error);
-          aiLoading.style.display = 'none';
-          aiContent.style.display = 'block';
-          aiContent.innerHTML = `
-            <div class="error-message">
-              <i class="fas fa-exclamation-circle"></i>
-              <span>Failed to generate AI explanation: ${error.message}</span>
-            </div>
-            <p>Please try again later or contact support if this problem persists.</p>
-          `;
-        }
+      if (!sessionStorage.getItem('analysisData')) {
+        alert('Please analyze a URL first');
+        return;
       }
+      
+      window.location.href = 'ai-explanation.html';
     });
   </script>
 </body>
