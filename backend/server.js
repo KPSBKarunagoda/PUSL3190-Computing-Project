@@ -50,6 +50,9 @@ app.get('/api/debug', (req, res) => {
 // Setup static file serving for frontend
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
+// Setup static file serving for admin dashboard
+app.use('/admin', express.static(path.join(__dirname, '..', 'admin')));
+
 // Add login-specific rate limiting with more generous limits
 const loginLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes instead of 15
