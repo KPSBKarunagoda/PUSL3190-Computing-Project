@@ -1040,9 +1040,6 @@
             <button id="new-analysis" class="btn-new-analysis">
               <i class="fas fa-redo-alt"></i> New Analysis
             </button>
-            <a id="view-details" href="analysis-details.html" class="btn-view-details">
-              <i class="fas fa-chart-bar"></i> View Detailed Analysis
-            </a>
           </div>
         </div>
       </div>
@@ -1145,7 +1142,6 @@
       const recommendationText = document.getElementById('recommendation-text');
       const findingsCards = document.getElementById('findings-cards');
       const newAnalysisButton = document.getElementById('new-analysis');
-      const viewDetailsButton = document.getElementById('view-details');
       
       // URL validation function
       function isValidUrl(url) {
@@ -1305,21 +1301,31 @@
         container.innerHTML = '<div class="loading-findings">Loading key findings...</div>';
         
         try {
-          // Call the backend API for key findings
+          console.log('Requesting key findings for URL:', url);
+          
+          // Call the backend API for key findings with proper URL
           const response = await fetch('/api/education/key-findings', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'x-auth-token': localStorage.getItem('phishguardToken') // Add auth token for authenticated requests
             },
             body: JSON.stringify({ url, analysisResult: result })
           });
           
+          console.log('Key findings response status:', response.status);
+          
           if (!response.ok) {
-            throw new Error('Failed to fetch key findings');
+            const errorText = await response.text();
+            console.error('Key findings API error:', response.status, errorText);
+            throw new Error(`Failed to fetch key findings: ${response.status} ${errorText}`);
           }
           
           const data = await response.json();
+          console.log('Key findings retrieved successfully:', data);
+          
           const findings = data.findings || [];
+          console.log(`Displaying ${findings.length} key findings`);
           
           // Clear the container
           container.innerHTML = '';

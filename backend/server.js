@@ -92,10 +92,50 @@ async function initializeServer() {
     const reportsRouter = require('./routes/reports');
     const adminReportsRouter = require('./routes/admin-reports');
     
-    // Set up each route with appropriate error handling
+    // Debug log for education router
+    console.log('Education router loaded:', educationRouter ? 'Yes' : 'No');
+    
+    // Mount routes with proper logging for setup
+    console.log('Setting up /api/education route');
+    app.use('/api/education', educationRouter);
+    console.log('Education router mounted at /api/education');
+    
+    // Add direct key-findings endpoint to server.js for redundancy
+    // This ensures the endpoint works even if the router has issues
+    app.post('/api/education/key-findings', async (req, res) => {
+      console.log('Direct key-findings endpoint called');
+      try {
+        const { url, analysisResult } = req.body;
+        
+        if (!url || !analysisResult) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Missing required data - URL and analysis result are required' 
+          });
+        }
+        
+        // Create an educational service instance
+        const educationService = new (require('./services/education-service'))();
+        
+        // Generate findings
+        const findings = educationService.generateKeyFindings(analysisResult, url);
+        console.log(`Generated ${findings.length} key findings directly`);
+        
+        return res.json({
+          success: true,
+          findings
+        });
+      } catch (error) {
+        console.error('Error generating key findings:', error);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Failed to generate key findings' 
+        });
+      }
+    });
+    
     setupRoute('/api/auth', authRouter);
     setupRoute('/api/lists', listRouter);
-    setupRoute('/api/education', educationRouter);
     setupRoute('/api/admin', adminRouter);
     setupRoute('/api/user', userRouter);
     setupRoute('/api/votes', votesRouter);
@@ -187,41 +227,12 @@ async function initializeServer() {
       }
     });
 
-    // Add direct key-findings endpoint to server.js
-    app.post('/api/education/key-findings', async (req, res) => {
-      try {
-        const { url, analysisResult } = req.body;
-        
-        if (!url || !analysisResult) {
-          return res.status(400).json({ 
-            success: false, 
-            error: 'Missing required data - URL and analysis result are required' 
-          });
-        }
-        
-        // Create an educational service instance
-        const educationService = new (require('./services/education-service'))();
-        
-        // Generate findings
-        const findings = educationService.generateKeyFindings(analysisResult, url);
-        
-        return res.json({
-          success: true,
-          findings
-        });
-      } catch (error) {
-        console.error('Error generating key findings:', error);
-        return res.status(500).json({ 
-          success: false, 
-          error: 'Failed to generate key findings' 
-        });
-      }
-    });
-
     // Start the server
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
+      console.log(`✅ API routes configured:`);
+      console.log(`   - /api/education/key-findings`);
     });
   } catch (error) {
     console.error('Error setting up routes:', error);
