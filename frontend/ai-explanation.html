@@ -611,20 +611,26 @@
     
     .feature-learn-more {
       margin-top: 10px;
-      font-size: 0.85rem;
+      text-align: right;
     }
     
     .feature-learn-more a {
       color: var(--primary-color);
       text-decoration: none;
+      background: rgba(61, 133, 198, 0.1);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      transition: all 0.2s;
+      justify-content: center;
+      transition: all 0.2s ease;
     }
     
     .feature-learn-more a:hover {
-      text-decoration: underline;
+      background: rgba(61, 133, 198, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
     }
     
     .feature-empty {
@@ -707,6 +713,154 @@
       margin-top: 5px;
       font-size: 0.8rem;
       color: var(--text-tertiary);
+    }
+    
+    /* Enhanced Recommendations Tab Styling */
+    .recommendations-list {
+      margin-top: 25px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+    }
+    
+    .recommendation-item {
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.05));
+      border-radius: 12px;
+      padding: 20px;
+      border-left: 5px solid var(--primary-color);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .recommendation-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .recommendation-item.high-priority {
+      border-left-color: #f44336;
+    }
+    
+    .recommendation-item.medium-priority {
+      border-left-color: #ff9800;
+    }
+    
+    .recommendation-item.low-priority {
+      border-left-color: #4caf50;
+    }
+    
+    .recommendation-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle at top right, rgba(255,255,255,0.05), transparent);
+      border-radius: 0 0 0 100%;
+    }
+    
+    .recommendation-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .recommendation-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-color);
+      font-size: 1.2rem;
+      flex-shrink: 0;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .recommendation-item.high-priority .recommendation-icon {
+      color: #f44336;
+      background-color: rgba(244, 67, 54, 0.15);
+    }
+    
+    .recommendation-item.medium-priority .recommendation-icon {
+      color: #ff9800;
+      background-color: rgba(255, 152, 0, 0.15);
+    }
+    
+    .recommendation-item.low-priority .recommendation-icon {
+      color: #4caf50;
+      background-color: rgba(76, 175, 80, 0.15);
+    }
+    
+    .recommendation-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      margin: 0;
+      line-height: 1.3;
+    }
+    
+    .recommendation-content {
+      color: var(--text-secondary);
+      margin-left: 55px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    
+    .recommendation-actions {
+      margin-top: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-left: 55px;
+      padding-top: 12px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+    
+    .recommendation-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background-color: rgba(0, 0, 0, 0.2);
+      color: var(--text-primary);
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .recommendation-action-btn:hover {
+      background-color: rgba(61, 133, 198, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .recommendation-section-intro {
+      background: rgba(0, 0, 0, 0.07);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 25px;
+      border-left: 4px solid var(--accent-color);
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+    }
+    
+    .recommendation-section-intro i {
+      font-size: 1.8rem;
+      color: var(--accent-color);
+      margin-top: 2px;
+    }
+    
+    .recommendation-section-intro p {
+      margin: 0;
     }
   </style>
   <!-- Add jsPDF library for PDF generation -->
@@ -995,7 +1149,6 @@
         `;
       }
       
-      // Completely overhauled createFeaturesHTML function
       function createFeaturesHTML(features) {
         if (!features || Object.keys(features).length === 0) {
           return `
@@ -1007,15 +1160,15 @@
           `;
         }
         
-        // Enhanced feature information with user-friendly descriptions
+        // Enhanced feature information with more concise descriptions
         const featureInfo = {
           domain_in_ip: {
             name: "IP Address Instead of Domain",
-            description: "Shows whether the URL uses a numeric IP address (like 192.168.1.1) instead of a domain name (like example.com)",
-            explanation: "Legitimate websites almost always use domain names rather than raw IP addresses. Sites using IP addresses directly are often temporary and suspicious.",
+            description: "Shows if the URL uses IP address (192.168.1.1) instead of domain (example.com)",
+            explanation: "Legitimate websites almost always use domain names rather than raw IP addresses.",
             getImpact: (value) => value ? 
-              { level: "high", text: "High Risk - Legitimate websites rarely use IP addresses directly" } : 
-              { level: "low", text: "Low Risk - Uses a proper domain name" },
+              { level: "high", text: "High Risk - Legitimate sites rarely use IP addresses" } : 
+              { level: "low", text: "Low Risk - Uses proper domain name" },
             valueLabel: "IP-based:",
             formatValue: (v) => v ? "Yes" : "No",
             icon: "fa-globe",
@@ -1023,11 +1176,11 @@
           },
           tls_ssl_certificate: {
             name: "HTTPS Encryption",
-            description: "Shows if the website uses secure HTTPS encryption to protect your data",
-            explanation: "HTTPS encryption protects your data during transmission and is an indicator of site legitimacy.",
+            description: "Shows if the site uses secure HTTPS encryption",
+            explanation: "HTTPS encryption protects your data during transmission.",
             getImpact: (value) => value ? 
-              { level: "positive", text: "Positive - Site uses HTTPS encryption" } : 
-              { level: "negative", text: "Negative - Site lacks encryption, making your data vulnerable" },
+              { level: "positive", text: "Positive - Uses HTTPS encryption" } : 
+              { level: "negative", text: "Negative - Site lacks encryption" },
             valueLabel: "HTTPS:",
             formatValue: (v) => v ? "Yes" : "No",
             icon: "fa-lock",
@@ -1035,13 +1188,13 @@
           },
           time_domain_activation: {
             name: "Domain Age",
-            description: "How long the domain has been registered, measured in days",
-            explanation: "New domains (less than 30 days old) are more likely to be used for phishing than established domains.",
+            description: "How long the domain has been registered",
+            explanation: "New domains (< 30 days) are more likely to be used for phishing.",
             getImpact: (value) => value < 30 ? 
-              { level: "high", text: "High Risk - Very new domain (less than 30 days old)" } : 
+              { level: "high", text: "High Risk - Very new domain (< 30 days)" } : 
               value < 90 ? 
-              { level: "medium", text: "Medium Risk - Relatively new domain (less than 3 months old)" } : 
-              { level: "low", text: "Low Risk - Established domain (more than 3 months old)" },
+              { level: "medium", text: "Medium Risk - Relatively new domain" } : 
+              { level: "low", text: "Low Risk - Established domain" },
             valueLabel: "Age:",
             formatValue: (v) => v === 1 ? "1 day" : `${v} days`,
             icon: "fa-calendar-alt",
@@ -1049,11 +1202,11 @@
           },
           domain_google_index: {
             name: "Google Indexing (Domain)",
-            description: "Indicates whether Google has indexed the domain (shown in search results)",
-            explanation: "Legitimate domains are typically indexed by Google. Phishing sites often avoid detection by staying out of search indexes.",
+            description: "Whether Google has indexed this domain",
+            explanation: "Legitimate domains are typically indexed by search engines.",
             getImpact: (value) => value ? 
-              { level: "positive", text: "Positive - Domain is indexed by Google, suggesting it's established" } : 
-              { level: "negative", text: "Negative - Domain isn't indexed by Google, which is unusual for legitimate sites" },
+              { level: "positive", text: "Positive - Domain is indexed by Google" } : 
+              { level: "negative", text: "Negative - Domain not indexed" },
             valueLabel: "Indexed:",
             formatValue: (v) => v ? "Yes" : "No",
             icon: "fa-search",
@@ -1061,11 +1214,11 @@
           },
           url_google_index: {
             name: "Google Indexing (Page)",
-            description: "Indicates whether this specific page has been indexed by Google",
-            explanation: "Pages that haven't been indexed by Google may be too new or intentionally hidden.",
+            description: "Whether this specific page has been indexed by Google",
+            explanation: "Non-indexed pages may be new or intentionally hidden.",
             getImpact: (value) => value ? 
-              { level: "positive", text: "Positive - This specific page is indexed by Google" } : 
-              { level: "negative", text: "Negative - This page isn't indexed by Google" },
+              { level: "positive", text: "Positive - Page is indexed" } : 
+              { level: "negative", text: "Negative - Page not indexed" },
             valueLabel: "Indexed:",
             formatValue: (v) => v ? "Yes" : "No",
             icon: "fa-search",
@@ -1073,11 +1226,11 @@
           },
           qty_dot_url: {
             name: "Dots in URL",
-            description: "The number of dots (periods) in the URL",
-            explanation: "While legitimate URLs contain dots, an unusually high number can indicate deception or subdomains designed to confuse users.",
+            description: "Number of dots (periods) in the URL",
+            explanation: "High dot count may indicate deceptive subdomains.",
             getImpact: (value) => value > 5 ? 
-              { level: "medium", text: "Medium Risk - Excessive dots may indicate subdomains used to mimic legitimate URLs" } : 
-              { level: "low", text: "Low Risk - Normal number of dots" },
+              { level: "medium", text: "Medium Risk - Excessive dots" } : 
+              { level: "low", text: "Low Risk - Normal dot count" },
             valueLabel: "Count:",
             formatValue: (v) => v.toString(),
             icon: "fa-ellipsis-h",
@@ -1085,11 +1238,11 @@
           },
           qty_hyphen_url: {
             name: "Hyphens in URL",
-            description: "The number of hyphens (-) in the URL",
-            explanation: "Excessive hyphens in a URL can be a sign of a deceptive website trying to mimic a legitimate domain.",
+            description: "Number of hyphens (-) in the URL",
+            explanation: "Excessive hyphens may indicate a deceptive website.",
             getImpact: (value) => value > 3 ? 
-              { level: "medium", text: "Medium Risk - Multiple hyphens may indicate a suspicious URL" } : 
-              { level: "low", text: "Low Risk - Normal use of hyphens" },
+              { level: "medium", text: "Medium Risk - Multiple hyphens" } : 
+              { level: "low", text: "Low Risk - Normal hyphen use" },
             valueLabel: "Count:",
             formatValue: (v) => v.toString(),
             icon: "fa-minus",
@@ -1097,23 +1250,23 @@
           },
           length_url: {
             name: "URL Length",
-            description: "The total character length of the URL",
-            explanation: "Very long URLs can be used to hide the true destination or to make the URL difficult to analyze.",
+            description: "Total character length of the URL",
+            explanation: "Long URLs may hide suspicious elements.",
             getImpact: (value) => value > 75 ? 
-              { level: "medium", text: "Medium Risk - Unusually long URL which may be hiding suspicious elements" } : 
+              { level: "medium", text: "Medium Risk - Unusually long URL" } : 
               { level: "low", text: "Low Risk - Normal URL length" },
             valueLabel: "Length:",
-            formatValue: (v) => `${v} characters`,
+            formatValue: (v) => `${v} chars`,
             icon: "fa-text-width",
             learnMoreUrl: "https://www.phishing.org/phishing-techniques"
           },
           qty_at_url: {
             name: "@ Symbols in URL",
-            description: "The number of @ symbols in the URL",
-            explanation: "The @ symbol in URLs can be used to override the domain to the left of it, redirecting to a malicious site.",
+            description: "Number of @ symbols in the URL",
+            explanation: "@ symbol can redirect to malicious sites.",
             getImpact: (value) => value > 0 ? 
-              { level: "high", text: "High Risk - @ symbol in URL is a major phishing indicator" } : 
-              { level: "low", text: "Low Risk - No @ symbols in URL" },
+              { level: "high", text: "High Risk - @ symbol detected" } : 
+              { level: "low", text: "Low Risk - No @ symbols" },
             valueLabel: "Count:",
             formatValue: (v) => v.toString(),
             icon: "fa-at",
@@ -1121,10 +1274,10 @@
           },
           qty_redirects: {
             name: "URL Redirects",
-            description: "The number of redirects before reaching the final URL",
-            explanation: "Multiple redirects can be used to mask the true destination of a URL, making it harder to identify phishing attempts.",
+            description: "Number of redirects before reaching final URL",
+            explanation: "Multiple redirects may mask true destination.",
             getImpact: (value) => value > 1 ? 
-              { level: "medium", text: "Medium Risk - Multiple redirects may hide the true destination" } : 
+              { level: "medium", text: "Medium Risk - Multiple redirects" } : 
               { level: "low", text: "Low Risk - Minimal redirects" },
             valueLabel: "Count:",
             formatValue: (v) => v.toString(),
@@ -1133,11 +1286,11 @@
           },
           qty_mx_servers: {
             name: "Mail Servers",
-            description: "The number of mail exchange (MX) servers for the domain",
-            explanation: "MX records direct email to a domain's mail servers. Legitimate business websites typically have email infrastructure.",
+            description: "Number of mail exchange (MX) servers",
+            explanation: "Legitimate businesses typically have email servers.",
             getImpact: (value) => value === 0 ? 
-              { level: "medium", text: "Medium Risk - Legitimate businesses typically have email capabilities" } : 
-              { level: "low", text: "Low Risk - Domain has email capabilities" },
+              { level: "medium", text: "Medium Risk - No email capability" } : 
+              { level: "low", text: "Low Risk - Has email servers" },
             valueLabel: "Count:",
             formatValue: (v) => v.toString(),
             icon: "fa-envelope",
@@ -1145,11 +1298,11 @@
           },
           qty_nameservers: {
             name: "DNS Nameservers",
-            description: "The number of DNS nameservers for the domain",
-            explanation: "Nameservers translate domain names to IP addresses. Legitimate websites typically have multiple nameservers for reliability.",
+            description: "Number of DNS nameservers for the domain",
+            explanation: "Legitimate sites have multiple nameservers.",
             getImpact: (value) => value < 2 ? 
-              { level: "medium", text: "Medium Risk - Few nameservers may indicate poor configuration" } : 
-              { level: "low", text: "Low Risk - Properly configured nameservers" },
+              { level: "medium", text: "Medium Risk - Few nameservers" } : 
+              { level: "low", text: "Low Risk - Proper configuration" },
             valueLabel: "Count:",
             formatValue: (v) => v.toString(),
             icon: "fa-server",
@@ -1157,11 +1310,11 @@
           },
           domain_spf: {
             name: "Email Security (SPF)",
-            description: "Whether the domain has SPF records configured to prevent email spoofing",
-            explanation: "SPF records help prevent email spoofing, where attackers send emails pretending to be from your domain.",
+            description: "Has SPF records to prevent email spoofing",
+            explanation: "SPF helps prevent attackers from sending emails as your domain.",
             getImpact: (value) => value ? 
-              { level: "positive", text: "Positive - Domain has SPF email security" } : 
-              { level: "negative", text: "Negative - Domain lacks SPF email security" },
+              { level: "positive", text: "Positive - Has SPF security" } : 
+              { level: "negative", text: "Negative - No SPF protection" },
             valueLabel: "SPF:",
             formatValue: (v) => v ? "Yes" : "No",
             icon: "fa-envelope-open",
@@ -1169,11 +1322,11 @@
           },
           url_shortened: {
             name: "URL Shortening",
-            description: "Indicates if this is a shortened URL (bit.ly, tinyurl, etc.)",
-            explanation: "URL shorteners hide the actual destination, making it impossible to see where a link leads before clicking.",
+            description: "Whether this is a shortened URL (bit.ly, etc.)",
+            explanation: "URL shorteners hide the actual destination.",
             getImpact: (value) => value ? 
-              { level: "high", text: "High Risk - Shortened URLs hide the true destination" } : 
-              { level: "low", text: "Low Risk - Not a shortened URL" },
+              { level: "high", text: "High Risk - Shortened URL" } : 
+              { level: "low", text: "Low Risk - Not shortened" },
             valueLabel: "Shortened:",
             formatValue: (v) => v ? "Yes" : "No",
             icon: "fa-link",
@@ -1314,8 +1467,8 @@
                 </div>
                 ${info.learnMoreUrl ? `
                   <div class="feature-learn-more">
-                    <a href="${info.learnMoreUrl}" target="_blank">
-                      <i class="fas fa-external-link-alt"></i> Learn more
+                    <a href="${info.learnMoreUrl}" target="_blank" title="Learn more">
+                      <i class="fas fa-external-link-alt"></i>
                     </a>
                   </div>
                 ` : ''}
@@ -1814,4 +1967,4 @@
   </script>
 </body>
 </html>
-`
+
