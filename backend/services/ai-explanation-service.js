@@ -11,8 +11,22 @@ class AIExplanationService {
     this.cacheDir = path.join(__dirname, '..', 'data', 'ai-cache');
     
     // Create an in-memory map of normalized URLs to cache files
-    // This helps prevent duplicate cache files by keeping track of all URL variations
     this.urlToFileMap = new Map();
+    
+    // Track in-progress requests to avoid duplicate processing
+    this.inProgressRequests = new Map();
+    
+    // Global lock to prevent race conditions in file operations
+    this.locks = new Map();
+    
+    // Cache configuration settings - making them explicit for easier tuning
+    this.cacheConfig = {
+      maxCacheFiles: 50,          // Changed from 100 to 50 maximum files
+      maxCacheAge: 24 * 60 * 60 * 1000, // Maximum age of cache files (24 hours)
+      filesToKeep: 50,            // Number of newest files to keep when cleaning
+      maxCacheSizeMB: 50,         // Maximum cache directory size in MB
+      cleanupThreshold: 0.8,      // Run cleanup when cache reaches 80% of max size
+    };
     
     // Ensure cache directory exists
     if (!fs.existsSync(this.cacheDir)) {
@@ -115,8 +129,13 @@ Important:
       const urlsToFiles = new Map();
       const files = fs.readdirSync(this.cacheDir);
       
+      // Track duplicate stats for logging
+      let totalFiles = 0;
+      let duplicateCount = 0;
+      
       for (const file of files) {
         if (!file.endsWith('.json')) continue;
+        totalFiles++;
         
         try {
           const filePath = path.join(this.cacheDir, file);
@@ -166,11 +185,120 @@ Important:
       }
       
       console.log(`Cache cleanup complete. Removed ${removedCount} duplicate files.`);
+      console.log(`Cache statistics: ${totalFiles} total files, ${duplicateCount} duplicates found`);
+      
+      // After cleaning duplicates, check if we need a general cleanup
+      this._checkCacheSize();
     } catch (error) {
       console.error("Error cleaning up duplicate cache files:", error);
     }
   }
+
+  _checkCacheSize() {
+    try {
+      // Get cache directory stats
+      let totalSize = 0;
+      let fileCount = 0;
+      const cacheFiles = [];
+      
+      const files = fs.readdirSync(this.cacheDir);
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+        
+        try {
+          const filePath = path.join(this.cacheDir, file);
+          const stats = fs.statSync(filePath);
+          totalSize += stats.size;
+          fileCount++;
+          
+          cacheFiles.push({
+            path: filePath,
+            filename: file,
+            size: stats.size,
+            mtime: stats.mtime.getTime()
+          });
+        } catch (error) {
+          console.error(`Error getting stats for file ${file}:`, error.message);
+        }
+      }
+      
+      // Log cache stats
+      const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+      const maxSizeMB = this.cacheConfig.maxCacheSizeMB;
+      console.log(`Cache stats: ${fileCount} files, ${totalSizeMB}MB / ${maxSizeMB}MB max`);
+      
+      // Check if we need to clean up based on file count
+      if (fileCount > this.cacheConfig.maxCacheFiles) {
+        console.log(`Cache file count (${fileCount}) exceeds limit (${this.cacheConfig.maxCacheFiles}), cleaning up...`);
+        this._performCleanup(cacheFiles, 'count');
+        return;
+      }
+      
+      // Check if we need to clean up based on size
+      if (totalSize > (this.cacheConfig.maxCacheSizeMB * 1024 * 1024 * this.cacheConfig.cleanupThreshold)) {
+        console.log(`Cache size (${totalSizeMB}MB) approaching limit (${maxSizeMB}MB), cleaning up...`);
+        this._performCleanup(cacheFiles, 'size');
+      }
+    } catch (error) {
+      console.error('Cache size check error:', error);
+    }
+  }
   
+  _performCleanup(cacheFiles, mode) {
+    try {
+      // Sort files by modification time (oldest first)
+      cacheFiles.sort((a, b) => a.mtime - b.mtime);
+      
+      const filesToKeep = this.cacheConfig.filesToKeep;
+      let filesToDelete;
+      
+      if (mode === 'count') {
+        // Keep newest N files, delete the rest
+        filesToDelete = cacheFiles.slice(0, Math.max(0, cacheFiles.length - filesToKeep));
+      } else {
+        // Delete oldest files until we're under the size threshold
+        const targetSize = this.cacheConfig.maxCacheSizeMB * 1024 * 1024 * 0.7; // Target 70% of max
+        
+        let currentSize = cacheFiles.reduce((sum, file) => sum + file.size, 0);
+        filesToDelete = [];
+        
+        // Keep removing oldest files until we're under target size
+        // but always keep at least filesToKeep newest files
+        for (let i = 0; i < cacheFiles.length - filesToKeep && currentSize > targetSize; i++) {
+          filesToDelete.push(cacheFiles[i]);
+          currentSize -= cacheFiles[i].size;
+        }
+      }
+      
+      console.log(`Deleting ${filesToDelete.length} cache files...`);
+      
+      // Delete the files
+      for (const file of filesToDelete) {
+        try {
+          fs.unlinkSync(file.path);
+          
+          // Remove from in-memory map if present
+          for (const [url, filename] of this.urlToFileMap.entries()) {
+            if (filename === file.filename) {
+              this.urlToFileMap.delete(url);
+              break;
+            }
+          }
+        } catch (error) {
+          console.error(`Error deleting cache file ${file.filename}:`, error.message);
+        }
+      }
+      
+      console.log(`Cache cleanup complete. Deleted ${filesToDelete.length} files.`);
+    } catch (error) {
+      console.error('Cache cleanup error:', error);
+    }
+  }
+
+  _cleanupOldCache() {
+    this._checkCacheSize();
+  }
+
   _normalizeUrl(url) {
     if (!url) return '';
     
@@ -179,41 +307,31 @@ Important:
         return url;
       }
       
+      // Make URL lowercase and trim whitespace
       let normalizedUrl = url.trim().toLowerCase();
       
-      if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
-        normalizedUrl = 'https://' + normalizedUrl;
-      }
+      // Unified protocol handling - standardize on https://
+      normalizedUrl = normalizedUrl.replace(/^https?:\/\//, '');
       
-      try {
-        const urlObj = new URL(normalizedUrl);
-        
-        let hostname = urlObj.hostname.replace(/^www\./, '');
-        
-        let pathname = urlObj.pathname;
-        if (pathname === '/') pathname = '';
-        else if (pathname.endsWith('/')) pathname = pathname.slice(0, -1);
-        
-        const canonical = `normalized:${hostname}${pathname}`;
-        return canonical;
-      } catch (e) {
-        console.warn(`URL object creation failed: ${e.message}. Using direct string normalization.`);
-        
-        normalizedUrl = normalizedUrl.replace(/^https?:\/\//, '');
-        normalizedUrl = normalizedUrl.replace(/^www\./, '');
-        normalizedUrl = normalizedUrl.replace(/\/+$/, '');
-        
-        return `normalized:${normalizedUrl}`;
-      }
+      // Remove 'www.' if present
+      normalizedUrl = normalizedUrl.replace(/^www\./, '');
+      
+      // Remove trailing slashes consistently
+      normalizedUrl = normalizedUrl.replace(/\/+$/, '');
+      
+      // Remove query parameters and hash fragments
+      normalizedUrl = normalizedUrl.split(/[?#]/)[0];
+      
+      // Add standard prefix for all normalized URLs
+      return `normalized:${normalizedUrl}`;
     } catch (error) {
-      console.warn(`URL normalization failed: ${error.message}`);
-      
-      const hash = crypto.createHash('md5').update(url).digest('hex').substring(0, 8);
-      return `normalized:fallback:${hash}`;
+      console.error('URL normalization failed:', error);
+      // Create a fallback hash for consistency
+      return `normalized:hash:${crypto.createHash('md5').update(url).digest('hex').substring(0, 8)}`;
     }
   }
-
-  async generateExplanation(url, analysisResult, features) { // Remove bypassCache parameter
+  
+  async generateExplanation(url, analysisResult, features) {
     if (!this.promptTemplate) {
       throw new Error('Prompt template not loaded');
     }
@@ -222,67 +340,100 @@ Important:
       console.log(`====== AI Explanation Request ======`);
       console.log(`URL: ${url}`);
       
-      // Normalize URL for consistent caching
+      // Normalize URL and log the result for debugging duplicate requests
       const normalizedUrl = this._normalizeUrl(url);
-      console.log(`Normalized URL: ${normalizedUrl}`);
+      console.log(`Normalized URL: "${url}" → "${normalizedUrl}"`);
       
-      // Check for cached content
+      // CRITICAL FIX: Create a unique lock key for this specific URL
+      const lockKey = `lock:${normalizedUrl}`;
+      console.log(`Using lock key: ${lockKey}`);
+      
+      // Check if there's already a request in progress for this URL
+      if (this.inProgressRequests.has(normalizedUrl)) {
+        console.log(`Request for ${normalizedUrl} already in progress, waiting for result...`);
+        return await this.inProgressRequests.get(normalizedUrl);
+      }
+      
+      // Check cache first
       const cachedContent = this._getCachedContent(normalizedUrl);
       if (cachedContent) {
-        console.log(`Using cached explanation for ${url}`);
+        console.log(`Using cached explanation for ${url} (cache hit)`);
         return cachedContent;
       }
       
-      // Generate a new explanation
-      console.log('Generating new AI explanation...');
-      const context = {
-        url: url,
-        result: analysisResult,
-        features: features,
-        timestamp: new Date().toISOString()
-      };
+      console.log(`No cache found for ${normalizedUrl}, generating new explanation...`);
+      
+      // Create promise for this request
+      const requestPromise = (async () => {
+        // Acquire a lock for this URL to prevent race conditions
+        const releaseLock = await this._acquireLock(normalizedUrl);
+        
+        try {
+          // Double-check cache after acquiring lock
+          const cachedContentAfterLock = this._getCachedContent(normalizedUrl);
+          if (cachedContentAfterLock) {
+            console.log(`Cache created while waiting for lock for ${url}`);
+            return cachedContentAfterLock;
+          }
+          
+          // Generate new explanation since no cache exists
+          console.log(`Generating new AI explanation for ${normalizedUrl}...`);
+          
+          const context = {
+            url: url,
+            result: analysisResult,
+            features: features,
+            timestamp: new Date().toISOString()
+          };
 
-      const explanation = await this.geminiAdapter.generateCompletion(
-        this.promptTemplate, 
-        context,
-        {
-          temperature: 0.3,
-          topP: 0.9,
-          maxTokens: 1500
+          const explanation = await this.geminiAdapter.generateCompletion(
+            this.promptTemplate, 
+            context,
+            {
+              temperature: 0.3,
+              topP: 0.9,
+              maxTokens: 1500
+            }
+          );
+
+          const formattedExplanation = this._formatExplanation(explanation);
+          
+          await this._saveToCache(url, normalizedUrl, formattedExplanation);
+          
+          return formattedExplanation;
+        } finally {
+          // Always release the lock
+          releaseLock();
+          this.inProgressRequests.delete(normalizedUrl);
+          console.log(`Request for ${normalizedUrl} completed`);
         }
-      );
-
-      const formattedExplanation = this._formatExplanation(explanation);
+      })();
       
-      this._saveToCache(url, normalizedUrl, formattedExplanation);
+      // Store the promise before awaiting it
+      this.inProgressRequests.set(normalizedUrl, requestPromise);
       
-      return formattedExplanation;
+      // Await and return the result
+      return await requestPromise;
     } catch (error) {
       console.error('Error generating AI explanation:', error);
       throw new Error(`Failed to generate AI explanation: ${error.message}`);
     }
   }
-  
+
   _getCachedContent(normalizedUrl) {
     try {
-      if (!this.urlToFileMap.has(normalizedUrl)) {
-        console.log(`No cache entry for ${normalizedUrl}`);
-        return null;
-      }
-      
-      const cacheFileName = this.urlToFileMap.get(normalizedUrl);
-      const cacheFilePath = path.join(this.cacheDir, cacheFileName);
+      const cacheKey = this._generateCacheKey(normalizedUrl);
+      const cacheFilePath = path.join(this.cacheDir, `${cacheKey}.json`);
       
       if (!fs.existsSync(cacheFilePath)) {
-        console.log(`Cache file doesn't exist: ${cacheFileName}`);
-        this.urlToFileMap.delete(normalizedUrl);
+        console.log(`No cache file found at ${cacheFilePath}`);
         return null;
       }
       
       const cacheData = JSON.parse(fs.readFileSync(cacheFilePath, 'utf8'));
       
       const cacheAge = Date.now() - new Date(cacheData.timestamp).getTime();
-      const MAX_CACHE_AGE = 60 * 60 * 1000;
+      const MAX_CACHE_AGE = this.cacheConfig.maxCacheAge;
       
       if (cacheAge > MAX_CACHE_AGE) {
         console.log(`Cache expired for ${normalizedUrl} (${Math.round(cacheAge / 60000)} minutes old)`);
@@ -290,6 +441,9 @@ Important:
       }
       
       console.log(`Cache hit for ${normalizedUrl} (${Math.round(cacheAge / 60000)} minutes old)`);
+      
+      this.urlToFileMap.set(normalizedUrl, `${cacheKey}.json`);
+      
       return cacheData.content;
     } catch (error) {
       console.error(`Error reading cache: ${error.message}`);
@@ -297,47 +451,33 @@ Important:
     }
   }
   
-  _saveToCache(originalUrl, normalizedUrl, content) {
+  async _saveToCache(originalUrl, normalizedUrl, content) {
     try {
-      if (this.urlToFileMap.has(normalizedUrl)) {
-        const existingFile = this.urlToFileMap.get(normalizedUrl);
-        const existingPath = path.join(this.cacheDir, existingFile);
-        
-        if (fs.existsSync(existingPath)) {
-          try {
-            console.log(`Updating existing cache file ${existingFile} for ${normalizedUrl}`);
-            
-            const existingData = JSON.parse(fs.readFileSync(existingPath, 'utf8'));
-            existingData.content = content;
-            existingData.timestamp = new Date().toISOString();
-            
-            fs.writeFileSync(existingPath, JSON.stringify(existingData, null, 2));
-            return;
-          } catch (updateError) {
-            console.error(`Error updating existing cache: ${updateError.message}`);
-          }
-        }
-      }
-      
-      const cacheKey = crypto.createHash('md5').update(normalizedUrl).digest('hex');
+      const cacheKey = this._generateCacheKey(normalizedUrl);
       const cacheFile = path.join(this.cacheDir, `${cacheKey}.json`);
       
-      console.log(`Creating new cache file ${cacheKey}.json for ${normalizedUrl}`);
+      console.log(`Creating/updating cache file ${cacheKey}.json for ${normalizedUrl}`);
       
       const cacheData = {
         timestamp: new Date().toISOString(),
         content: content,
         originalUrl: originalUrl,
-        normalizedUrl: normalizedUrl
+        normalizedUrl: normalizedUrl,
+        cacheKey: cacheKey
       };
       
       fs.writeFileSync(cacheFile, JSON.stringify(cacheData, null, 2));
       
       this.urlToFileMap.set(normalizedUrl, `${cacheKey}.json`);
       
+      console.log(`Cache saved successfully for ${normalizedUrl}`);
+      
       this._cleanupOldCache();
+      
+      return true;
     } catch (error) {
       console.error(`Failed to cache explanation: ${error.message}`);
+      return false;
     }
   }
 
@@ -364,47 +504,6 @@ Important:
     );
     
     return formatted;
-  }
-  
-  _cleanupOldCache() {
-    try {
-      const files = fs.readdirSync(this.cacheDir);
-      
-      if (files.length <= 10) return;
-      console.log(`Cache directory has ${files.length} files, cleaning up old files`);
-      const cacheFiles = [];
-      
-      for (const file of files) {
-        if (file.endsWith('.json')) {
-          try {
-            const filePath = path.join(this.cacheDir, file);
-            const stats = fs.statSync(filePath);
-            cacheFiles.push({
-              path: filePath,
-              filename: file,
-              mtime: stats.mtime.getTime(),
-            });
-          } catch (error) {
-            console.error(`Error getting stats for ${file}: ${error.message}`);
-          }
-        }
-      }
-      
-      cacheFiles.sort((a, b) => a.mtime - b.mtime);
-      
-      const filesToDelete = cacheFiles.slice(0, cacheFiles.length - 5);
-      console.log(`Deleting ${filesToDelete.length} old cache files`);
-      
-      for (const file of filesToDelete) {
-        try {
-          fs.unlinkSync(file.path);
-        } catch (error) {
-          console.error(`Error deleting ${file.filename}: ${error.message}`);
-        }
-      }
-    } catch (error) {
-      console.error(`Cache cleanup error: ${error.message}`);
-    }
   }
 }
 
