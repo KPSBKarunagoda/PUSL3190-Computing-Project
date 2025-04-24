@@ -410,30 +410,303 @@
       font-size: 2rem;
     }
     
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-      .ai-card-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-      }
-      
-      .ai-card-risk {
-        margin-left: 0;
-      }
-      
-      .ai-tabs {
-        overflow-x: auto;
-      }
-      
-      .action-buttons {
-        flex-direction: column;
-      }
-      
-      .btn-primary, .btn-secondary {
-        width: 100%;
-        justify-content: center;
-      }
+    /* Enhanced Technical Features Tab Styling */
+    .feature-overview {
+      background: rgba(0, 0, 0, 0.07);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 25px;
+      border-left: 4px solid var(--primary-color);
+    }
+    
+    .risk-summary-box {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .risk-summary-high {
+      background: rgba(244, 67, 54, 0.1);
+      border-left: 4px solid #f44336;
+    }
+    
+    .risk-summary-medium {
+      background: rgba(255, 152, 0, 0.1);
+      border-left: 4px solid #ff9800;
+    }
+    
+    .risk-summary-low {
+      background: rgba(76, 175, 80, 0.1);
+      border-left: 4px solid #4caf50;
+    }
+    
+    .risk-summary-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.15);
+      flex-shrink: 0;
+    }
+    
+    .risk-summary-high .risk-summary-icon {
+      color: #f44336;
+    }
+    
+    .risk-summary-medium .risk-summary-icon {
+      color: #ff9800;
+    }
+    
+    .risk-summary-low .risk-summary-icon {
+      color: #4caf50;
+    }
+    
+    .feature-section {
+      margin-bottom: 30px;
+    }
+    
+    .feature-section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .feature-section-header h3 {
+      margin: 0;
+      font-size: 1.3rem;
+      color: var(--primary-color);
+    }
+    
+    .feature-section-header .badge {
+      background: rgba(61, 133, 198, 0.15);
+      color: var(--primary-color);
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .feature-card {
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.05));
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .feature-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+    }
+    
+    .feature-card.impact-high::before {
+      background: linear-gradient(to bottom, #f44336, #ff5252);
+    }
+    
+    .feature-card.impact-medium::before {
+      background: linear-gradient(to bottom, #ff9800, #ffb74d);
+    }
+    
+    .feature-card.impact-low::before {
+      background: linear-gradient(to bottom, #4caf50, #81c784);
+    }
+    
+    .feature-card.impact-positive::before {
+      background: linear-gradient(to bottom, #4caf50, #81c784);
+    }
+    
+    .feature-card.impact-negative::before {
+      background: linear-gradient(to bottom, #f44336, #ff5252);
+    }
+    
+    .feature-icon-area {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+    }
+    
+    .feature-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    
+    .impact-high .feature-icon { color: #f44336; }
+    .impact-medium .feature-icon { color: #ff9800; }
+    .impact-low .feature-icon, .impact-positive .feature-icon { color: #4caf50; }
+    .impact-negative .feature-icon { color: #f44336; }
+    
+    .feature-name {
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+      padding-right: 40px; /* Make space for the icon */
+    }
+    
+    .feature-value-wrapper {
+      margin: 15px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .feature-label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    
+    .feature-value {
+      font-family: monospace;
+      padding: 4px 10px;
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    
+    .feature-description {
+      margin-top: 10px;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    
+    .feature-impact {
+      margin-top: 15px;
+      padding-top: 12px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.1);
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .feature-learn-more {
+      margin-top: 10px;
+      font-size: 0.85rem;
+    }
+    
+    .feature-learn-more a {
+      color: var(--primary-color);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+    
+    .feature-learn-more a:hover {
+      text-decoration: underline;
+    }
+    
+    .feature-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 40px 20px;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .feature-empty i {
+      font-size: 3rem;
+      color: var(--text-tertiary);
+    }
+    
+    .tech-info-footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    
+    .tech-definitions {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 8px;
+      padding: 15px 20px;
+      margin-top: 15px;
+    }
+    
+    .tech-definitions h4 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 1rem;
+    }
+    
+    .tech-term {
+      margin-bottom: 10px;
+    }
+    
+    .tech-term-name {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .risk-gauge {
+      width: 100%;
+      margin: 25px 0;
+      position: relative;
+      padding-top: 20px;
+    }
+    
+    .risk-gauge-bar {
+      height: 12px;
+      background: linear-gradient(to right, #4caf50, #ffeb3b, #ff9800, #f44336);
+      border-radius: 6px;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .risk-gauge-marker {
+      position: absolute;
+      width: 4px;
+      height: 20px;
+      background: #fff;
+      top: -5px;
+      transform: translateX(-2px);
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .risk-gauge-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      font-size: 0.8rem;
+      color: var(--text-tertiary);
     }
   </style>
 </head>
@@ -686,29 +959,499 @@
         }
       }
 
+      // Completely overhauled createFeaturesHTML function
       function createFeaturesHTML(features) {
         if (!features || Object.keys(features).length === 0) {
-          return '<p>No technical features available for this URL.</p>';
+          return `
+            <div class="feature-empty">
+              <i class="fas fa-database"></i>
+              <h3>No Technical Features Available</h3>
+              <p>We couldn't retrieve the technical features for this URL analysis.</p>
+            </div>
+          `;
         }
         
-        let html = '<ul>';
+        // Enhanced feature information with user-friendly descriptions
+        const featureInfo = {
+          domain_in_ip: {
+            name: "IP Address Instead of Domain",
+            description: "Shows whether the URL uses a numeric IP address (like 192.168.1.1) instead of a domain name (like example.com)",
+            explanation: "Legitimate websites almost always use domain names rather than raw IP addresses. Sites using IP addresses directly are often temporary and suspicious.",
+            getImpact: (value) => value ? 
+              { level: "high", text: "High Risk - Legitimate websites rarely use IP addresses directly" } : 
+              { level: "low", text: "Low Risk - Uses a proper domain name" },
+            valueLabel: "IP-based:",
+            formatValue: (v) => v ? "Yes" : "No",
+            icon: "fa-globe",
+            learnMoreUrl: "https://www.phishing.org/phishing-techniques"
+          },
+          tls_ssl_certificate: {
+            name: "HTTPS Encryption",
+            description: "Shows if the website uses secure HTTPS encryption to protect your data",
+            explanation: "HTTPS encryption protects your data during transmission and is an indicator of site legitimacy.",
+            getImpact: (value) => value ? 
+              { level: "positive", text: "Positive - Site uses HTTPS encryption" } : 
+              { level: "negative", text: "Negative - Site lacks encryption, making your data vulnerable" },
+            valueLabel: "HTTPS:",
+            formatValue: (v) => v ? "Yes" : "No",
+            icon: "fa-lock",
+            learnMoreUrl: "https://support.google.com/chrome/answer/95617"
+          },
+          time_domain_activation: {
+            name: "Domain Age",
+            description: "How long the domain has been registered, measured in days",
+            explanation: "New domains (less than 30 days old) are more likely to be used for phishing than established domains.",
+            getImpact: (value) => value < 30 ? 
+              { level: "high", text: "High Risk - Very new domain (less than 30 days old)" } : 
+              value < 90 ? 
+              { level: "medium", text: "Medium Risk - Relatively new domain (less than 3 months old)" } : 
+              { level: "low", text: "Low Risk - Established domain (more than 3 months old)" },
+            valueLabel: "Age:",
+            formatValue: (v) => v === 1 ? "1 day" : `${v} days`,
+            icon: "fa-calendar-alt",
+            learnMoreUrl: "https://www.spamhaus.org/whitepapers/dblwhitepaper/"
+          },
+          domain_google_index: {
+            name: "Google Indexing (Domain)",
+            description: "Indicates whether Google has indexed the domain (shown in search results)",
+            explanation: "Legitimate domains are typically indexed by Google. Phishing sites often avoid detection by staying out of search indexes.",
+            getImpact: (value) => value ? 
+              { level: "positive", text: "Positive - Domain is indexed by Google, suggesting it's established" } : 
+              { level: "negative", text: "Negative - Domain isn't indexed by Google, which is unusual for legitimate sites" },
+            valueLabel: "Indexed:",
+            formatValue: (v) => v ? "Yes" : "No",
+            icon: "fa-search",
+            learnMoreUrl: "https://support.google.com/webmasters/answer/9012289"
+          },
+          url_google_index: {
+            name: "Google Indexing (Page)",
+            description: "Indicates whether this specific page has been indexed by Google",
+            explanation: "Pages that haven't been indexed by Google may be too new or intentionally hidden.",
+            getImpact: (value) => value ? 
+              { level: "positive", text: "Positive - This specific page is indexed by Google" } : 
+              { level: "negative", text: "Negative - This page isn't indexed by Google" },
+            valueLabel: "Indexed:",
+            formatValue: (v) => v ? "Yes" : "No",
+            icon: "fa-search",
+            learnMoreUrl: "https://developers.google.com/search/docs/fundamentals/seo-starter-guide"
+          },
+          qty_dot_url: {
+            name: "Dots in URL",
+            description: "The number of dots (periods) in the URL",
+            explanation: "While legitimate URLs contain dots, an unusually high number can indicate deception or subdomains designed to confuse users.",
+            getImpact: (value) => value > 5 ? 
+              { level: "medium", text: "Medium Risk - Excessive dots may indicate subdomains used to mimic legitimate URLs" } : 
+              { level: "low", text: "Low Risk - Normal number of dots" },
+            valueLabel: "Count:",
+            formatValue: (v) => v.toString(),
+            icon: "fa-ellipsis-h",
+            learnMoreUrl: "https://www.malwarebytes.com/phishing"
+          },
+          qty_hyphen_url: {
+            name: "Hyphens in URL",
+            description: "The number of hyphens (-) in the URL",
+            explanation: "Excessive hyphens in a URL can be a sign of a deceptive website trying to mimic a legitimate domain.",
+            getImpact: (value) => value > 3 ? 
+              { level: "medium", text: "Medium Risk - Multiple hyphens may indicate a suspicious URL" } : 
+              { level: "low", text: "Low Risk - Normal use of hyphens" },
+            valueLabel: "Count:",
+            formatValue: (v) => v.toString(),
+            icon: "fa-minus",
+            learnMoreUrl: "https://www.malwarebytes.com/phishing"
+          },
+          length_url: {
+            name: "URL Length",
+            description: "The total character length of the URL",
+            explanation: "Very long URLs can be used to hide the true destination or to make the URL difficult to analyze.",
+            getImpact: (value) => value > 75 ? 
+              { level: "medium", text: "Medium Risk - Unusually long URL which may be hiding suspicious elements" } : 
+              { level: "low", text: "Low Risk - Normal URL length" },
+            valueLabel: "Length:",
+            formatValue: (v) => `${v} characters`,
+            icon: "fa-text-width",
+            learnMoreUrl: "https://www.phishing.org/phishing-techniques"
+          },
+          qty_at_url: {
+            name: "@ Symbols in URL",
+            description: "The number of @ symbols in the URL",
+            explanation: "The @ symbol in URLs can be used to override the domain to the left of it, redirecting to a malicious site.",
+            getImpact: (value) => value > 0 ? 
+              { level: "high", text: "High Risk - @ symbol in URL is a major phishing indicator" } : 
+              { level: "low", text: "Low Risk - No @ symbols in URL" },
+            valueLabel: "Count:",
+            formatValue: (v) => v.toString(),
+            icon: "fa-at",
+            learnMoreUrl: "https://www.phishing.org/phishing-techniques"
+          },
+          qty_redirects: {
+            name: "URL Redirects",
+            description: "The number of redirects before reaching the final URL",
+            explanation: "Multiple redirects can be used to mask the true destination of a URL, making it harder to identify phishing attempts.",
+            getImpact: (value) => value > 1 ? 
+              { level: "medium", text: "Medium Risk - Multiple redirects may hide the true destination" } : 
+              { level: "low", text: "Low Risk - Minimal redirects" },
+            valueLabel: "Count:",
+            formatValue: (v) => v.toString(),
+            icon: "fa-exchange-alt",
+            learnMoreUrl: "https://www.malwarebytes.com/phishing"
+          },
+          qty_mx_servers: {
+            name: "Mail Servers",
+            description: "The number of mail exchange (MX) servers for the domain",
+            explanation: "MX records direct email to a domain's mail servers. Legitimate business websites typically have email infrastructure.",
+            getImpact: (value) => value === 0 ? 
+              { level: "medium", text: "Medium Risk - Legitimate businesses typically have email capabilities" } : 
+              { level: "low", text: "Low Risk - Domain has email capabilities" },
+            valueLabel: "Count:",
+            formatValue: (v) => v.toString(),
+            icon: "fa-envelope",
+            learnMoreUrl: "https://support.google.com/a/answer/174125"
+          },
+          qty_nameservers: {
+            name: "DNS Nameservers",
+            description: "The number of DNS nameservers for the domain",
+            explanation: "Nameservers translate domain names to IP addresses. Legitimate websites typically have multiple nameservers for reliability.",
+            getImpact: (value) => value < 2 ? 
+              { level: "medium", text: "Medium Risk - Few nameservers may indicate poor configuration" } : 
+              { level: "low", text: "Low Risk - Properly configured nameservers" },
+            valueLabel: "Count:",
+            formatValue: (v) => v.toString(),
+            icon: "fa-server",
+            learnMoreUrl: "https://www.cloudflare.com/learning/dns/dns-records/dns-ns-record/"
+          },
+          domain_spf: {
+            name: "Email Security (SPF)",
+            description: "Whether the domain has SPF records configured to prevent email spoofing",
+            explanation: "SPF records help prevent email spoofing, where attackers send emails pretending to be from your domain.",
+            getImpact: (value) => value ? 
+              { level: "positive", text: "Positive - Domain has SPF email security" } : 
+              { level: "negative", text: "Negative - Domain lacks SPF email security" },
+            valueLabel: "SPF:",
+            formatValue: (v) => v ? "Yes" : "No",
+            icon: "fa-envelope-open",
+            learnMoreUrl: "https://support.google.com/a/answer/33786"
+          },
+          url_shortened: {
+            name: "URL Shortening",
+            description: "Indicates if this is a shortened URL (bit.ly, tinyurl, etc.)",
+            explanation: "URL shorteners hide the actual destination, making it impossible to see where a link leads before clicking.",
+            getImpact: (value) => value ? 
+              { level: "high", text: "High Risk - Shortened URLs hide the true destination" } : 
+              { level: "low", text: "Low Risk - Not a shortened URL" },
+            valueLabel: "Shortened:",
+            formatValue: (v) => v ? "Yes" : "No",
+            icon: "fa-link",
+            learnMoreUrl: "https://www.malwarebytes.com/blog/news/2020/06/the-dangers-of-shortened-links"
+          }
+        };
+        
+        // Categorize features and identify key risk factors
+        const highRiskFeatures = {};
+        const mediumRiskFeatures = {};
+        const securityFeatures = {};
+        const technicalFeatures = {};
+        
+        // Calculate overall technical risk level
+        let criticalIssues = 0;
+        let majorIssues = 0;
+        let positivePoints = 0;
+        
         for (const [key, value] of Object.entries(features)) {
-          html += `<li><strong>${key}:</strong> ${value}</li>`;
+          // Skip internal or irrelevant features
+          if (key.startsWith('_') || typeof value === 'undefined' || value === null) {
+            continue;
+          }
+          
+          if (!featureInfo[key]) continue;
+          
+          const impact = featureInfo[key].getImpact(value);
+          
+          if (impact.level === "high") {
+            highRiskFeatures[key] = value;
+            criticalIssues++;
+          } else if (impact.level === "medium" || impact.level === "negative") {
+            mediumRiskFeatures[key] = value;
+            majorIssues++;
+          } else if (impact.level === "positive") {
+            positivePoints++;
+            securityFeatures[key] = value;
+          } else {
+            technicalFeatures[key] = value;
+          }
         }
-        html += '</ul>';
+        
+        // Determine overall technical assessment
+        let overallRiskLevel = "low";
+        let overallAssessment = "No significant technical issues detected";
+        
+        if (criticalIssues > 0) {
+          overallRiskLevel = "high";
+          overallAssessment = `${criticalIssues} critical technical issue${criticalIssues > 1 ? 's' : ''} detected`;
+        } else if (majorIssues > 1) {
+          overallRiskLevel = "medium";
+          overallAssessment = `${majorIssues} concerning technical issues detected`;
+        } else if (majorIssues === 1) {
+          overallRiskLevel = "medium";
+          overallAssessment = "1 concerning technical issue detected";
+        }
+        
+        // Start building the HTML with an overview section
+        let html = `
+          <div class="feature-overview">
+            <h3>Technical Risk Assessment</h3>
+            <p>Our system analyzed ${Object.keys(features).length} technical elements of this URL to determine its security characteristics.</p>
+            
+            <div class="risk-summary-box risk-summary-${overallRiskLevel}">
+              <div class="risk-summary-icon">
+                <i class="fas ${overallRiskLevel === 'high' ? 'fa-exclamation-triangle' : 
+                              overallRiskLevel === 'medium' ? 'fa-exclamation-circle' : 
+                              'fa-check-circle'}"></i>
+              </div>
+              <div>
+                <strong>${overallRiskLevel === 'high' ? 'High Technical Risk' : 
+                         overallRiskLevel === 'medium' ? 'Medium Technical Risk' : 
+                         'Low Technical Risk'}</strong>
+                <p>${overallAssessment}.</p>
+              </div>
+            </div>
+            
+            <div class="risk-gauge">
+              <div class="risk-gauge-bar"></div>
+              <div class="risk-gauge-marker" style="left: ${
+                overallRiskLevel === 'high' ? '85%' : 
+                overallRiskLevel === 'medium' ? '50%' : '15%'
+              }"></div>
+              <div class="risk-gauge-labels">
+                <span>Low Risk</span>
+                <span>Medium Risk</span>
+                <span>High Risk</span>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Function to build feature cards
+        const buildFeatureCards = (features, title, icon, badgeText = null) => {
+          const keys = Object.keys(features);
+          
+          if (keys.length === 0) return '';
+          
+          let sectionHtml = `
+            <div class="feature-section">
+              <div class="feature-section-header">
+                <i class="fas ${icon}"></i>
+                <h3>${title}</h3>
+                ${badgeText ? `<span class="badge">${badgeText}</span>` : ''}
+              </div>
+              <div class="feature-grid">
+          `;
+          
+          keys.forEach(key => {
+            const value = features[key];
+            const info = featureInfo[key];
+            
+            if (!info) return;
+            
+            const impact = info.getImpact(value);
+            const displayValue = info.formatValue ? info.formatValue(value) : String(value);
+            
+            sectionHtml += `
+              <div class="feature-card impact-${impact.level}">
+                <div class="feature-icon-area">
+                  <div class="feature-icon">
+                    <i class="fas ${info.icon || 'fa-code'}"></i>
+                  </div>
+                </div>
+                <h4 class="feature-name">${info.name}</h4>
+                <div class="feature-value-wrapper">
+                  <span class="feature-label">${info.valueLabel || 'Value:'}</span>
+                  <span class="feature-value">${displayValue}</span>
+                </div>
+                <p class="feature-description">${info.description}</p>
+                <div class="feature-impact impact-${impact.level}">
+                  <i class="fas ${
+                    impact.level === 'high' || impact.level === 'negative' ? 'fa-exclamation-triangle' : 
+                    impact.level === 'medium' ? 'fa-exclamation-circle' : 
+                    'fa-check-circle'
+                  }"></i>
+                  ${impact.text}
+                </div>
+                ${info.learnMoreUrl ? `
+                  <div class="feature-learn-more">
+                    <a href="${info.learnMoreUrl}" target="_blank">
+                      <i class="fas fa-external-link-alt"></i> Learn more
+                    </a>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          });
+          
+          sectionHtml += '</div></div>';
+          return sectionHtml;
+        };
+        
+        // Add feature sections in order of importance
+        if (Object.keys(highRiskFeatures).length > 0) {
+          html += buildFeatureCards(highRiskFeatures, "Critical Risk Factors", "fa-exclamation-triangle", "High Risk");
+        }
+        
+        if (Object.keys(mediumRiskFeatures).length > 0) {
+          html += buildFeatureCards(mediumRiskFeatures, "Concerning Factors", "fa-exclamation-circle", "Medium Risk");
+        }
+        
+        if (Object.keys(securityFeatures).length > 0) {
+          html += buildFeatureCards(securityFeatures, "Security Positives", "fa-shield-alt", "Positive");
+        }
+        
+        if (Object.keys(technicalFeatures).length > 0) {
+          html += buildFeatureCards(technicalFeatures, "Other Technical Properties", "fa-cogs");
+        }
+        
+        // Add educational footer
+        html += `
+          <div class="tech-info-footer">
+            <p>Our technical analysis examines the structure, configuration, and behavior of the URL and its domain. 
+            These technical elements can reveal patterns often associated with phishing or malicious websites.</p>
+            
+            <div class="tech-definitions">
+              <h4>Key Terms</h4>
+              
+              <div class="tech-term">
+                <div class="tech-term-name">HTTPS/SSL</div>
+                <div>Encryption that protects the data sent between your browser and the website.</div>
+              </div>
+              
+              <div class="tech-term">
+                <div class="tech-term-name">Domain Age</div>
+                <div>How long a website's domain name has been registered. Phishing sites are often very new.</div>
+              </div>
+              
+              <div class="tech-term">
+                <div class="tech-term-name">DNS Records</div>
+                <div>Configuration records that determine how a domain operates online.</div>
+              </div>
+              
+              <div class="tech-term">
+                <div class="tech-term-name">Google Indexing</div>
+                <div>Whether the site appears in Google search results, which can indicate legitimacy.</div>
+              </div>
+            </div>
+          </div>
+        `;
+        
         return html;
       }
 
       function createRecommendationsHTML(result, riskScore) {
-        if (riskScore > 60) {
-          return '<p>High risk detected. Avoid this URL.</p>';
-        } else if (riskScore > 30) {
-          return '<p>Medium risk detected. Proceed with caution.</p>';
+        const isHighRisk = riskScore > 70;
+        const isMediumRisk = riskScore > 30;
+        
+        // Generate recommendations based on risk level
+        const recommendations = [];
+        
+        if (isHighRisk) {
+          recommendations.push({
+            icon: 'fa-ban',
+            title: 'Avoid This Website',
+            content: 'This website shows strong indicators of being a phishing site. Do not enter any personal information, passwords, or financial details on this site.',
+            actions: [
+              { icon: 'fa-arrow-left', text: 'Leave Site Immediately', url: 'javascript:history.back()' },
+              { icon: 'fa-flag', text: 'Report as Phishing', url: 'reports.html' }
+            ]
+          });
+          
+          recommendations.push({
+            icon: 'fa-key',
+            title: 'Check Password Reuse',
+            content: 'If you\'ve used this site before and entered credentials, change your passwords on any other sites where you\'ve used the same password.',
+            actions: [
+              { icon: 'fa-key', text: 'Password Health Check', url: 'password-health.html' }
+            ]
+          });
+        } else if (isMediumRisk) {
+          recommendations.push({
+            icon: 'fa-exclamation-triangle',
+            title: 'Exercise Caution',
+            content: 'This website has some suspicious characteristics. Avoid entering sensitive information unless you\'re confident about its legitimacy.',
+            actions: [
+              { icon: 'fa-search', text: 'Verify Website Identity', url: `https://www.whois.com/whois/${new URL(analysisData.url).hostname}` }
+            ]
+          });
         } else {
-          return '<p>Low risk detected. This URL appears safe.</p>';
+          recommendations.push({
+            icon: 'fa-shield-alt',
+            title: 'Practice Standard Security',
+            content: 'While this site appears legitimate, always follow standard security practices when sharing personal information online.',
+            actions: [
+              { icon: 'fa-lock', text: 'Learn About HTTPS', url: 'https://support.google.com/chrome/answer/95617?hl=en&co=GENIE.Platform%3DDesktop' }
+            ]
+          });
         }
+        
+        // Add general recommendations
+        recommendations.push({
+          icon: 'fa-shield-alt',
+          title: 'Use a Password Manager',
+          content: 'Password managers help you create strong unique passwords and prevent you from accidentally entering credentials on phishing sites.',
+          actions: [
+            { icon: 'fa-key', text: 'Password Health Check', url: 'password-health.html' }
+          ]
+        });
+        
+        recommendations.push({
+          icon: 'fa-user-shield',
+          title: 'Enable Two-Factor Authentication',
+          content: 'Two-factor authentication adds an extra layer of security even if your password is compromised.',
+          actions: [
+            { icon: 'fa-book', text: 'Learn More', url: 'education.html' }
+          ]
+        });
+        
+        recommendations.push({
+          icon: 'fa-sync',
+          title: 'Keep Software Updated',
+          content: 'Ensure your browser and operating system are up-to-date with the latest security patches.',
+          actions: []
+        });
+        
+        // Build HTML for recommendations
+        let html = `
+          <h3><i class="fas fa-shield-alt"></i> Security Recommendations</h3>
+          <p>Based on our analysis, here are key recommendations to protect yourself:</p>
+          <div class="recommendations-list">
+        `;
+        
+        recommendations.forEach(rec => {
+          html += `
+            <div class="recommendation-item">
+              <div class="recommendation-header">
+                <div class="recommendation-icon">
+                  <i class="fas ${rec.icon}"></i>
+                </div>
+                <div class="recommendation-title">${rec.title}</div>
+              </div>
+              <div class="recommendation-content">
+                <p>${rec.content}</p>
+              </div>
+              ${rec.actions && rec.actions.length > 0 ? `
+                <div class="recommendation-actions">
+                  ${rec.actions.map(action => `
+                    <a href="${action.url}" class="recommendation-action-btn" ${!action.url.includes('javascript:') ? 'target="_blank" rel="noopener"' : ''}>
+                      <i class="fas ${action.icon}"></i> ${action.text}
+                    </a>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        return html;
       }
 
+      // Show error function
       function showError(message) {
         document.getElementById('ai-content').innerHTML = `
           <div class="error-message">
@@ -721,6 +1464,18 @@
         `;
         document.getElementById('ai-content').style.display = 'block';
       }
+      
+      // Copy Report functionality
+      document.getElementById('copy-report').addEventListener('click', function() {
+        try {
+          const explanationContent = document.getElementById('explanation-content').innerText;
+          navigator.clipboard.writeText(explanationContent).then(() => {
+            alert('Report copied to clipboard!');
+          });
+        } catch (err) {
+          alert('Unable to copy report: ' + err);
+        }
+      });
     });
   </script>
 </body>
