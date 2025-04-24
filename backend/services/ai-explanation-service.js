@@ -331,6 +331,45 @@ Important:
     }
   }
   
+  // Add missing cache key generation function
+  _generateCacheKey(normalizedUrl) {
+    // Generate a simple hash of the normalized URL for the cache filename
+    const hash = crypto.createHash('md5').update(normalizedUrl).digest('hex');
+    return hash.substring(0, 16); // Use first 16 chars of hash for filename
+  }
+  
+  // Add missing lock function
+  async _acquireLock(lockKey) {
+    if (!this.locks.has(lockKey)) {
+      this.locks.set(lockKey, false);
+    }
+    
+    // Simple wait-and-retry mechanism (up to 20 attempts)
+    const maxAttempts = 20;
+    let attempts = 0;
+    
+    while (this.locks.get(lockKey) === true) {
+      // Wait 100ms before retrying
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+      
+      if (attempts >= maxAttempts) {
+        console.warn(`Lock acquisition timeout for ${lockKey}`);
+        break;
+      }
+    }
+    
+    // Acquire lock
+    this.locks.set(lockKey, true);
+    console.log(`Lock acquired for ${lockKey}`);
+    
+    // Return a release function
+    return () => {
+      this.locks.set(lockKey, false);
+      console.log(`Lock released for ${lockKey}`);
+    };
+  }
+  
   async generateExplanation(url, analysisResult, features) {
     if (!this.promptTemplate) {
       throw new Error('Prompt template not loaded');
@@ -344,17 +383,13 @@ Important:
       const normalizedUrl = this._normalizeUrl(url);
       console.log(`Normalized URL: "${url}" → "${normalizedUrl}"`);
       
-      // CRITICAL FIX: Create a unique lock key for this specific URL
-      const lockKey = `lock:${normalizedUrl}`;
-      console.log(`Using lock key: ${lockKey}`);
-      
       // Check if there's already a request in progress for this URL
       if (this.inProgressRequests.has(normalizedUrl)) {
         console.log(`Request for ${normalizedUrl} already in progress, waiting for result...`);
         return await this.inProgressRequests.get(normalizedUrl);
       }
       
-      // Check cache first
+      // Check cache first - using original method without _generateCacheKey
       const cachedContent = this._getCachedContent(normalizedUrl);
       if (cachedContent) {
         console.log(`Using cached explanation for ${url} (cache hit)`);
@@ -365,17 +400,7 @@ Important:
       
       // Create promise for this request
       const requestPromise = (async () => {
-        // Acquire a lock for this URL to prevent race conditions
-        const releaseLock = await this._acquireLock(normalizedUrl);
-        
         try {
-          // Double-check cache after acquiring lock
-          const cachedContentAfterLock = this._getCachedContent(normalizedUrl);
-          if (cachedContentAfterLock) {
-            console.log(`Cache created while waiting for lock for ${url}`);
-            return cachedContentAfterLock;
-          }
-          
           // Generate new explanation since no cache exists
           console.log(`Generating new AI explanation for ${normalizedUrl}...`);
           
@@ -398,12 +423,12 @@ Important:
 
           const formattedExplanation = this._formatExplanation(explanation);
           
+          // Save to cache using original method
           await this._saveToCache(url, normalizedUrl, formattedExplanation);
           
           return formattedExplanation;
         } finally {
-          // Always release the lock
-          releaseLock();
+          // Clean up when complete
           this.inProgressRequests.delete(normalizedUrl);
           console.log(`Request for ${normalizedUrl} completed`);
         }
@@ -422,7 +447,9 @@ Important:
 
   _getCachedContent(normalizedUrl) {
     try {
-      const cacheKey = this._generateCacheKey(normalizedUrl);
+      // Generate a simple hash of the normalized URL for the cache filename
+      const hash = crypto.createHash('md5').update(normalizedUrl).digest('hex');
+      const cacheKey = hash.substring(0, 16); // Use first 16 chars of hash for filename
       const cacheFilePath = path.join(this.cacheDir, `${cacheKey}.json`);
       
       if (!fs.existsSync(cacheFilePath)) {
@@ -453,7 +480,9 @@ Important:
   
   async _saveToCache(originalUrl, normalizedUrl, content) {
     try {
-      const cacheKey = this._generateCacheKey(normalizedUrl);
+      // Generate a simple hash of the normalized URL for the cache filename
+      const hash = crypto.createHash('md5').update(normalizedUrl).digest('hex');
+      const cacheKey = hash.substring(0, 16); // Use first 16 chars of hash for filename
       const cacheFile = path.join(this.cacheDir, `${cacheKey}.json`);
       
       console.log(`Creating/updating cache file ${cacheKey}.json for ${normalizedUrl}`);
