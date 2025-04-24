@@ -141,7 +141,7 @@ async function initializeServer() {
     app.post('/api/ai/explain', async (req, res) => {
       console.log('AI explanation endpoint called');
       try {
-        const { url, analysisResult, features } = req.body;
+        const { url, analysisResult, features } = req.body; // Remove bypassCache parameter
         
         if (!url || !analysisResult) {
           return res.status(400).json({ 
@@ -154,17 +154,19 @@ async function initializeServer() {
         const AIExplanationService = require('./services/ai-explanation-service');
         const aiExplanationService = new AIExplanationService();
         
-        // Generate explanation
+        // Generate explanation - removed bypassCache parameter
         console.log(`Generating AI explanation for URL: ${url}`);
         const explanation = await aiExplanationService.generateExplanation(
           url, 
           analysisResult, 
           features || {}
+          // bypassCache parameter removed
         );
         
         return res.json({
           success: true,
-          explanation
+          explanation,
+          timestamp: new Date().toISOString()
         });
       } catch (error) {
         console.error('Error generating AI explanation:', error);

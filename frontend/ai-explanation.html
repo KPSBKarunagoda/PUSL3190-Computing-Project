@@ -587,8 +587,6 @@
     </div>
   </footer>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Show loading state initially
@@ -642,47 +640,8 @@
         });
       }
       
-      // Add refresh button functionality if it exists
-      const refreshBtn = document.getElementById('refresh-ai');
-      if (refreshBtn) {
-        refreshBtn.addEventListener('click', async () => {
-          try {
-            // Get the analyzed data
-            const analysisData = JSON.parse(sessionStorage.getItem('analysisData'));
-            if (!analysisData) {
-              showAlert('No analysis data found. Please analyze a URL first.', 'error');
-              return;
-            }
-            
-            // Show loading state
-            if (aiLoading) aiLoading.style.display = 'flex';
-            if (aiContent) aiContent.style.display = 'none';
-            
-            // Update button state
-            refreshBtn.disabled = true;
-            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
-            
-            // Force a fresh analysis by setting bypassCache to true
-            fetchAIExplanation(analysisData, true);
-            
-          } catch (error) {
-            console.error('Error refreshing AI explanation:', error);
-            showAlert('Failed to refresh AI explanation: ' + error.message, 'error');
-            
-            if (aiLoading) aiLoading.style.display = 'none';
-            if (aiContent) aiContent.style.display = 'block';
-            
-            // Reset button state
-            refreshBtn.disabled = false;
-            refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Analysis';
-          }
-        });
-      } else {
-        console.warn('Refresh button not found in the document');
-      }
-      
       // Get AI explanation from the server
-      async function fetchAIExplanation(analysisData, bypassCache = false) {
+      async function fetchAIExplanation(analysisData) {
         const aiLoading = document.getElementById('ai-loading');
         const aiContent = document.getElementById('ai-content');
         
@@ -692,7 +651,6 @@
         try {
           // Make the API call - let the server handle caching
           console.log('Fetching AI explanation from API');
-          console.log('Bypass cache:', bypassCache);
           
           const response = await fetch('/api/ai/explain', {
             method: 'POST',
@@ -703,8 +661,7 @@
             body: JSON.stringify({
               url: analysisData.url,
               analysisResult: analysisData.result,
-              features: analysisData.features,
-              bypassCache: bypassCache // Pass this flag to the server
+              features: analysisData.features
             })
           });
           
@@ -721,11 +678,6 @@
           document.getElementById('explanation-content').innerHTML = result.explanation;
           document.getElementById('features-content').innerHTML = createFeaturesHTML(analysisData.features);
           document.getElementById('recommendations-content').innerHTML = createRecommendationsHTML(result, analysisData.result.risk_score);
-          
-          // Show cache statistics if available (for debugging)
-          if (result.cacheStats) {
-            console.log('Cache stats:', result.cacheStats);
-          }
           
         } catch (error) {
           console.error('AI explanation error:', error);
@@ -773,4 +725,3 @@
   </script>
 </body>
 </html>
-``` 
