@@ -1549,11 +1549,6 @@
           const url = document.getElementById('analyzed-url').textContent;
           const riskLevel = document.getElementById('risk-level').textContent;
           
-          // Get current active panel
-          const activePanel = document.querySelector('.ai-panel.active');
-          const activePanelId = activePanel.id;
-          const activePanelContent = activePanel.querySelector('.ai-content');
-          
           // Create temporary div with structured content for PDF
           const pdfContent = document.createElement('div');
           pdfContent.style.position = 'absolute';
@@ -1582,42 +1577,149 @@
           
           // Create metadata section
           const metadata = document.createElement('div');
-          metadata.style.marginBottom = '20px';
+          metadata.style.marginBottom = '30px';
           metadata.style.padding = '15px';
           metadata.style.backgroundColor = '#f5f5f5';
           metadata.style.borderRadius = '5px';
           metadata.style.fontSize = '14px';
+          metadata.style.border = '1px solid #ddd';
           
           metadata.innerHTML = `
-            <div><strong>URL:</strong> ${url.replace('URL: ', '')}</div>
-            <div><strong>Risk Level:</strong> ${riskLevel}</div>
-            <div><strong>Report Generated:</strong> ${new Date().toLocaleString()}</div>
+            <div style="margin-bottom: 8px;"><strong style="display: inline-block; width: 100px;">URL:</strong> ${url.replace('URL: ', '')}</div>
+            <div style="margin-bottom: 8px;"><strong style="display: inline-block; width: 100px;">Risk Level:</strong> ${riskLevel}</div>
+            <div><strong style="display: inline-block; width: 100px;">Date:</strong> ${new Date().toLocaleString()}</div>
           `;
           
-          // Copy the content from active panel and style it for PDF
-          const contentClone = activePanelContent.cloneNode(true);
+          // Create table of contents
+          const toc = document.createElement('div');
+          toc.style.marginBottom = '30px';
+          toc.style.pageBreakAfter = 'avoid';
           
-          // Convert all elements to black text for better printing
-          const allElements = contentClone.querySelectorAll('*');
-          allElements.forEach(el => {
-            el.style.color = '#000000';
-            
-            // Make h2, h3 headers blue for better structure
-            if (el.tagName === 'H2' || el.tagName === 'H3') {
-              el.style.color = '#3d85c6';
-            }
-          });
+          toc.innerHTML = `
+            <h2 style="color: #3d85c6; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 15px;">Report Contents</h2>
+            <ol style="padding-left: 25px; margin-bottom: 20px; line-height: 1.8;">
+              <li><a href="#ai-explanation" style="color: #3d85c6; text-decoration: none;">AI Analysis</a></li>
+              <li><a href="#technical-features" style="color: #3d85c6; text-decoration: none;">Technical Features</a></li>
+              <li><a href="#security-recommendations" style="color: #3d85c6; text-decoration: none;">Security Recommendations</a></li>
+            </ol>
+          `;
           
           // Add content to the PDF container
           pdfContent.appendChild(header);
           pdfContent.appendChild(metadata);
-          pdfContent.appendChild(contentClone);
+          pdfContent.appendChild(toc);
+          
+          // Get all three panel contents regardless of which is active
+          // 1. AI Explanation
+          const explanationContent = document.getElementById('explanation-content').cloneNode(true);
+          explanationContent.id = "ai-explanation";
+          
+          // 2. Technical Features
+          const featuresContent = document.getElementById('features-content').cloneNode(true);
+          featuresContent.id = "technical-features";
+          
+          // 3. Security Recommendations
+          const recommendationsContent = document.getElementById('recommendations-content').cloneNode(true);
+          recommendationsContent.id = "security-recommendations";
+          
+          // Create section wrappers with proper styling
+          const sections = [
+            {
+              title: "AI Analysis",
+              content: explanationContent,
+              icon: "fa-robot"
+            },
+            {
+              title: "Technical Features",
+              content: featuresContent,
+              icon: "fa-list-check"
+            },
+            {
+              title: "Security Recommendations",
+              content: recommendationsContent,
+              icon: "fa-shield-alt"
+            }
+          ];
+          
+          // Add each section with proper formatting
+          sections.forEach((section, index) => {
+            // Section divider if not the first section
+            if (index > 0) {
+              const divider = document.createElement('hr');
+              divider.style.border = 'none';
+              divider.style.borderTop = '1px dashed #ccc';
+              divider.style.margin = '40px 0';
+              pdfContent.appendChild(divider);
+            }
+            
+            // Section header
+            const sectionHeader = document.createElement('div');
+            sectionHeader.style.backgroundColor = '#f5f8fa';
+            sectionHeader.style.padding = '15px';
+            sectionHeader.style.borderRadius = '5px';
+            sectionHeader.style.marginBottom = '25px';
+            sectionHeader.style.borderLeft = '4px solid #3d85c6';
+            sectionHeader.style.pageBreakBefore = index > 0 ? 'always' : 'avoid';
+            sectionHeader.style.pageBreakAfter = 'avoid';
+            
+            sectionHeader.innerHTML = `
+              <h2 id="${section.content.id}" style="margin: 0; color: #3d85c6; display: flex; align-items: center;">
+                <i class="fas ${section.icon}" style="margin-right: 10px;"></i>
+                ${section.title}
+              </h2>
+            `;
+            
+            pdfContent.appendChild(sectionHeader);
+            
+            // Convert section content to black text for better printing
+            const allElements = section.content.querySelectorAll('*');
+            allElements.forEach(el => {
+              el.style.color = '#000000';
+              
+              // Make headers blue for better structure
+              if (el.tagName === 'H2' || el.tagName === 'H3') {
+                el.style.color = '#3d85c6';
+                el.style.borderBottom = '1px solid #eee';
+                el.style.paddingBottom = '5px';
+                el.style.marginTop = '25px';
+                el.style.pageBreakAfter = 'avoid';
+              }
+              
+              // Style paragraphs
+              if (el.tagName === 'P') {
+                el.style.lineHeight = '1.6';
+                el.style.marginBottom = '10px';
+              }
+              
+              // Style lists
+              if (el.tagName === 'UL' || el.tagName === 'OL') {
+                el.style.marginBottom = '15px';
+                el.style.paddingLeft = '25px';
+              }
+              
+              if (el.tagName === 'LI') {
+                el.style.marginBottom = '5px';
+                el.style.lineHeight = '1.6';
+              }
+              
+              // Style feature cards for technical features panel
+              if (el.classList && el.classList.contains('feature-card')) {
+                el.style.backgroundColor = '#f9f9f9';
+                el.style.border = '1px solid #eee';
+                el.style.borderRadius = '5px';
+                el.style.padding = '15px';
+                el.style.marginBottom = '15px';
+              }
+            });
+            
+            pdfContent.appendChild(section.content);
+          });
           
           // Add a footer
           const footer = document.createElement('div');
-          footer.style.marginTop = '30px';
+          footer.style.marginTop = '40px';
           footer.style.borderTop = '1px solid #ccc';
-          footer.style.paddingTop = '10px';
+          footer.style.paddingTop = '15px';
           footer.style.fontSize = '12px';
           footer.style.color = '#777';
           footer.style.textAlign = 'center';
@@ -1628,46 +1730,81 @@
           // Add to body temporarily
           document.body.appendChild(pdfContent);
           
-          // Use jsPDF
-          const { jsPDF } = window.jspdf;
-          const doc = new jsPDF({
-            orientation: 'portrait',
-            unit: 'pt',
-            format: 'a4'
-          });
-          
-          // Convert to canvas with html2canvas
-          const canvas = await html2canvas(pdfContent, {
-            scale: 1.5,
-            useCORS: true,
-            logging: false
-          });
-          
-          // Calculate dimensions
-          const imgWidth = 550;
-          const pageHeight = doc.internal.pageSize.getHeight();
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-          let heightLeft = imgHeight;
-          let position = 40; // Top margin
-          
-          // Add first page
-          doc.addImage(canvas, 'PNG', 20, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-          
-          // Add subsequent pages if content is long
-          while (heightLeft >= 0) {
-            position = heightLeft - imgHeight;
-            doc.addPage();
-            doc.addImage(canvas, 'PNG', 20, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
+          try {
+            // Use jsPDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+              orientation: 'portrait',
+              unit: 'pt',
+              format: 'a4'
+            });
+            
+            // Get page dimensions
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 40;
+            const contentWidth = pageWidth - 2 * margin;
+            
+            // Convert to canvas with html2canvas
+            const canvas = await html2canvas(pdfContent, {
+              scale: 2, // Higher scale for better quality
+              useCORS: true,
+              logging: false,
+              allowTaint: true
+            });
+            
+            // Calculate dimensions
+            const imgWidth = contentWidth;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            // Split into pages
+            let remainingHeight = canvas.height;
+            let position = 0;
+            let currentPage = 0;
+            
+            while (remainingHeight > 0) {
+              // Calculate height of current page
+              const pageContentHeight = Math.min(canvas.width * (pageHeight - 2 * margin) / imgWidth, remainingHeight);
+              
+              // Create canvas for the current page
+              const pageCanvas = document.createElement('canvas');
+              const context = pageCanvas.getContext('2d');
+              pageCanvas.width = canvas.width;
+              pageCanvas.height = pageContentHeight;
+              
+              // Copy portion of the full canvas
+              context.drawImage(
+                canvas,
+                0, position, canvas.width, pageContentHeight,
+                0, 0, canvas.width, pageContentHeight
+              );
+              
+              // Add new page if not the first page
+              if (currentPage > 0) {
+                doc.addPage();
+              }
+              
+              // Add image to the page
+              const imgData = pageCanvas.toDataURL('image/jpeg', 1.0);
+              doc.addImage(imgData, 'JPEG', margin, margin, contentWidth, (pageContentHeight * contentWidth) / canvas.width);
+              
+              // Add page number
+              doc.setFontSize(10);
+              doc.setTextColor(150);
+              doc.text(`Page ${currentPage + 1}`, pageWidth / 2, pageHeight - 20, { align: 'center' });
+              
+              // Update for next page
+              position += pageContentHeight;
+              remainingHeight -= pageContentHeight;
+              currentPage++;
+            }
+            
+            // Save PDF
+            doc.save(filename);
+          } finally {
+            // Clean up
+            document.body.removeChild(pdfContent);
           }
-          
-          // Save PDF
-          doc.save(filename);
-          
-          // Clean up
-          document.body.removeChild(pdfContent);
-          
         } catch (error) {
           console.error('PDF generation failed:', error);
           throw new Error('Could not generate PDF: ' + error.message);
@@ -1677,3 +1814,4 @@
   </script>
 </body>
 </html>
+`
