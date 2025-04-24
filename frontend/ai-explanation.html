@@ -709,6 +709,9 @@
       color: var(--text-tertiary);
     }
   </style>
+  <!-- Add jsPDF library for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body class="dark-theme">
   <header class="top-header">
@@ -944,6 +947,9 @@
           
           const result = await response.json();
           
+          // Update the risk level indicator
+          updateRiskLevelIndicator(analysisData.result.risk_score);
+          
           // Display the explanation
           aiLoading.style.display = 'none';
           aiContent.style.display = 'block';
@@ -959,6 +965,36 @@
         }
       }
 
+      // Add new function to update risk level indicator
+      function updateRiskLevelIndicator(riskScore) {
+        const riskLevelElement = document.getElementById('risk-level');
+        if (!riskLevelElement) return;
+        
+        // Clear the spinner and "Analyzing..." text
+        riskLevelElement.innerHTML = '';
+        
+        // Determine risk level based on score
+        let riskClass = 'low';
+        let riskText = 'Low Risk';
+        
+        if (riskScore > 70) {
+          riskClass = 'high';
+          riskText = 'High Risk';
+        } else if (riskScore > 30) {
+          riskClass = 'medium';
+          riskText = 'Medium Risk';
+        }
+        
+        // Update the risk level element
+        riskLevelElement.classList.add(riskClass);
+        riskLevelElement.innerHTML = `
+          <i class="fas ${riskClass === 'high' ? 'fa-exclamation-triangle' : 
+                        riskClass === 'medium' ? 'fa-exclamation-circle' : 
+                        'fa-check-circle'}"></i>
+          <span>${riskText} (${Math.round(riskScore)}%)</span>
+        `;
+      }
+      
       // Completely overhauled createFeaturesHTML function
       function createFeaturesHTML(features) {
         if (!features || Object.keys(features).length === 0) {
@@ -1476,6 +1512,167 @@
           alert('Unable to copy report: ' + err);
         }
       });
+
+      // PDF Generation functionality
+      document.getElementById('generate-pdf').addEventListener('click', function() {
+        // Show loading state
+        const originalBtnText = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+        this.disabled = true;
+        
+        // Get current date and time for the filename
+        const now = new Date();
+        const dateString = now.toLocaleDateString().replace(/\//g, '-');
+        const timeString = now.toLocaleTimeString().replace(/:/g, '-').replace(/\s/g, '');
+        const filename = `PhishGuard-Analysis-${dateString}-${timeString}.pdf`;
+        
+        // Delay to allow UI update before heavy processing
+        setTimeout(() => {
+          generatePDF(filename)
+            .then(() => {
+              // Restore button state
+              document.getElementById('generate-pdf').innerHTML = originalBtnText;
+              document.getElementById('generate-pdf').disabled = false;
+            })
+            .catch(error => {
+              console.error('PDF generation error:', error);
+              alert('Failed to generate PDF: ' + error.message);
+              document.getElementById('generate-pdf').innerHTML = originalBtnText;
+              document.getElementById('generate-pdf').disabled = false;
+            });
+        }, 100);
+      });
+      
+      async function generatePDF(filename) {
+        try {
+          // Get URL and risk info
+          const url = document.getElementById('analyzed-url').textContent;
+          const riskLevel = document.getElementById('risk-level').textContent;
+          
+          // Get current active panel
+          const activePanel = document.querySelector('.ai-panel.active');
+          const activePanelId = activePanel.id;
+          const activePanelContent = activePanel.querySelector('.ai-content');
+          
+          // Create temporary div with structured content for PDF
+          const pdfContent = document.createElement('div');
+          pdfContent.style.position = 'absolute';
+          pdfContent.style.left = '-9999px';
+          pdfContent.style.top = '0';
+          pdfContent.style.width = '800px';
+          pdfContent.style.padding = '20px';
+          pdfContent.style.backgroundColor = '#ffffff';
+          pdfContent.style.color = '#000000';
+          pdfContent.style.fontFamily = 'Arial, sans-serif';
+          
+          // Create PDF header with logo and title
+          const header = document.createElement('div');
+          header.style.display = 'flex';
+          header.style.alignItems = 'center';
+          header.style.marginBottom = '20px';
+          header.style.borderBottom = '2px solid #3d85c6';
+          header.style.paddingBottom = '10px';
+          
+          header.innerHTML = `
+            <div style="font-size: 24px; font-weight: bold; color: #3d85c6; margin-right: 15px;">
+              <i class="fas fa-shield-alt"></i> PhishGuard
+            </div>
+            <div style="font-size: 20px; color: #333;">Security Analysis Report</div>
+          `;
+          
+          // Create metadata section
+          const metadata = document.createElement('div');
+          metadata.style.marginBottom = '20px';
+          metadata.style.padding = '15px';
+          metadata.style.backgroundColor = '#f5f5f5';
+          metadata.style.borderRadius = '5px';
+          metadata.style.fontSize = '14px';
+          
+          metadata.innerHTML = `
+            <div><strong>URL:</strong> ${url.replace('URL: ', '')}</div>
+            <div><strong>Risk Level:</strong> ${riskLevel}</div>
+            <div><strong>Report Generated:</strong> ${new Date().toLocaleString()}</div>
+          `;
+          
+          // Copy the content from active panel and style it for PDF
+          const contentClone = activePanelContent.cloneNode(true);
+          
+          // Convert all elements to black text for better printing
+          const allElements = contentClone.querySelectorAll('*');
+          allElements.forEach(el => {
+            el.style.color = '#000000';
+            
+            // Make h2, h3 headers blue for better structure
+            if (el.tagName === 'H2' || el.tagName === 'H3') {
+              el.style.color = '#3d85c6';
+            }
+          });
+          
+          // Add content to the PDF container
+          pdfContent.appendChild(header);
+          pdfContent.appendChild(metadata);
+          pdfContent.appendChild(contentClone);
+          
+          // Add a footer
+          const footer = document.createElement('div');
+          footer.style.marginTop = '30px';
+          footer.style.borderTop = '1px solid #ccc';
+          footer.style.paddingTop = '10px';
+          footer.style.fontSize = '12px';
+          footer.style.color = '#777';
+          footer.style.textAlign = 'center';
+          footer.innerHTML = `Generated by PhishGuard • ${new Date().toLocaleDateString()}`;
+          
+          pdfContent.appendChild(footer);
+          
+          // Add to body temporarily
+          document.body.appendChild(pdfContent);
+          
+          // Use jsPDF
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'pt',
+            format: 'a4'
+          });
+          
+          // Convert to canvas with html2canvas
+          const canvas = await html2canvas(pdfContent, {
+            scale: 1.5,
+            useCORS: true,
+            logging: false
+          });
+          
+          // Calculate dimensions
+          const imgWidth = 550;
+          const pageHeight = doc.internal.pageSize.getHeight();
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          let heightLeft = imgHeight;
+          let position = 40; // Top margin
+          
+          // Add first page
+          doc.addImage(canvas, 'PNG', 20, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+          
+          // Add subsequent pages if content is long
+          while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            doc.addPage();
+            doc.addImage(canvas, 'PNG', 20, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+          
+          // Save PDF
+          doc.save(filename);
+          
+          // Clean up
+          document.body.removeChild(pdfContent);
+          
+        } catch (error) {
+          console.error('PDF generation failed:', error);
+          throw new Error('Could not generate PDF: ' + error.message);
+        }
+      }
     });
   </script>
 </body>
