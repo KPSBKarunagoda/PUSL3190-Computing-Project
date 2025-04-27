@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard - Protect Yourself from Phishing Attacks</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="footer-styles.css">
+  <style>
+    body.dark-theme {
+      padding-bottom: 0;
+    }
+    
+    /* Hero Section - Increased Height */
+    .hero-section {
+      background: linear-gradient(135deg, var(--card-bg), #121820);
+      padding: 100px 0 100px; /* Increased from 100px 0 80px for more vertical space */
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    }
+    
+    .hero-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .hero-section::after {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(61, 133, 198, 0.05) 0%, rgba(78, 201, 176, 0.05) 50%, transparent 70%);
+      top: -150px;
+      right: -150px;
+      z-index: 0;
+    }
+    
+    .hero-title {
+      font-size: 3.5rem;
+      font-weight: 700;
+      margin-bottom: 25px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+    
+    .hero-subtitle {
+      font-size: 1.4rem;
+      color: var(--text-secondary);
+      max-width: 800px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+    
+    .cta-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 40px;
+    }
+    
+    .btn-cta-primary {
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      color: white;
+      border: none;
+      padding: 15px 35px;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 25px rgba(61, 133, 198, 0.25);
+    }
+    
+    .btn-cta-primary:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 30px rgba(61, 133, 198, 0.3);
+    }
+    
+    .btn-cta-secondary {
+      background-color: transparent;
+      border: 2px solid var(--primary-color);
+      color: var(--primary-color);
+      padding: 15px 35px;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .btn-cta-secondary:hover {
+      background-color: rgba(61, 133, 198, 0.1);
+      transform: translateY(-4px);
+    }
+    
+    /* Features Section - Enhanced */
+    .features-section {
+      padding: 120px 0;
+      background-color: var(--dark-bg);
+      position: relative;
+      overflow: visible;
+      z-index: 1;
+    }
+    
+    .features-section::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      left: 0;
+      right: 0;
+      height: 200px;
+      background: linear-gradient(to bottom, transparent, var(--dark-bg));
+      z-index: 0;
+      pointer-events: none;
+    }
+    
+    .section-title {
+      text-align: center;
+      font-size: 2.8rem;
+      margin-bottom: 80px;
+      color: var(--text-primary);
+      position: relative;
+      font-weight: 600;
+    }
+    
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      border-radius: 2px;
+    }
+    
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 35px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .feature-card {
+      background: linear-gradient(145deg, var(--card-bg), rgba(40, 40, 40, 0.8));
+      border-radius: 16px;
+      padding: 40px 30px;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      text-align: center;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform: translateZ(0); /* Force hardware acceleration */
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-15px) translateZ(0);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      border-color: rgba(61, 133, 198, 0.3);
+    }
+    
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    }
+    
+    .feature-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle at bottom right, rgba(61, 133, 198, 0.1), transparent);
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .feature-card:hover::after {
+      opacity: 1;
+    }
+    
+    .feature-icon {
+      width: 85px;
+      height: 85px;
+      background: linear-gradient(135deg, rgba(61, 133, 198, 0.1), rgba(78, 201, 176, 0.1));
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 25px;
+      font-size: 2rem;
+      color: var(--primary-color);
+      transition: all 0.4s ease;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      position: relative;
+      z-index: 1;
+    }
+    
+    .feature-card:hover .feature-icon {
+      background: linear-gradient(135deg, rgba(61, 133, 198, 0.2), rgba(78, 201, 176, 0.2));
+      transform: scale(1.1) rotate(5deg);
+      box-shadow: 0 8px 20px rgba(61, 133, 198, 0.2);
+    }
+    
+    .feature-icon i {
+      transition: transform 0.3s ease;
+    }
+    
+    .feature-card:hover .feature-icon i {
+      transform: scale(1.2);
+    }
+    
+    .feature-title {
+      font-size: 1.4rem;
+      margin-bottom: 15px;
+      color: var(--text-primary);
+      font-weight: 600;
+      position: relative;
+      padding-bottom: 12px;
+    }
+    
+    .feature-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    }
+    
+    .feature-description {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      font-size: 1rem;
+      margin: 0;
+      flex-grow: 1;
+    }
+    
+    /* How It Works Section */
+    .how-it-works {
+      background-color: var(--card-bg);
+      padding: 80px 0;
+    }
+    
+    .steps-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    .step-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 30px;
+      margin-top: 60px;
+    }
+    
+    @media (max-width: 992px) {
+      .step-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .step-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .step-item {
+      text-align: center;
+      position: relative;
+    }
+    
+    .step-number {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+      border-radius: 50%;
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 25px;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .step-title {
+      font-size: 1.3rem;
+      margin-bottom: 15px;
+      color: var(--text-primary);
+    }
+    
+    .step-description {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+    
+    .step-connector {
+      position: absolute;
+      top: 30px;
+      left: 50%;
+      right: -50%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      z-index: 1;
+    }
+    
+    .step-item:last-child .step-connector {
+      display: none;
+    }
+    
+    /* Stats Section */
+    .stats-section {
+      padding: 80px 0;
+      background-color: var(--dark-bg);
+      text-align: center;
+    }
+    
+    .stats-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 40px;
+      padding: 0 20px;
+    }
+    
+    .stat-item {
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .stat-number {
+      font-size: 3.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+    
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: 1.2rem;
+    }
+    
+    /* Navigation */
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background-color: rgba(30, 30, 30, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .nav-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 80px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    .nav-logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .nav-logo i {
+      color: var(--primary-color);
+      font-size: 1.8rem;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 30px;
+      align-items: center;
+    }
+    
+    .nav-link {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 1rem;
+      transition: all 0.2s;
+      padding: 8px 0;
+      position: relative;
+    }
+    
+    .nav-link:hover {
+      color: var(--primary-color);
+    }
+    
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      transition: width 0.3s;
+    }
+    
+    .nav-link:hover::after {
+      width: 100%;
+    }
+    
+    .nav-buttons {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+    
+    .btn-login {
+      color: var(--primary-color);
+      text-decoration: none;
+      background: transparent;
+      border: 1px solid var(--primary-color);
+      padding: 8px 20px;
+      border-radius: 30px;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+    
+    .btn-login:hover {
+      background-color: rgba(61, 133, 198, 0.1);
+    }
+    
+    .btn-register {
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      color: white;
+      text-decoration: none;
+      padding: 8px 20px;
+      border-radius: 30px;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+    
+    .btn-register:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(61, 133, 198, 0.3);
+    }
+    
+    /* Mobile menu */
+    .mobile-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+    
+    /* Call to action section */
+    .cta-section {
+      background: linear-gradient(135deg, rgba(61, 133, 198, 0.1), rgba(78, 201, 176, 0.1));
+      padding: 80px 0;
+      text-align: center;
+    }
+    
+    .cta-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    .cta-title {
+      font-size: 2.5rem;
+      margin-bottom: 25px;
+      color: var(--text-primary);
+    }
+    
+    .cta-description {
+      color: var(--text-secondary);
+      font-size: 1.2rem;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 768px) {
+      .hero-title {
+        font-size: 2.5rem;
+      }
+      
+      .hero-subtitle {
+        font-size: 1.1rem;
+      }
+      
+      .cta-buttons {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+      
+      .nav-links, .nav-buttons {
+        display: none;
+      }
+      
+      .mobile-toggle {
+        display: block;
+      }
+      
+      .step-grid {
+        gap: 40px;
+      }
+      
+      .step-connector {
+        display: none;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .hero-title {
+        font-size: 2rem;
+      }
+      
+      .section-title {
+        font-size: 1.8rem;
+      }
+      
+      .stat-number {
+        font-size: 2.5rem;
+      }
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <!-- Navigation -->
+  <nav class="top-nav">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <i class="fas fa-shield-alt"></i>
+        <span>PhishGuard</span>
+      </a>
+      
+      <div class="nav-links">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#how-it-works" class="nav-link">How It Works</a>
+        <a href="education.html" class="nav-link">Education</a>
+        <a href="#about" class="nav-link">About</a>
+      </div>
+      
+      <div class="nav-buttons">
+        <a href="login.html" class="btn-login">Log In</a>
+        <a href="register.html" class="btn-register">Register</a>
+      </div>
+      
+      <button class="mobile-toggle">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </nav>
+  
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-container">
+      <h1 class="hero-title">Stay Safe from Phishing Attacks</h1>
+      <p class="hero-subtitle">PhishGuard uses AI-powered technology to detect and block phishing attempts in real-time, keeping your data and identity secure online.</p>
+      
+      <div class="cta-buttons">
+        <a href="register.html" class="btn-cta-primary">
+          <i class="fas fa-shield-alt"></i>
+          Get Started for Free
+        </a>
+        <a href="analyze.html" class="btn-cta-secondary">
+          <i class="fas fa-search"></i>
+          Check a URL
+        </a>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Features Section -->
+  <section class="features-section" id="features">
+    <h2 class="section-title">Powerful Protection Features</h2>
+    
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-robot"></i>
+        </div>
+        <h3 class="feature-title">ML-Based Detection</h3>
+        <p class="feature-description">Our advanced machine learning algorithm analyzes URL patterns and website characteristics to identify phishing attempts that traditional tools miss.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-bolt"></i>
+        </div>
+        <h3 class="feature-title">Real-Time Protection</h3>
+        <p class="feature-description">Instant scanning of URLs before you visit them, preventing access to malicious websites and protecting your sensitive information.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <h3 class="feature-title">Security Education</h3>
+        <p class="feature-description">Learn how to identify phishing attempts with our comprehensive educational resources and interactive training tools.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-key"></i>
+        </div>
+        <h3 class="feature-title">Password Health Check</h3>
+        <p class="feature-description">Evaluate the strength of your passwords and get recommendations to improve your overall security posture.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-tachometer-alt"></i>
+        </div>
+        <h3 class="feature-title">Security Dashboard</h3>
+        <p class="feature-description">Visualize your security status and track protection metrics through an intuitive, user-friendly dashboard.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-bell"></i>
+        </div>
+        <h3 class="feature-title">Threat Alerts</h3>
+        <p class="feature-description">Receive instant alerts when PhishGuard detects suspicious activity targeting your accounts or personal information.</p>
+      </div>
+    </div>
+  </section>
+  
+  <!-- How It Works Section -->
+  <section class="how-it-works" id="how-it-works">
+    <h2 class="section-title">How PhishGuard Works</h2>
+    
+    <div class="steps-container">
+      <div class="step-grid">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-connector"></div>
+          <h3 class="step-title">Install Extension</h3>
+          <p class="step-description">Add the PhishGuard extension to your browser with just a few clicks to start protecting yourself online.</p>
+        </div>
+        
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-connector"></div>
+          <h3 class="step-title">Browse Securely</h3>
+          <p class="step-description">PhishGuard silently scans every URL in real-time as you browse the web, without slowing you down.</p>
+        </div>
+        
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-connector"></div>
+          <h3 class="step-title">Get Instant Alerts</h3>
+          <p class="step-description">Receive immediate notifications when dangerous sites are detected, with detailed information about potential threats.</p>
+        </div>
+        
+        <div class="step-item">
+          <div class="step-number">4</div>
+          <h3 class="step-title">Stay Safe</h3>
+          <p class="step-description">Automatically block malicious sites and continue browsing with confidence, knowing PhishGuard has your back.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Statistics Section -->
+  <section class="stats-section">
+    <h2 class="section-title">Trusted Protection</h2>
+    
+    <div class="stats-container">
+      <div class="stat-item">
+        <div class="stat-number">10M+</div>
+        <div class="stat-label">Phishing Attempts Blocked</div>
+      </div>
+      
+      <div class="stat-item">
+        <div class="stat-number">500K+</div>
+        <div class="stat-label">Users Protected</div>
+      </div>
+      
+      <div class="stat-item">
+        <div class="stat-number">98%</div>
+        <div class="stat-label">Detection Accuracy</div>
+      </div>
+      
+      <div class="stat-item">
+        <div class="stat-number">24/7</div>
+        <div class="stat-label">Real-Time Protection</div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Call to Action Section -->
+  <section class="cta-section">
+    <div class="cta-container">
+      <h2 class="cta-title">Ready to Protect Yourself?</h2>
+      <p class="cta-description">Create your free PhishGuard account today and take the first step toward safer browsing. Our easy setup takes less than a minute.</p>
+      
+      <div class="cta-buttons">
+        <a href="register.html" class="btn-cta-primary">
+          <i class="fas fa-user-plus"></i>
+          Create Free Account
+        </a>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Footer Section -->
+  <footer class="pg-footer">
+    <div class="pg-footer-container">
+      <div class="pg-footer-column">
+        <div class="pg-footer-logo">
+          <i class="fas fa-shield-alt"></i>
+          <h3>PhishGuard</h3>
+        </div>
+        <p class="pg-footer-description">
+          Protecting users against phishing attacks with advanced detection technology and security education.
+        </p>
+        <div class="pg-footer-social">
+          <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+          <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+          <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
+        </div>
+      </div>
+      
+      <div class="pg-footer-column pg-footer-links">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+          <li><a href="analyze.html"><i class="fas fa-search"></i> URL Analysis</a></li>
+          <li><a href="reports.html"><i class="fas fa-flag"></i> Reports</a></li>
+          <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+        </ul>
+      </div>
+      
+      <div class="pg-footer-column pg-footer-links">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="education.html"><i class="fas fa-book"></i> Phishing Education</a></li>
+          <li><a href="password-health.html"><i class="fas fa-key"></i> Password Health</a></li>
+          <li><a href="#"><i class="fas fa-question-circle"></i> Help Center</a></li>
+          <li><a href="#"><i class="fas fa-file-alt"></i> Blog</a></li>
+        </ul>
+      </div>
+      
+      <div class="pg-footer-column pg-footer-links">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#"><i class="fas fa-shield-alt"></i> Privacy Policy</a></li>
+          <li><a href="#"><i class="fas fa-gavel"></i> Terms of Service</a></li>
+          <li><a href="#"><i class="fas fa-cookie"></i> Cookie Policy</a></li>
+          <li><a href="#"><i class="fas fa-id-card"></i> Contact Us</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="pg-footer-copyright">
+      <p>&copy; 2023 PhishGuard - All Rights Reserved</p>
+    </div>
+  </footer>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Smooth scroll for navigation
+      document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+          e.preventDefault();
+          
+          const targetId = this.getAttribute('href');
+          if (targetId === '#') return;
+          
+          const targetElement = document.querySelector(targetId);
+          if (targetElement) {
+            window.scrollTo({
+              top: targetElement.offsetTop - 80,
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
+      
+      // Mobile menu toggle
+      const mobileToggle = document.querySelector('.mobile-toggle');
+      const navLinks = document.querySelector('.nav-links');
+      const navButtons = document.querySelector('.nav-buttons');
+      
+      if (mobileToggle) {
+        mobileToggle.addEventListener('click', () => {
+          // This is a placeholder - in a real implementation, you'd create a proper mobile menu
+          alert('Mobile menu functionality will be implemented later');
+        });
+      }
+      
+      // Enhanced authentication check for smarter navigation
+      const token = localStorage.getItem('phishguardToken');
+      const userLinks = document.querySelectorAll('.nav-buttons');
+      
+      if (token) {
+        // User is logged in, replace login/register buttons with dashboard link
+        userLinks.forEach(linkContainer => {
+          linkContainer.innerHTML = `
+            <a href="dashboard.html" class="btn-register">
+              <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+          `;
+        });
+        
+        // Also add dashboard and other user-specific links to main navigation
+        if (navLinks) {
+          let userNavHTML = `
+            <a href="#features" class="nav-link">Features</a>
+            <a href="#how-it-works" class="nav-link">How It Works</a>
+            <a href="education.html" class="nav-link">Education</a>
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="analyze.html" class="nav-link">Analyze URL</a>
+          `;
+          navLinks.innerHTML = userNavHTML;
+        }
+        
+        // Add welcome message somewhere if desired
+        const heroSubtitle = document.querySelector('.hero-subtitle');
+        if (heroSubtitle) {
+          // Get username if available
+          const userData = JSON.parse(localStorage.getItem('phishguardUser') || '{}');
+          const username = userData.username || userData.email || 'there';
+          
+          // Add personalized message
+          const welcomeDiv = document.createElement('div');
+          welcomeDiv.className = 'welcome-message';
+          welcomeDiv.innerHTML = `Welcome back, <strong>${username}</strong>! <a href="dashboard.html">View your dashboard</a>`;
+          
+          heroSubtitle.parentNode.insertBefore(welcomeDiv, heroSubtitle.nextSibling);
+          
+          // Add style for welcome message
+          const style = document.createElement('style');
+          style.textContent = `
+            .welcome-message {
+              background-color: rgba(61, 133, 198, 0.1);
+              border-radius: 10px;
+              padding: 12px 20px;
+              margin: 20px auto;
+              max-width: 80%;
+              color: var(--text-primary);
+              border-left: 4px solid var(--primary-color);
+            }
+            .welcome-message a {
+              color: var(--primary-color);
+              text-decoration: none;
+              font-weight: bold;
+            }
+            .welcome-message a:hover {
+              text-decoration: underline;
+            }
+          `;
+          document.head.appendChild(style);
+        }
+        
+        // You might want to adjust your hero section CTA buttons for logged-in users
+        const ctaButtons = document.querySelector('.cta-buttons');
+        if (ctaButtons) {
+          ctaButtons.innerHTML = `
+            <a href="dashboard.html" class="btn-cta-primary">
+              <i class="fas fa-tachometer-alt"></i>
+              Go to Your Dashboard
+            </a>
+            <a href="analyze.html" class="btn-cta-secondary">
+              <i class="fas fa-search"></i>
+              Check a URL
+            </a>
+          `;
+        }
+      }
+      
+      // Simple animation for stats numbers
+      const statNumbers = document.querySelectorAll('.stat-number');
+      
+      const animateStats = () => {
+        statNumbers.forEach(stat => {
+          const targetValue = stat.textContent;
+          stat.textContent = '0';
+          
+          let currentValue = 0;
+          const targetValueNum = parseInt(targetValue.replace(/\D/g,'')) || 0;
+          const duration = 2000; // 2 seconds
+          const interval = 20;
+          const steps = duration / interval;
+          const increment = targetValueNum / steps;
+          
+          // Skip animation for non-numeric values like "24/7"
+          if (isNaN(targetValueNum) || targetValueNum === 0) {
+            stat.textContent = targetValue;
+            return;
+          }
+          
+          const timer = setInterval(() => {
+            currentValue += increment;
+            if (currentValue >= targetValueNum) {
+              stat.textContent = targetValue;
+              clearInterval(timer);
+            } else {
+              stat.textContent = Math.round(currentValue) + '+';
+            }
+          }, interval);
+        });
+      };
+      
+      // Use Intersection Observer to trigger animation when stats are visible
+      const statsSection = document.querySelector('.stats-section');
+      if (statsSection) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              animateStats();
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.1 });
+        
+        observer.observe(statsSection);
+      }
+    });
+  </script>
+</body>
+</html>
