@@ -2,10 +2,21 @@ const express = require('express');
 const router = express.Router();
 const AuthService = require('../services/auth');
 const bcrypt = require('bcrypt'); // Add this import for bcrypt
+const crypto = require('crypto'); // Add this import for crypto
+const rateLimit = require('express-rate-limit'); // Add this import for rate limiting
 
 module.exports = function(dbConnection) {
     const authService = new AuthService(dbConnection);
     const authMiddleware = require('../middleware/auth')(dbConnection);
+    
+    // Add rate limiting middleware for password reset
+    const passwordResetLimiter = rateLimit({
+        windowMs: 60 * 60 * 1000, // 1 hour
+        max: 5, // 5 requests per hour per IP
+        message: 'Too many password reset attempts, please try again after an hour',
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
     
     // POST /api/auth/login - User login endpoint
     router.post('/login', async (req, res) => {
@@ -198,6 +209,71 @@ module.exports = function(dbConnection) {
                 role: req.user.role
             }
         });
+    });
+
+    // Password reset request - generates token and sends email
+    router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
+        try {
+            const { email } = req.body;
+            
+            if (!email) {
+                return res.status(400).json({ message: 'Email is required' });
+            }
+            
+            console.log(`Processing password reset request for: ${email}`);
+            
+            // Send password reset email (with improved error handling)
+            try {
+                await authService.sendPasswordResetEmail(email);
+                
+                // For security reasons, always return the same response
+                // regardless of whether the email exists or not
+                res.status(200).json({ 
+                    message: 'If your email is registered, you will receive reset instructions.' 
+                });
+            } catch (error) {
+                console.error('Detailed error in password reset process:', error);
+                res.status(500).json({ message: 'Server error while processing password reset' });
+            }
+            
+        } catch (error) {
+            console.error('Password reset request error:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    });
+
+    // Verify reset token and set new password
+    router.post('/reset-password', async (req, res) => {
+        try {
+            const { email, token, password } = req.body;
+            
+            if (!email || !token || !password) {
+                return res.status(400).json({ message: 'All fields are required' });
+            }
+            
+            // Validate password strength
+            if (password.length < 8) {
+                return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+            }
+            
+            // Find user and verify token
+            const valid = await authService.verifyResetToken(email, token);
+            if (!valid) {
+                return res.status(401).json({ message: 'Invalid or expired reset token' });
+            }
+            
+            // Update password
+            await authService.updatePassword(email, password);
+            
+            // Clear reset token
+            await authService.clearResetToken(email);
+            
+            res.status(200).json({ message: 'Password successfully updated' });
+            
+        } catch (error) {
+            console.error('Password reset error:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
     });
     
     return router;

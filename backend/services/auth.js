@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const emailService = require('./email-service');
 require('dotenv').config();
 
 class AuthService {
@@ -113,9 +114,10 @@ class AuthService {
     
     async getUserByEmail(email) {
         const [users] = await this.connection.execute(
-            'SELECT UserID, Username, Email FROM User WHERE Email = ?',
+            'SELECT * FROM User WHERE Email = ?',
             [email]
         );
+        
         return users.length > 0 ? users[0] : null;
     }
     
@@ -182,6 +184,128 @@ class AuthService {
             };
         } catch (error) {
             console.error('Error in createUser:', error);
+            throw error;
+        }
+    }
+
+    async storeResetToken(userId, tokenHash) {
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1);
+        
+        try {
+            await this.connection.execute(
+                'INSERT INTO PasswordReset (UserID, TokenHash, ExpiresAt) VALUES (?, ?, ?) ' +
+                'ON DUPLICATE KEY UPDATE TokenHash = ?, ExpiresAt = ?',
+                [userId, tokenHash, expiresAt, tokenHash, expiresAt]
+            );
+        } catch (error) {
+            console.error('Error storing reset token:', error);
+            throw error;
+        }
+    }
+
+    async verifyResetToken(email, token) {
+        try {
+            // Get user and token info
+            const [users] = await this.connection.execute(
+                'SELECT u.UserID, pr.TokenHash, pr.ExpiresAt FROM User u ' +
+                'JOIN PasswordReset pr ON u.UserID = pr.UserID ' +
+                'WHERE u.Email = ? AND pr.ExpiresAt > NOW()',
+                [email]
+            );
+            
+            if (users.length === 0) return false;
+            
+            const user = users[0];
+            
+            // Verify token
+            const isValid = await bcrypt.compare(token, user.TokenHash);
+            return isValid;
+        } catch (error) {
+            console.error('Token verification error:', error);
+            return false;
+        }
+    }
+
+    async updatePassword(email, newPassword) {
+        const hashedPassword = await this.hashPassword(newPassword);
+        
+        await this.connection.execute(
+            'UPDATE User SET PasswordHash = ? WHERE Email = ?',
+            [hashedPassword, email]
+        );
+    }
+
+    async clearResetToken(email) {
+        await this.connection.execute(
+            'DELETE pr FROM PasswordReset pr ' +
+            'JOIN User u ON pr.UserID = u.UserID ' +
+            'WHERE u.Email = ?',
+            [email]
+        );
+    }
+
+    async sendPasswordResetEmail(email) {
+        try {
+            // Normalize email by converting to lowercase
+            const normalizedEmail = email.toLowerCase().trim();
+            
+            // Check if user exists
+            const user = await this.getUserByEmail(normalizedEmail);
+            
+            if (!user) {
+                // If user doesn't exist, log it (but don't reveal to client)
+                console.log(`Password reset attempted for non-existent email: ${normalizedEmail}`);
+                
+                // For security, we'll simulate successful response timing
+                // to prevent timing attacks that could reveal if an email exists
+                await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 500));
+                
+                // Return success: false, but don't throw an error
+                // This ensures consistent API response regardless of email existence
+                return { success: false, message: 'Request processed' };
+            }
+            
+            // Rest of email sending logic for existing users
+            // Generate a secure random token
+            const resetToken = crypto.randomBytes(32).toString('hex');
+            
+            // Hash the token for database storage
+            const hashedToken = await bcrypt.hash(resetToken, 10);
+            
+            // Store the token in the database
+            await this.storeResetToken(user.UserID, hashedToken);
+            
+            // Create reset URL
+            const resetUrl = `http://localhost:3000/reset-password.html?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
+            
+            try {
+                // Send the email only for existing users
+                await emailService.sendPasswordResetEmail(normalizedEmail, {
+                    username: user.Username || normalizedEmail.split('@')[0],
+                    resetUrl: resetUrl
+                });
+                
+                console.log(`Password reset email sent successfully to: ${normalizedEmail}`);
+                return { success: true, message: 'Email sent successfully' };
+            } catch (emailError) {
+                // Email sending failed - log the error but don't expose details
+                console.error(`Failed to send password reset email to ${normalizedEmail}:`, emailError);
+                
+                // In development, log the reset URL to console so testing can continue
+                if (process.env.NODE_ENV !== 'production') {
+                    console.log('=====================================');
+                    console.log('EMAIL SENDING FAILED - Using fallback');
+                    console.log('Password Reset URL:', resetUrl);
+                    console.log('=====================================');
+                    // Still return success since we've stored the token and provided a way to test
+                    return { success: true, fallback: true };
+                }
+                
+                throw new Error('Failed to send password reset email');
+            }
+        } catch (error) {
+            console.error('Error in sendPasswordResetEmail:', error);
             throw error;
         }
     }
