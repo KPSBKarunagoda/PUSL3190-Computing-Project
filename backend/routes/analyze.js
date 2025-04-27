@@ -1,53 +1,134 @@
-router.post('/analyze-url', async (req, res) => {
+const express = require('express');
+const { spawn } = require('child_process');
+
+// Convert to a function that receives database connection
+module.exports = function(db) {
+  const router = express.Router();
+
+  router.post('/analyze-url', async (req, res) => {
     try {
-        const { url } = req.body;
-        
-        // Input validation
-        if (!url) {
-            return res.status(400).json({
-                error: 'Missing URL parameter',
-                message: 'Please provide a URL to analyze'
-            });
-        }
-        
-        // URL validation
+      const { url, useSafeBrowsing } = req.body;
+      
+      // Input validation
+      if (!url) {
+        return res.status(400).json({
+          error: 'Missing URL parameter',
+          message: 'Please provide a URL to analyze'
+        });
+      }
+      
+      // URL validation
+      const isValidUrl = (urlString) => {
         try {
-            new URL(url);
+          const url = new URL(urlString);
+          return url.protocol === 'http:' || url.protocol === 'https:';
         } catch (e) {
-            return res.status(400).json({
-                error: 'Invalid URL format',
-                message: 'The provided URL is not valid'
-            });
+          return false;
         }
+      };
+      
+      if (!isValidUrl(url)) {
+        return res.status(400).json({
+          error: 'Invalid URL format',
+          message: 'The provided URL is not valid'
+        });
+      }
+      
+      // Now db is properly defined from the function parameter
+      // Check whitelist first
+      const [whitelisted] = await db.execute(
+        'SELECT * FROM Whitelist WHERE URL = ? OR Domain = ?',
+        [url, new URL(url).hostname]
+      );
+
+      if (whitelisted.length > 0) {
+        return res.json({
+          url: url,
+          risk_score: 0,
+          is_phishing: false,
+          ml_confidence: 100,
+          message: 'URL is whitelisted and considered safe',
+          features: {
+            whitelist_status: 'Approved',
+            whitelist_entry: whitelisted[0]
+          }
+        });
+      }
+
+      // If not whitelisted, continue with Python analysis
+      const safeBrowsingFlag = String(Boolean(useSafeBrowsing));
+      console.log(`Analyzing URL: ${url}, Safe Browsing enabled: ${safeBrowsingFlag}`);
+      
+      try {
+        const python = spawn('python', [
+          'analyze_url.py', 
+          url, 
+          safeBrowsingFlag
+        ]);
         
-        // Check whitelist first
-        const [whitelisted] = await db.execute(
-            'SELECT * FROM Whitelist WHERE URL = ? OR Domain = ?',
-            [url, new URL(url).hostname]
-        );
+        let jsonData = '';
+        let debugOutput = '';
 
-        if (whitelisted.length > 0) {
-            return res.json({
+        python.stdout.on('data', (data) => {
+          jsonData += data.toString();
+          console.log('Python stdout:', data.toString());
+        });
+
+        python.stderr.on('data', (data) => {
+          debugOutput += data.toString();
+          console.log('Python stderr:', data.toString());
+        });
+
+        python.on('close', (code) => {
+          console.log('Python process exited with code', code);
+          try {
+            if (jsonData.trim()) {
+              const result = JSON.parse(jsonData.trim());
+              
+              // Ensure consistent response structure
+              const response = {
                 url: url,
-                risk_score: 0,
-                is_phishing: false,
-                ml_confidence: 100,
-                message: 'URL is whitelisted and considered safe',
-                features: {
-                    whitelist_status: 'Approved',
-                    whitelist_entry: whitelisted[0]
-                }
-            });
-        }
+                risk_score: result.risk_score || 0,
+                is_phishing: result.is_phishing || false,
+                risk_explanation: result.risk_explanation || result.message || 'No detailed explanation available',
+                features: result.ml_result?.features || {}, // Include the features from ml_result
+                ml_confidence: result.ml_confidence || result.ml_result?.confidence || 0,
+                timestamp: new Date().toISOString()
+              };
 
-        // If not whitelisted, continue with your existing analysis
-        // ...existing analysis code...
+              console.log('Sending analysis response:', response);
+              res.json(response);
+            } else {
+              res.status(500).json({
+                error: 'Analysis failed',
+                debug: debugOutput
+              });
+            }
+          } catch (e) {
+            console.error('JSON parse error:', e);
+            res.status(500).json({
+              error: 'JSON parse error',
+              debug: debugOutput,
+              originalError: e.message
+            });
+          }
+        });
+      } catch (error) {
+        console.error('Python spawn error:', error);
+        res.status(500).json({
+          error: 'Server error',
+          message: error.message
+        });
+      }
 
     } catch (error) {
-        console.error('Analysis error:', error);
-        res.status(500).json({ 
-            error: 'Analysis failed',
-            message: error.message 
-        });
+      console.error('Analysis error:', error);
+      res.status(500).json({ 
+        error: 'Analysis failed',
+        message: error.message 
+      });
     }
-});
+  });
+
+  return router;
+};

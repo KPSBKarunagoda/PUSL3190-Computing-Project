@@ -43,8 +43,7 @@ app.use((req, res, next) => {
 
 // Debug endpoint - add this before any other routes
 app.get('/api/debug', (req, res) => {
-  console.log('Debug endpoint accessed');
-  res.json({ status: 'Server is running' });
+  res.json({ status: 'API is running' });
 });
 
 // Setup static file serving for frontend
@@ -66,6 +65,26 @@ const loginLimiter = rateLimit({
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/admin-login', loginLimiter);
 
+// Import routes with proper require statements
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
+const analyzeRoutes = require('./routes/analyze');  
+const analysisRoutes = require('./routes/analysis'); 
+
+// When setting up routes, make sure to properly initialize them
+console.log('Setting up API routes...');
+
+// Register routes with correct database connection passed
+app.use('/api/auth', authRoutes(pool));
+app.use('/api/user', userRoutes(pool));
+app.use('/', analyzeRoutes(pool));  // This will handle /analyze-url
+app.use('/api', analysisRoutes);    // This will handle /api/analyze-email-headers
+
+// Simple status check endpoint
+app.get('/api/status', (req, res) => {
+  res.json({ status: 'Server is running', uptime: process.uptime() });
+});
+
 // Initialize server with database connection
 async function initializeServer() {
   // Test database connection
@@ -84,16 +103,17 @@ async function initializeServer() {
   console.log('Setting up API routes...');
   
   try {
-    // Import routes modules
-    const authRouter = require('./routes/auth');
+    // Import routes modules - make sure analyzeRoutes is properly required
     const listRouter = require('./routes/lists');
     const educationRouter = require('./routes/education');
     const adminRouter = require('./routes/admin');
-    const userRouter = require('./routes/user');
     const votesRouter = require('./routes/votes');
     const passwordCheckRouter = require('./routes/password-check');
     const reportsRouter = require('./routes/reports');
     const adminReportsRouter = require('./routes/admin-reports');
+    
+    // Mount analyzeRoutes here, not in the API route block since it handles /analyze-url at the root level
+    setupRoute('/', analyzeRoutes);
     
     // Debug log for education router
     console.log('Education router loaded:', educationRouter ? 'Yes' : 'No');
@@ -178,105 +198,23 @@ async function initializeServer() {
       }
     });
     
-    setupRoute('/api/auth', authRouter);
+    setupRoute('/api/auth', authRoutes);
     setupRoute('/api/lists', listRouter);
     setupRoute('/api/admin', adminRouter);
-    setupRoute('/api/user', userRouter);
+    setupRoute('/api/user', userRoutes);
     setupRoute('/api/votes', votesRouter);
     setupRoute('/api/check-password', passwordCheckRouter);
     setupRoute('/api/reports', reportsRouter);
     setupRoute('/api/admin/reports', adminReportsRouter);
+    app.use('/api', analysisRoutes);
     
-    // API route for URL analysis
-    app.post('/analyze-url', async (req, res) => {
-      const { url, useSafeBrowsing } = req.body;
-      
-      // Validate URL before processing
-      const isValidUrl = (urlString) => {
-        try {
-          const url = new URL(urlString);
-          return url.protocol === 'http:' || url.protocol === 'https:';
-        } catch (e) {
-          return false;
-        }
-      };
-      
-      if (!url || !isValidUrl(url)) {
-        return res.status(400).json({ error: 'Invalid URL format' });
-      }
-      
-      const safeBrowsingFlag = String(Boolean(useSafeBrowsing));
-      console.log(`Analyzing URL: ${url}, Safe Browsing enabled: ${safeBrowsingFlag}`);
-      
-      try {
-        const python = spawn('python', [
-          'analyze_url.py', 
-          url, 
-          safeBrowsingFlag
-        ]);
-        
-        let jsonData = '';
-        let debugOutput = '';
-
-        python.stdout.on('data', (data) => {
-          jsonData += data.toString();
-          console.log('Python stdout:', data.toString());
-        });
-
-        python.stderr.on('data', (data) => {
-          debugOutput += data.toString();
-          console.log('Python stderr:', data.toString());
-        });
-
-        python.on('close', (code) => {
-          console.log('Python process exited with code', code);
-          try {
-            if (jsonData.trim()) {
-              const result = JSON.parse(jsonData.trim());
-              
-              // Ensure consistent response structure
-              const response = {
-                url: url,
-                risk_score: result.risk_score || 0,
-                is_phishing: result.is_phishing || false,
-                risk_explanation: result.risk_explanation || result.message || 'No detailed explanation available',
-                features: result.ml_result?.features || {}, // Include the features from ml_result
-                ml_confidence: result.ml_confidence || result.ml_result?.confidence || 0,
-                timestamp: new Date().toISOString()
-              };
-
-              console.log('Sending analysis response:', response);
-              res.json(response);
-            } else {
-              res.status(500).json({
-                error: 'Analysis failed',
-                debug: debugOutput
-              });
-            }
-          } catch (e) {
-            console.error('JSON parse error:', e);
-            res.status(500).json({
-              error: 'JSON parse error',
-              debug: debugOutput,
-              originalError: e.message
-            });
-          }
-        });
-      } catch (error) {
-        console.error('Server error:', error);
-        res.status(500).json({
-          error: 'Server error',
-          message: error.message
-        });
-      }
-    });
-
     // Start the server
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`✅ API routes configured:`);
       console.log(`   - /api/education/key-findings`);
+      console.log(`   - /api/analyze-email-headers`);
     });
   } catch (error) {
     console.error('Error setting up routes:', error);
@@ -310,3 +248,6 @@ initializeServer().catch(err => {
   console.error('Server initialization failed:', err);
   process.exit(1);
 });
+
+// Add to console log of API routes configured
+console.log(`   - /api/analyze-email-headers`);
