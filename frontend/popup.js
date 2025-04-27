@@ -36,7 +36,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // User avatar and role elements
     userAvatar: document.querySelector('.user-avatar'),
-    userRole: document.getElementById('user-role')
+    userRole: document.getElementById('user-role'),
+
+    // Key findings and detailed analysis elements
+    findingsCards: document.getElementById('findings-cards'),
+    viewDetailedAnalysis: document.getElementById('view-detailed-analysis'),
   };
 
   // First check authentication state
@@ -283,6 +287,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
   }
+
+  // Setup detailed analysis button
+  if (elements.viewDetailedAnalysis) {
+    elements.viewDetailedAnalysis.addEventListener('click', () => {
+      // Get analyzed URL from current tab
+      chrome.tabs.query({active: true, currentWindow: true}, async (tabs) => {
+        if (tabs && tabs.length > 0) {
+          const url = tabs[0].url;
+          // Store URL in session storage for analyze.html
+          chrome.storage.session.set({ 'lastAnalyzedUrl': url }, () => {
+            // Open analyze.html in new tab
+            chrome.tabs.create({ url: 'http://localhost:3000/analyze.html' });
+          });
+        }
+      });
+    });
+  }
   
   try {
     // Get current tab
@@ -349,17 +370,14 @@ async function processTab(tab, elements) {
   showLoading(elements);
   console.log('Analyzing URL:', tab.url);
   
-  // Get user preferences
-  const preferences = await chrome.storage.sync.get(['safeSearchEnabled']);
-  const useSafeBrowsing = preferences.safeSearchEnabled !== false; // default to true
-  
   try {
     // Request analysis (will return cached result if available)
+    // Always use Safe Browsing API by default (removing toggle functionality)
     const result = await sendMessageWithTimeout(
       { 
         type: 'analyzeNow', 
         url: tab.url,
-        useSafeBrowsing: useSafeBrowsing,
+        useSafeBrowsing: true, // Always use Safe Browsing
         forceRefresh: false // Don't force reanalysis
       },
       10000 // 10 second timeout
@@ -409,16 +427,13 @@ function setupRefreshButton(tab, elements) {
     }
     
     try {
-      // Get user preferences for analysis
-      const preferences = await chrome.storage.sync.get(['safeSearchEnabled']);
-      const useSafeBrowsing = preferences.safeSearchEnabled !== false;
-      
       // Request fresh analysis with forceRefresh flag
+      // Always use Safe Browsing API (removing toggle functionality)
       const freshResult = await sendMessageWithTimeout(
         { 
           type: 'analyzeNow', 
           url: tab.url,
-          useSafeBrowsing: useSafeBrowsing,
+          useSafeBrowsing: true, // Always use Safe Browsing
           forceRefresh: true // Force reanalysis
         },
         10000
@@ -821,7 +836,7 @@ function makeAuthenticatedRequest(endpoint, method = 'GET', body = null) {
 
 // Replace the vote count retrieval in showResult with the VotingSystem approach
 function showResult(result, elements) {
-  const { scoreElement, statusElement, resultContainer, scoreSection, riskExplanation, currentSiteLink, circleFill } = elements;
+  const { scoreElement, statusElement, resultContainer, scoreSection, riskExplanation, currentSiteLink, circleFill, findingsCards } = elements;
 
   console.log('Processing result:', result);
 
@@ -922,6 +937,21 @@ function showResult(result, elements) {
     currentSiteLink.href = displayData.url;
   }
 
+  // Only display key findings if risk score is over 40 (changed from 50)
+  if (findingsCards) {
+    if (displayData.risk_score > 40) {
+      displayKeyFindings(findingsCards, result, displayData.url);
+    } else {
+      // Hide the findings section completely when risk score is 40 or below
+      const findingsSection = findingsCards.closest('.key-findings-section');
+      if (findingsSection) {
+        findingsSection.style.display = 'none';
+      } else {
+        findingsCards.style.display = 'none';
+      }
+    }
+  }
+
   if (resultContainer) {
     if (Object.keys(displayData.features).length > 0) {
       resultContainer.innerHTML = `
@@ -941,8 +971,184 @@ function showResult(result, elements) {
   }
 }
 
+// Add the displayKeyFindings function
+async function displayKeyFindings(container, result, url) {
+  container.innerHTML = '<div class="finding-placeholder"><div class="finding-loader"></div></div>';
+  
+  try {
+    console.log('Requesting key findings for URL:', url);
+    
+    // Check if we have a valid token for authentication
+    const authState = await getAuthState();
+    if (!authState.isLoggedIn) {
+      container.innerHTML = `
+        <div class="finding-card medium-risk">
+          <div class="finding-header">
+            <i class="fas fa-info-circle"></i>
+            <span>Login Required</span>
+          </div>
+          <p>Log in to view key security findings for this URL.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Call the backend API for key findings
+    const response = await fetch('http://localhost:3000/api/education/key-findings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': authState.token
+      },
+      body: JSON.stringify({ url, analysisResult: result })
+    });
+    
+    console.log('Key findings response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Key findings API error:', response.status, errorText);
+      throw new Error(`Failed to fetch key findings: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Key findings retrieved successfully:', data);
+    
+    const findings = data.findings || [];
+    console.log(`Displaying ${findings.length} key findings`);
+    
+    // Clear the container
+    container.innerHTML = '';
+    
+    // If no findings, show a default message
+    if (findings.length === 0) {
+      container.innerHTML = `
+        <div class="finding-card low-risk">
+          <div class="finding-header">
+            <i class="fas fa-check-circle"></i>
+            <span>No significant risk factors</span>
+          </div>
+          <p>No major security concerns detected.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Check for SSL/HTTPS findings specifically
+    const sslFindings = findings.filter(f => 
+      f.text.includes('SSL/TLS certificate validation') || 
+      f.text.includes('No HTTPS')
+    );
+    
+    // If we have multiple SSL/HTTPS findings, show them together first
+    if (sslFindings.length > 1) {
+      sslFindings.forEach(finding => {
+        const iconClass = 'fas fa-shield-alt'; // Special icon for security issues
+        
+        container.innerHTML += `
+          <div class="finding-card ssl-security-warning ${finding.severity}-risk">
+            <div class="finding-header">
+              <i class="${iconClass}"></i>
+              <span>${finding.text}</span>
+            </div>
+            <p>${finding.description ? finding.description.split('.')[0] + '.' : 'Security concern detected.'}</p>
+          </div>
+        `;
+      });
+      
+      // Adjust the remaining findings to show
+      const otherFindings = findings.filter(f => !sslFindings.includes(f));
+      const remainingCount = Math.min(3 - sslFindings.length, otherFindings.length);
+      
+      // Show up to (3 - sslFindings.length) more findings
+      if (remainingCount > 0) {
+        // Show other high priority findings
+        const highRisk = otherFindings.filter(f => f.severity === 'high');
+        const mediumRisk = otherFindings.filter(f => f.severity === 'medium');
+        const lowRisk = otherFindings.filter(f => f.severity === 'low');
+        
+        // Combine them with high risk first, then medium, then low
+        const prioritizedFindings = [...highRisk, ...mediumRisk, ...lowRisk].slice(0, remainingCount);
+        
+        // Add these findings to the container
+        prioritizedFindings.forEach(finding => {
+          const iconClass = finding.severity === 'high' ? 'fas fa-exclamation-triangle' : 
+                           finding.severity === 'medium' ? 'fas fa-exclamation-circle' : 
+                           'fas fa-info-circle';
+          
+          container.innerHTML += `
+            <div class="finding-card ${finding.severity}-risk">
+              <div class="finding-header">
+                <i class="${iconClass}"></i>
+                <span>${finding.text}</span>
+              </div>
+              <p>${finding.description ? finding.description.split('.')[0] + '.' : 'Risk factor detected.'}</p>
+            </div>
+          `;
+        });
+      }
+      
+      // If we limited the findings, add a note
+      if ((findings.length - sslFindings.length) > remainingCount) {
+        container.innerHTML += `
+          <div class="more-findings-note">
+            <i class="fas fa-plus-circle"></i> 
+            <span>${findings.length - sslFindings.length} more findings available in detailed view</span>
+          </div>
+        `;
+      }
+    } else {
+      // Show up to 3 most important findings (prioritize high risk)
+      const highRisk = findings.filter(f => f.severity === 'high');
+      const mediumRisk = findings.filter(f => f.severity === 'medium');
+      const lowRisk = findings.filter(f => f.severity === 'low');
+      
+      // Combine them with high risk first, then medium, then low
+      const prioritizedFindings = [...highRisk, ...mediumRisk, ...lowRisk].slice(0, 3);
+      
+      // Add findings to the container
+      prioritizedFindings.forEach(finding => {
+        const iconClass = finding.severity === 'high' ? 'fas fa-exclamation-triangle' : 
+                         finding.severity === 'medium' ? 'fas fa-exclamation-circle' : 
+                         'fas fa-info-circle';
+        
+        container.innerHTML += `
+          <div class="finding-card ${finding.severity}-risk">
+            <div class="finding-header">
+              <i class="${iconClass}"></i>
+              <span>${finding.text}</span>
+            </div>
+            <p>${finding.description ? finding.description.split('.')[0] + '.' : 'Risk factor detected.'}</p>
+          </div>
+        `;
+      });
+      
+      // If we limited the findings, add a note
+      if (findings.length > 3) {
+        container.innerHTML += `
+          <div class="more-findings-note">
+            <i class="fas fa-plus-circle"></i> 
+            <span>${findings.length - 3} more findings available in detailed view</span>
+          </div>
+        `;
+      }
+    }
+  } catch (error) {
+    console.error('Error displaying key findings:', error);
+    container.innerHTML = `
+      <div class="finding-card medium-risk">
+        <div class="finding-header">
+          <i class="fas fa-exclamation-circle"></i>
+          <span>Error loading findings</span>
+        </div>
+        <p>Failed to load key findings. View detailed analysis for more information.</p>
+      </div>
+    `;
+  }
+}
+
 function showLoading(elements) {
-  const { scoreElement, statusElement, resultContainer, scoreSection, riskExplanation, circleFill } = elements;
+  const { scoreElement, statusElement, resultContainer, scoreSection, riskExplanation, circleFill, findingsCards } = elements;
 
   if (scoreElement) {
     scoreElement.textContent = '...';
@@ -957,6 +1163,14 @@ function showLoading(elements) {
   if (circleFill) {
     circleFill.style.strokeDashoffset = '339.3'; // Reset to empty
     circleFill.classList.remove('safe', 'warning', 'danger');
+  }
+
+  if (findingsCards) {
+    findingsCards.innerHTML = `
+      <div class="finding-placeholder">
+        <div class="finding-loader"></div>
+      </div>
+    `;
   }
 
   if (resultContainer) {

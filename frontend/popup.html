@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="popup-styles.css">
     <link rel="stylesheet" href="popup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <title>PhishGuard</title>
@@ -128,17 +129,20 @@
             </div>
         </section>
 
-        <!-- Diagnostic Tools Section -->
-        <section class="diagnostic-tools">
-            <h3><i class="fas fa-tools"></i> Analysis Settings</h3>
-            <div class="settings-section">
-                <label class="switch">
-                    <input type="checkbox" id="safeSearchToggle" checked>
-                    <span class="slider"></span>
-                </label>
-                <span class="toggle-label">Google Safe Browsing API</span>
+        <!-- Key Findings Section -->
+        <section class="key-findings-section">
+            <h3><i class="fas fa-exclamation-circle"></i> Key Findings</h3>
+            <div id="findings-cards" class="findings-cards">
+                <!-- Findings will be populated by JavaScript -->
+                <div class="finding-placeholder">
+                    <div class="finding-loader"></div>
+                </div>
             </div>
-            <p class="diagnostic-note">Toggle off to use ML analysis only</p>
+            <div class="detailed-analysis-container">
+                <button id="view-detailed-analysis" class="detailed-analysis-btn">
+                    <i class="fas fa-search-plus"></i> View Detailed Analysis
+                </button>
+            </div>
         </section>
 
         <!-- Refresh button -->

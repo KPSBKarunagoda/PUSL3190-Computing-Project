@@ -1,0 +1,160 @@
+/* Key Findings Section Styles */
+.key-findings-section {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.key-findings-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.key-findings-section h3 i {
+  color: var(--primary-color);
+}
+
+.findings-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.finding-card {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid transparent;
+}
+
+.finding-card.high-risk {
+  border-left-color: #f44336;
+}
+
+.finding-card.medium-risk {
+  border-left-color: #ff9800;
+}
+
+.finding-card.low-risk {
+  border-left-color: #4caf50;
+}
+
+/* Special styling for SSL/HTTPS security warnings */
+.finding-card.ssl-security-warning {
+  border-left-width: 4px;
+  background-color: rgba(244, 67, 54, 0.05);
+}
+
+.finding-card.ssl-security-warning .finding-header i {
+  color: #d32f2f;
+}
+
+.finding-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.finding-card.high-risk .finding-header i {
+  color: #f44336;
+}
+
+.finding-card.medium-risk .finding-header i {
+  color: #ff9800;
+}
+
+.finding-card.low-risk .finding-header i {
+  color: #4caf50;
+}
+
+.finding-card p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.finding-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80px;
+}
+
+.finding-loader {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: var(--primary-color);
+  animation: finding-loader-spin 1s linear infinite;
+}
+
+@keyframes finding-loader-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.more-findings-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  padding: 4px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  margin-top: 6px;
+}
+
+.more-findings-note i {
+  color: var(--primary-color);
+}
+
+/* Detailed Analysis Button */
+.detailed-analysis-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.detailed-analysis-btn {
+  background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.detailed-analysis-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.3);
+  filter: brightness(110%);
+}
+
+.detailed-analysis-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}

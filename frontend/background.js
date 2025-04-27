@@ -298,12 +298,13 @@ async function analyzeAndCacheURL(url) {
 async function analyzeURL(url, useSafeBrowsing) {
   // Implementation of your analysis function
   try {
+    // Always use Safe Browsing, ignoring the parameter
     const response = await fetch('http://localhost:3000/analyze-url', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         url: url,
-        useSafeBrowsing: useSafeBrowsing
+        useSafeBrowsing: true // Always use Safe Browsing
       })
     });
     

@@ -86,8 +86,8 @@ class EducationService {
     
     if (url.startsWith('http:')) {
       findings.push({
-        text: 'Missing SSL/TLS security certificate',
-        description: 'This site does not use HTTPS encryption, which is a major security concern.',
+        text: 'No HTTPS',
+        description: 'This site uses insecure HTTP instead of HTTPS. Any information you send could be intercepted. Modern legitimate websites use HTTPS encryption.',
         severity: 'high'
       });
     }
@@ -103,6 +103,15 @@ class EducationService {
   
     // Process features if available
     if (features && Object.keys(features).length > 0) {
+      // Check for TLS/SSL certificate feature explicitly
+      if ('tls_ssl_certificate' in features && features.tls_ssl_certificate === 0) {
+        findings.push({
+          text: 'SSL/TLS certificate validation failed',
+          description: 'This site either has no SSL/TLS certificate or has an invalid certificate. Secure sites use valid certificates to encrypt your data and verify their identity.',
+          severity: 'high'
+        });
+      }
+
       // Domain Google indexing
       if ('domain_google_index' in features) {
         const domainIndexValue = Number(features.domain_google_index);
