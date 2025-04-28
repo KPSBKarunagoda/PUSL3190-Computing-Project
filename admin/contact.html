@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contact Submissions - PhishGuard Admin</title>
-  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     .contact-list {
@@ -223,10 +223,13 @@
 </head>
 <body>
   <div class="admin-container">
+    <!-- Updated Sidebar Navigation to match other admin pages -->
     <nav id="sidebar" class="sidebar">
-      <div class="sidebar-brand">
-        <i class="fas fa-shield-alt"></i>
-        <span>PhishGuard Admin</span>
+      <div class="sidebar-header">
+        <h3><i class="fas fa-shield-alt"></i> PhishGuard</h3>
+        <button id="sidebar-toggle" class="sidebar-toggle">
+          <i class="fas fa-bars"></i>
+        </button>
       </div>
       <ul class="sidebar-menu">
         <li>
@@ -248,7 +251,7 @@
           <a href="votes.html"><i class="fas fa-vote-yea"></i> Votes</a>
         </li>
         <li class="active">
-          <a href="contact.html"><i class="fas fa-envelope"></i> Contact Submissions</a>
+          <a href="contact.html"><i class="fas fa-envelope"></i> Contact</a>
         </li>
         <li>
           <a href="settings.html"><i class="fas fa-cogs"></i> Settings</a>
@@ -256,22 +259,16 @@
       </ul>
       
       <div class="sidebar-footer">
-        <a href="#" id="logout-btn" class="nav-link">
-          <i class="fas fa-sign-out-alt"></i>
-          <span>Logout</span>
-        </a>
+        <button id="logout-btn" class="btn btn-outline">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
       </div>
     </nav>
     
     <!-- Main Content -->
     <main id="content" class="content">
       <header class="content-header">
-        <div class="header-left">
-          <button id="sidebar-toggle" class="toggle-sidebar-btn">
-            <i class="fas fa-bars"></i>
-          </button>
-          <h1>Contact Submissions</h1>
-        </div>
+        <h1><i class="fas fa-envelope"></i> Contact Submissions</h1>
         <div class="user-info">
           <span id="current-user">Admin</span>
           <div class="avatar">
