@@ -80,15 +80,6 @@ app.use('/api/user', userRoutes(pool));
 app.use('/', analyzeRoutes(pool));  // This will handle /analyze-url
 app.use('/api', analysisRoutes);    // This will handle /api/analyze-email-headers
 
-// Define Routes
-app.use('/api/users', require('./routes/users'));
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/urls', require('./routes/urls'));
-app.use('/api/reports', require('./routes/reports'));
-app.use('/api/email', require('./routes/email'));
-app.use('/api/contact-us', require('./routes/contact'));
-app.use('/api/education', require('./routes/education'));
-app.use('/api/user', require('./routes/user'));
 
 // Simple status check endpoint
 app.get('/api/status', (req, res) => {
