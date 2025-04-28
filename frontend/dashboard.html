@@ -517,6 +517,85 @@
       font-size: 0.9rem;
     }
     
+    /* Feature Content Styling */
+    .feature-content {
+      margin-top: 15px;
+    }
+    
+    .feature-content p {
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      font-size: 1.05rem;
+      line-height: 1.5;
+    }
+    
+    .feature-highlight {
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-left: 4px solid var(--accent-color);
+    }
+    
+    .feature-details {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .feature-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-secondary);
+    }
+    
+    .feature-list li i {
+      color: var(--accent-color);
+      font-size: 0.9rem;
+    }
+    
+    .action-button-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+      filter: brightness(105%);
+    }
+    
+    .btn-primary:active {
+      transform: translateY(-1px);
+    }
+    
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -572,7 +651,10 @@
           <i class="fas fa-tachometer-alt"></i> Dashboard
         </a>
         <a href="analyze.html" class="header-nav-item">
-          <i class="fas fa-search"></i> Analyze
+          <i class="fas fa-search"></i> URL Analysis
+        </a>
+        <a href="email-analysis.html" class="header-nav-item">
+          <i class="fas fa-envelope"></i> Email Analysis
         </a>
         <a href="settings.html" class="header-nav-item">
           <i class="fas fa-cog"></i> Settings
@@ -654,6 +736,29 @@
           </div>
         </section>
         
+        <!-- Email Header Analysis Section -->
+        <section class="dashboard-section">
+          <h2><i class="fas fa-envelope-open-text"></i> Email Header Analysis</h2>
+          <div class="feature-content">
+            <p>Analyze email headers to detect sophisticated phishing attempts that bypass traditional security filters.</p>
+            <div class="feature-highlight">
+              <div class="feature-details">
+                <ul class="feature-list">
+                  <li><i class="fas fa-check-circle"></i> Authentication check (SPF, DKIM, DMARC)</li>
+                  <li><i class="fas fa-check-circle"></i> Routing path analysis</li>
+                  <li><i class="fas fa-check-circle"></i> Sender reputation verification</li>
+                  <li><i class="fas fa-check-circle"></i> Deception techniques detection</li>
+                </ul>
+              </div>
+            </div>
+            <div class="action-button-container">
+              <a href="email-analysis.html" class="btn-primary">
+                <i class="fas fa-envelope"></i> Analyze Email Headers
+              </a>
+            </div>
+          </div>
+        </section>
+        
         <section class="dashboard-section">
           <h2><i class="fas fa-shield-alt"></i> Security Tips</h2>
           <div class="security-tips-carousel">
@@ -713,6 +818,13 @@
               </div>
               <div class="score-item">
                 <div class="score-item-icon score-item-incomplete">
+                  <i class="fas fa-envelope"></i>
+                </div>
+                <div class="score-item-text">Perform your first email analysis</div>
+                <div class="score-item-status">Pending</div>
+              </div>
+              <div class="score-item">
+                <div class="score-item-icon score-item-incomplete">
                   <i class="fas fa-book"></i>
                 </div>
                 <div class="score-item-text">Review security education materials</div>
@@ -725,7 +837,6 @@
     </div>
   </div>
 
-  <!-- Footer Section -->
   <footer class="footer">
     <div class="footer-container">
       <div class="footer-column">
@@ -774,9 +885,8 @@
         </ul>
       </div>
     </div>
-    
     <div class="footer-copyright">
-      <p>&copy; 2025 PhishGuard </p>
+      <p>&copy; 2025 PhishGuard</p>
     </div>
   </footer>
 
@@ -832,6 +942,7 @@
       const completed = {
         passwordCheck: localStorage.getItem('completed_password_check') === 'true',
         urlAnalysis: localStorage.getItem('completed_url_analysis') === 'true',
+        emailAnalysis: localStorage.getItem('completed_email_analysis') === 'true',
         education: localStorage.getItem('completed_education') === 'true'
       };
       
@@ -840,17 +951,22 @@
       
       if (completed.passwordCheck) {
         updateTaskItem(items[0], true);
-        score += 33;
+        score += 25;
       }
       
       if (completed.urlAnalysis) {
         updateTaskItem(items[1], true);
-        score += 33;
+        score += 25;
+      }
+      
+      if (completed.emailAnalysis) {
+        updateTaskItem(items[2], true);
+        score += 25;
       }
       
       if (completed.education) {
-        updateTaskItem(items[2], true);
-        score += 34;
+        updateTaskItem(items[3], true);
+        score += 25;
       }
       
       // Update score display with animation
@@ -926,8 +1042,13 @@
         window.location.href = 'analyze.html';
       });
       
-      // Security education
+      // Email analysis
       items[2].addEventListener('click', () => {
+        window.location.href = 'email-analysis.html';
+      });
+      
+      // Security education
+      items[3].addEventListener('click', () => {
         window.location.href = 'education.html';
         // Mark as completed when the user visits the education page
         localStorage.setItem('completed_education', 'true');

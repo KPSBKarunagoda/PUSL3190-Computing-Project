@@ -237,15 +237,17 @@ function initializeSecurityScore() {
   const completed = {
     passwordCheck: localStorage.getItem('completed_password_check') === 'true',
     urlAnalysis: localStorage.getItem('completed_url_analysis') === 'true',
+    emailAnalysis: localStorage.getItem('completed_email_analysis') === 'true',
     education: localStorage.getItem('completed_education') === 'true'
   };
   
   // Calculate current score based on completed tasks
-  const totalTasks = 3;
+  const totalTasks = 4; // Updated to include email analysis
   let completedTasks = 0;
   
   if (completed.passwordCheck) completedTasks++;
   if (completed.urlAnalysis) completedTasks++;
+  if (completed.emailAnalysis) completedTasks++;
   if (completed.education) completedTasks++;
   
   const score = Math.floor((completedTasks / totalTasks) * 100);
@@ -273,8 +275,11 @@ function updateSecurityChecklist(completed) {
   // URL analysis
   updateChecklistItem(items[1], completed.urlAnalysis);
   
+  // Email analysis (new)
+  updateChecklistItem(items[2], completed.emailAnalysis);
+  
   // Security education
-  updateChecklistItem(items[2], completed.education);
+  updateChecklistItem(items[3], completed.education);
 }
 
 // Update individual checklist item
@@ -308,8 +313,11 @@ function updateSecurityChecklistItem(key, completed) {
     case 'urlAnalysis':
       targetItem = items[1];
       break;
-    case 'education':
+    case 'emailAnalysis':
       targetItem = items[2];
+      break;
+    case 'education':
+      targetItem = items[3];
       break;
   }
   
@@ -320,14 +328,16 @@ function updateSecurityChecklistItem(key, completed) {
     const completed = {
       passwordCheck: localStorage.getItem('completed_password_check') === 'true',
       urlAnalysis: localStorage.getItem('completed_url_analysis') === 'true',
+      emailAnalysis: localStorage.getItem('completed_email_analysis') === 'true',
       education: localStorage.getItem('completed_education') === 'true'
     };
     
-    const totalTasks = 3;
+    const totalTasks = 4; // Updated to include email analysis
     let completedTasks = 0;
     
     if (completed.passwordCheck) completedTasks++;
     if (completed.urlAnalysis) completedTasks++;
+    if (completed.emailAnalysis) completedTasks++; // Add this line
     if (completed.education) completedTasks++;
     
     const newScore = Math.floor((completedTasks / totalTasks) * 100);
@@ -403,8 +413,13 @@ function setupChecklistNavigation() {
     window.location.href = 'analyze.html';
   });
   
-  // Security education
+  // Email analysis (new)
   items[2].addEventListener('click', () => {
+    window.location.href = 'email-analysis.html';
+  });
+  
+  // Security education
+  items[3].addEventListener('click', () => {
     window.location.href = 'education.html';
     // Mark as completed when the user visits the education page
     localStorage.setItem('completed_education', 'true');
