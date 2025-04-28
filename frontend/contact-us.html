@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Us - PhishGuard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body.dark-theme {
+      padding-top: 80px;
+      padding-bottom: 80px;
+    }
+    
+    /* Header Navigation Styles */
+    .top-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      padding: 0 30px;
+      height: 60px;
+    }
+    
+    .top-header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    
+    .logo i {
+      font-size: 1.4rem;
+    }
+    
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .header-nav-item {
+      color: var(--text-primary);
+      text-decoration: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .header-nav-item:hover {
+      background-color: rgba(61, 133, 198, 0.1);
+      color: var(--primary-color);
+    }
+    
+    .header-nav-item.active {
+      color: var(--primary-color);
+      background-color: rgba(61, 133, 198, 0.1);
+    }
+
+    /* Contact Page Specific Styles */
+    .contact-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .contact-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
+    }
+    
+    .contact-header:after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      border-radius: 3px;
+    }
+    
+    .contact-header h1 {
+      font-size: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0;
+      color: var(--text-primary);
+    }
+    
+    .contact-header i {
+      color: var(--primary-color);
+    }
+
+    .contact-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 30px;
+    }
+
+    .contact-form-container {
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      padding: 30px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .contact-form-container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group label {
+      font-weight: 500;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-group label i {
+      color: var(--primary-color);
+      font-size: 0.9rem;
+    }
+
+    .contact-input, 
+    .contact-textarea {
+      background-color: rgba(0, 0, 0, 0.2);
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 15px;
+      color: var(--text-primary);
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+
+    .contact-input:focus,
+    .contact-textarea:focus {
+      border-color: var(--primary-color);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(61, 133, 198, 0.2);
+    }
+
+    .contact-textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+
+    .contact-submit-btn {
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      border: none;
+      color: white;
+      padding: 14px 25px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(61, 133, 198, 0.3);
+      margin-top: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .contact-submit-btn:before {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: -100%;
+      width: 300%;
+      height: 300%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transform: rotate(45deg);
+      transition: all 0.5s;
+    }
+
+    .contact-submit-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(61, 133, 198, 0.4);
+    }
+
+    .contact-submit-btn:hover:before {
+      top: 100%;
+      left: 100%;
+    }
+
+    .contact-info-container {
+      background: linear-gradient(145deg, var(--card-bg), rgba(0, 0, 0, 0.1));
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      padding: 30px;
+      height: fit-content;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .contact-info-container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .contact-info-header {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      color: var(--primary-color);
+      border-bottom: 2px solid rgba(61, 133, 198, 0.2);
+      padding-bottom: 15px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .contact-info-header:after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 60px;
+      height: 2px;
+      background: var(--accent-color);
+      transition: width 0.3s;
+    }
+
+    .contact-info-container:hover .contact-info-header:after {
+      width: 120px;
+    }
+
+    .contact-info-header i {
+      color: var(--accent-color);
+    }
+
+    .contact-info-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-top: 25px;
+    }
+
+    .contact-info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+    }
+
+    .contact-info-icon {
+      background: rgba(61, 133, 198, 0.1);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-color);
+      font-size: 1.2rem;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .contact-info-item:hover .contact-info-icon {
+      background: rgba(61, 133, 198, 0.2);
+      transform: scale(1.1);
+    }
+
+    .contact-info-text {
+      flex: 1;
+    }
+
+    .contact-info-text h3 {
+      font-size: 1.1rem;
+      margin: 0 0 5px;
+      color: var(--text-primary);
+    }
+
+    .contact-info-text p {
+      margin: 0;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .social-links {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    .social-link {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-size: 1.2rem;
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+
+    .social-link:hover {
+      transform: translateY(-5px);
+      color: white;
+    }
+
+    .social-link.twitter:hover {
+      background: #1DA1F2;
+      box-shadow: 0 5px 15px rgba(29, 161, 242, 0.4);
+    }
+
+    .social-link.facebook:hover {
+      background: #4267B2;
+      box-shadow: 0 5px 15px rgba(66, 103, 178, 0.4);
+    }
+
+    .social-link.linkedin:hover {
+      background: #0077B5;
+      box-shadow: 0 5px 15px rgba(0, 119, 181, 0.4);
+    }
+
+    .social-link.github:hover {
+      background: #333;
+      box-shadow: 0 5px 15px rgba(51, 51, 51, 0.4);
+    }
+
+    /* Success and error message styles */
+    .form-message {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-message.success {
+      background-color: rgba(76, 175, 80, 0.1);
+      border-left: 4px solid #4caf50;
+      color: #4caf50;
+    }
+
+    .form-message.error {
+      background-color: rgba(244, 67, 54, 0.1);
+      border-left: 4px solid #f44336;
+      color: #f44336;
+    }
+
+    .form-message i {
+      margin-right: 8px;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 992px) {
+      .contact-content {
+        grid-template-columns: 1fr;
+      }
+      
+      .contact-info-container {
+        order: -1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .contact-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="footer-styles.css">
+</head>
+<body class="dark-theme">
+  <header class="top-header">
+    <div class="top-header-content">
+      <div class="logo-container">
+        <a href="index.html" class="logo">
+          <i class="fas fa-shield-alt"></i>
+          <span>PhishGuard</span>
+        </a>
+      </div>
+      <nav class="header-nav">
+        <a href="dashboard.html" class="header-nav-item">
+          <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="analyze.html" class="header-nav-item">
+          <i class="fas fa-search"></i> URL Analysis
+        </a>
+        <a href="email-analysis.html" class="header-nav-item">
+          <i class="fas fa-envelope"></i> Email Analysis
+        </a>
+       
+        <a href="settings.html" class="header-nav-item">
+          <i class="fas fa-cog"></i> Settings
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="contact-container">
+    <div class="contact-header">
+      <h1><i class="fas fa-headset"></i> Contact Us</h1>
+    </div>
+    
+    <div class="contact-content">
+      <div class="contact-form-container">
+        <div id="form-message" class="form-message">
+          <i class="fas fa-check-circle"></i>
+          <span id="message-text">Your message has been sent successfully!</span>
+        </div>
+
+        <form id="contact-form" class="contact-form">
+          <div class="form-group">
+            <label for="name"><i class="fas fa-user"></i> Name</label>
+            <input type="text" id="name" name="name" class="contact-input" placeholder="Your full name" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="email"><i class="fas fa-envelope"></i> Email</label>
+            <input type="email" id="email" name="email" class="contact-input" placeholder="Your email address" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="subject"><i class="fas fa-tag"></i> Subject</label>
+            <input type="text" id="subject" name="subject" class="contact-input" placeholder="What is your message about?" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="message"><i class="fas fa-comment"></i> Message</label>
+            <textarea id="message" name="message" class="contact-textarea" placeholder="Your message here..." required></textarea>
+          </div>
+          
+          <button type="submit" id="submit-btn" class="contact-submit-btn">
+            <i class="fas fa-paper-plane"></i> Send Message
+          </button>
+        </form>
+      </div>
+      
+      <div class="contact-info-container">
+        <h2 class="contact-info-header"><i class="fas fa-info-circle"></i> Get in Touch</h2>
+        <p>Have questions or feedback? We'd love to hear from you. Reach out to our team using any of the channels below.</p>
+        
+        <div class="contact-info-list">
+          <div class="contact-info-item">
+            <div class="contact-info-icon">
+              <i class="fas fa-map-marker-alt"></i>
+            </div>
+            <div class="contact-info-text">
+              <h3>Address</h3>
+              <p>NSBM Green University Town, Pitipana, Homagama, Sri Lanka</p>
+            </div>
+          </div>
+          
+          <div class="contact-info-item">
+            <div class="contact-info-icon">
+              <i class="fas fa-phone"></i>
+            </div>
+            <div class="contact-info-text">
+              <h3>Phone</h3>
+              <p>+94 11 544 5000</p>
+            </div>
+          </div>
+          
+          <div class="contact-info-item">
+            <div class="contact-info-icon">
+              <i class="fas fa-envelope"></i>
+            </div>
+            <div class="contact-info-text">
+              <h3>Email</h3>
+              <p>support@phishguard.com</p>
+            </div>
+          </div>
+          
+          <div class="contact-info-item">
+            <div class="contact-info-icon">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="contact-info-text">
+              <h3>Hours</h3>
+              <p>Monday - Friday: 9:00 AM - 5:00 PM<br>Weekend: Closed</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="social-links">
+          <a href="#" class="social-link twitter" aria-label="Twitter">
+            <i class="fab fa-twitter"></i>
+          </a>
+          <a href="#" class="social-link facebook" aria-label="Facebook">
+            <i class="fab fa-facebook-f"></i>
+          </a>
+          <a href="#" class="social-link linkedin" aria-label="LinkedIn">
+            <i class="fab fa-linkedin-in"></i>
+          </a>
+          <a href="#" class="social-link github" aria-label="GitHub">
+            <i class="fab fa-github"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Section -->
+  <footer class="pg-footer">
+    <div class="pg-footer-container">
+      <div class="pg-footer-column">
+        <div class="pg-footer-logo">
+          <i class="fas fa-shield-alt"></i>
+          <h3>PhishGuard</h3>
+        </div>
+        <p class="pg-footer-description">
+          Protecting users against phishing attacks with advanced detection technology and security education.
+        </p>
+        <div class="pg-footer-social">
+          <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+          <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+          <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
+        </div>
+      </div>
+      
+      <div class="pg-footer-column pg-footer-links">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+          <li><a href="analyze.html"><i class="fas fa-search"></i> URL Analysis</a></li>
+          <li><a href="reports.html"><i class="fas fa-flag"></i> Reports</a></li>
+          <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
+        </ul>
+      </div>
+      
+      <div class="pg-footer-column pg-footer-links">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="education.html"><i class="fas fa-book"></i> Phishing Education</a></li>
+          <li><a href="password-health.html"><i class="fas fa-key"></i> Password Health</a></li>
+          <li><a href="#"><i class="fas fa-question-circle"></i> Help Center</a></li>
+          <li><a href="#"><i class="fas fa-file-alt"></i> Blog</a></li>
+        </ul>
+      </div>
+      
+      <div class="pg-footer-column pg-footer-links">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#"><i class="fas fa-shield-alt"></i> Privacy Policy</a></li>
+          <li><a href="#"><i class="fas fa-gavel"></i> Terms of Service</a></li>
+          <li><a href="#"><i class="fas fa-cookie"></i> Cookie Policy</a></li>
+          <li><a href="contact-us.html"><i class="fas fa-id-card"></i> Contact Us</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="pg-footer-copyright">
+      <p>&copy; 2025 PhishGuard | Protecting the digital world, one scan at a time</p>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check if user is logged in
+      const token = localStorage.getItem('phishguardToken');
+      if (!token) {
+        // Allow non-authenticated users to view the contact page
+        // but we'll remember to check auth state before form submission
+      }
+      
+      const contactForm = document.getElementById('contact-form');
+      const formMessage = document.getElementById('form-message');
+      const messageText = document.getElementById('message-text');
+      const submitBtn = document.getElementById('submit-btn');
+      
+      contactForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Get form data
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const subject = document.getElementById('subject').value;
+        const message = document.getElementById('message').value;
+        
+        // Basic validation
+        if (!name || !email || !subject || !message) {
+          showMessage('Please fill out all fields', 'error');
+          return;
+        }
+        
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          showMessage('Please enter a valid email address', 'error');
+          return;
+        }
+        
+        // Prepare for submission
+        const originalButtonText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        
+        try {
+          // Get authentication token - don't require login but use it if available
+          const token = localStorage.getItem('phishguardToken');
+          const headers = {
+            'Content-Type': 'application/json'
+          };
+          
+          if (token) {
+            headers['x-auth-token'] = token;
+          }
+          
+          // Send form data to backend
+          const response = await fetch('http://localhost:3000/api/contact-us', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+              name,
+              email,
+              subject,
+              message
+            })
+          });
+          
+          if (response.ok) {
+            // Show success message
+            showMessage('Your message has been sent successfully! We\'ll get back to you shortly.', 'success');
+            
+            // Clear form
+            contactForm.reset();
+          } else {
+            // Handle error response
+            const data = await response.json();
+            showMessage(data.message || 'Failed to send message. Please try again later.', 'error');
+          }
+        } catch (error) {
+          console.error('Error sending message:', error);
+          showMessage('Failed to send message. Please try again later.', 'error');
+        } finally {
+          // Reset button state
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalButtonText;
+        }
+      });
+      
+      // Function to show message
+      function showMessage(message, type) {
+        messageText.textContent = message;
+        formMessage.className = `form-message ${type}`;
+        formMessage.style.display = 'block';
+        
+        // Icon based on message type
+        const iconElement = formMessage.querySelector('i');
+        if (iconElement) {
+          iconElement.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+        }
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+          formMessage.style.display = 'none';
+        }, 5000);
+        
+        // Scroll to top of form
+        formMessage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  </script>
+</body>
+</html>
