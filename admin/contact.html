@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Submissions - PhishGuard Admin</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .contact-list {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-bottom: 20px;
+    }
+    
+    .contact-list th {
+      background-color: rgba(0, 0, 0, 0.2);
+      color: var(--text-primary);
+      font-weight: 600;
+      text-align: left;
+      padding: 15px;
+      border-bottom: 2px solid var(--border-color);
+    }
+    
+    .contact-list td {
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+    
+    .contact-list tr:hover td {
+      background-color: rgba(61, 133, 198, 0.05);
+    }
+    
+    .contact-list tr.unread td {
+      background-color: rgba(61, 133, 198, 0.1);
+      font-weight: 500;
+    }
+    
+    .contact-list tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-align: center;
+    }
+    
+    .status-new {
+      background-color: rgba(255, 152, 0, 0.15);
+      color: #ff9800;
+    }
+    
+    .status-in-progress {
+      background-color: rgba(33, 150, 243, 0.15);
+      color: #2196f3;
+    }
+    
+    .status-completed {
+      background-color: rgba(76, 175, 80, 0.15);
+      color: #4caf50;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .message-detail {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 25px;
+      display: none;
+    }
+    
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 15px;
+    }
+    
+    .message-header h3 {
+      margin: 0;
+      color: var(--text-primary);
+    }
+    
+    .message-sender {
+      margin-bottom: 20px;
+    }
+    
+    .message-sender p {
+      margin: 5px 0;
+      color: var(--text-secondary);
+    }
+    
+    .message-sender strong {
+      color: var(--text-primary);
+    }
+    
+    .message-content {
+      background-color: rgba(0, 0, 0, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+    }
+    
+    .message-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+    }
+    
+    .notes-section {
+      margin-top: 20px;
+    }
+    
+    .notes-section textarea {
+      width: 100%;
+      background-color: rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 15px;
+      color: var(--text-primary);
+      min-height: 100px;
+      margin-bottom: 15px;
+      resize: vertical;
+    }
+    
+    .filters {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .filter-label {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    
+    .filter-select {
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+    
+    .search-box {
+      flex-grow: 1;
+      position: relative;
+    }
+    
+    .search-input {
+      width: 100%;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 12px 8px 35px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+    
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+    }
+    
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+      gap: 5px;
+    }
+    
+    .pagination-item {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    
+    .pagination-item:hover {
+      background-color: rgba(61, 133, 198, 0.1);
+      color: var(--primary-color);
+    }
+    
+    .pagination-item.active {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <nav id="sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <i class="fas fa-shield-alt"></i>
+        <span>PhishGuard Admin</span>
+      </div>
+      <ul class="sidebar-menu">
+        <li>
+          <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        </li>
+        <li>
+          <a href="users.html"><i class="fas fa-users"></i> Users</a>
+        </li>
+        <li>
+          <a href="whitelist.html"><i class="fas fa-check-circle"></i> Whitelist</a>
+        </li>
+        <li>
+          <a href="blacklist.html"><i class="fas fa-ban"></i> Blacklist</a>
+        </li>
+        <li>
+          <a href="reports.html"><i class="fas fa-flag"></i> Reports</a>
+        </li>
+        <li>
+          <a href="votes.html"><i class="fas fa-vote-yea"></i> Votes</a>
+        </li>
+        <li class="active">
+          <a href="contact.html"><i class="fas fa-envelope"></i> Contact Submissions</a>
+        </li>
+        <li>
+          <a href="settings.html"><i class="fas fa-cogs"></i> Settings</a>
+        </li>
+      </ul>
+      
+      <div class="sidebar-footer">
+        <a href="#" id="logout-btn" class="nav-link">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main id="content" class="content">
+      <header class="content-header">
+        <div class="header-left">
+          <button id="sidebar-toggle" class="toggle-sidebar-btn">
+            <i class="fas fa-bars"></i>
+          </button>
+          <h1>Contact Submissions</h1>
+        </div>
+        <div class="user-info">
+          <span id="current-user">Admin</span>
+          <div class="avatar">
+            <i class="fas fa-user-shield"></i>
+          </div>
+        </div>
+      </header>
+      
+      <div id="system-alert" class="alert" role="alert" style="display: none;"></div>
+      
+      <!-- Contact Submissions Panel -->
+      <section class="card">
+        <div class="card-header">
+          <h2>
+            <i class="fas fa-envelope"></i> Messages from Users
+          </h2>
+        </div>
+        
+        <div class="card-body">
+          <!-- Filters -->
+          <div class="filters">
+            <div class="filter-group">
+              <label class="filter-label">Status:</label>
+              <select id="status-filter" class="filter-select">
+                <option value="all">All</option>
+                <option value="new">New</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label class="filter-label">Read:</label>
+              <select id="read-filter" class="filter-select">
+                <option value="all">All</option>
+                <option value="unread">Unread</option>
+                <option value="read">Read</option>
+              </select>
+            </div>
+            <div class="search-box">
+              <i class="fas fa-search search-icon"></i>
+              <input type="text" id="search-input" class="search-input" placeholder="Search by name, email, or subject...">
+            </div>
+          </div>
+          
+          <!-- Message detail view -->
+          <div id="message-detail" class="message-detail">
+            <div class="message-header">
+              <h3 id="message-subject"></h3>
+              <span id="message-date"></span>
+            </div>
+            <div class="message-sender">
+              <p><strong>From:</strong> <span id="message-name"></span> (<span id="message-email"></span>)</p>
+              <p id="message-user-info" style="display: none;"><strong>User:</strong> <span id="message-username"></span> (ID: <span id="message-user-id"></span>)</p>
+            </div>
+            <div class="message-content" id="message-content"></div>
+            
+            <div class="notes-section">
+              <h4>Admin Notes</h4>
+              <textarea id="admin-notes" placeholder="Add your notes here..."></textarea>
+              <div>
+                <button id="save-notes-btn" class="btn btn-primary">Save Notes</button>
+              </div>
+            </div>
+            
+            <div class="message-actions">
+              <div class="filter-group">
+                <label class="filter-label">Update Status:</label>
+                <select id="status-update" class="filter-select">
+                  <option value="new">New</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+                <button id="update-status-btn" class="btn btn-secondary">Update</button>
+              </div>
+              <div>
+                <button id="delete-message-btn" class="btn btn-danger">Delete</button>
+                <button id="close-detail-btn" class="btn btn-outline">Close</button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Submissions table -->
+          <table class="contact-list">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Subject</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="submissions-table">
+              <!-- Submissions will be loaded here -->
+            </tbody>
+          </table>
+          
+          <!-- No submissions message -->
+          <div id="no-submissions-message" style="display: none;">
+            <div class="empty-state">
+              <i class="fas fa-inbox empty-state-icon"></i>
+              <h3>No Submissions Found</h3>
+              <p>No contact form submissions match your current filters.</p>
+            </div>
+          </div>
+          
+          <!-- Pagination -->
+          <div id="pagination" class="pagination">
+            <!-- Pagination will be generated here -->
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  
+  <!-- Confirmation Modal -->
+  <div id="confirmation-modal" class="modal" style="display: none;">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="modal-title">Confirm Deletion</h3>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="modal-message">Are you sure you want to delete this submission? This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-cancel" class="btn btn-outline">Cancel</button>
+        <button id="modal-confirm" class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check if admin is logged in
+      const token = localStorage.getItem('phishguardToken');
+      const userJson = localStorage.getItem('phishguardUser');
+      let user;
+      
+      try {
+        user = JSON.parse(userJson);
+      } catch (e) {
+        console.error('Error parsing user data', e);
+      }
+      
+      if (!token || !user || (user.role !== 'admin' && user.role !== 'Admin')) {
+        window.location.href = '../frontend/login.html';
+        return;
+      }
+      
+      // Set admin username in header
+      document.getElementById('current-user').textContent = user.username || 'Admin';
+      
+      // Fetch contact submissions
+      let currentPage = 1;
+      const itemsPerPage = 10;
+      let totalSubmissions = 0;
+      let currentFilters = {
+        status: 'all',
+        read: 'all',
+        search: ''
+      };
+      
+      // Currently displayed submissions (for filtering)
+      let allSubmissions = [];
+      
+      // Currently selected submission
+      let selectedSubmissionId = null;
+      
+      // Elements
+      const submissionsTable = document.getElementById('submissions-table');
+      const noSubmissionsMessage = document.getElementById('no-submissions-message');
+      const paginationEl = document.getElementById('pagination');
+      const messageDetail = document.getElementById('message-detail');
+      const statusFilter = document.getElementById('status-filter');
+      const readFilter = document.getElementById('read-filter');
+      const searchInput = document.getElementById('search-input');
+      const closeDetailBtn = document.getElementById('close-detail-btn');
+      const deleteMessageBtn = document.getElementById('delete-message-btn');
+      const updateStatusBtn = document.getElementById('update-status-btn');
+      const statusUpdate = document.getElementById('status-update');
+      const saveNotesBtn = document.getElementById('save-notes-btn');
+      const adminNotes = document.getElementById('admin-notes');
+      
+      // Confirmation modal elements
+      const confirmationModal = document.getElementById('confirmation-modal');
+      const modalClose = document.querySelector('.modal-close');
+      const modalCancel = document.getElementById('modal-cancel');
+      const modalConfirm = document.getElementById('modal-confirm');
+      
+      // Fetch all submissions
+      async function fetchSubmissions() {
+        try {
+          const response = await fetch('http://localhost:3000/api/contact-us', {
+            headers: {
+              'x-auth-token': token
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch submissions');
+          }
+          
+          allSubmissions = await response.json();
+          totalSubmissions = allSubmissions.length;
+          
+          // Apply filters
+          filterSubmissions();
+        } catch (error) {
+          showAlert(error.message, 'danger');
+        }
+      }
+      
+      // Apply filters to submissions
+      function filterSubmissions() {
+        let filtered = [...allSubmissions];
+        
+        // Filter by status
+        if (currentFilters.status !== 'all') {
+          filtered = filtered.filter(sub => sub.status === currentFilters.status);
+        }
+        
+        // Filter by read status
+        if (currentFilters.read === 'read') {
+          filtered = filtered.filter(sub => sub.is_read);
+        } else if (currentFilters.read === 'unread') {
+          filtered = filtered.filter(sub => !sub.is_read);
+        }
+        
+        // Filter by search term
+        if (currentFilters.search) {
+          const searchTerm = currentFilters.search.toLowerCase();
+          filtered = filtered.filter(sub => 
+            sub.name.toLowerCase().includes(searchTerm) || 
+            sub.email.toLowerCase().includes(searchTerm) || 
+            sub.subject.toLowerCase().includes(searchTerm) ||
+            sub.message.toLowerCase().includes(searchTerm)
+          );
+        }
+        
+        // Update total for pagination
+        totalSubmissions = filtered.length;
+        
+        // Render the current page
+        renderSubmissions(filtered);
+        renderPagination();
+      }
+      
+      // Render submissions for current page
+      function renderSubmissions(submissions) {
+        // Clear the table
+        submissionsTable.innerHTML = '';
+        
+        // Calculate pagination
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, submissions.length);
+        const currentPageSubmissions = submissions.slice(startIndex, endIndex);
+        
+        // Show no submissions message if none found
+        if (currentPageSubmissions.length === 0) {
+          noSubmissionsMessage.style.display = 'block';
+        } else {
+          noSubmissionsMessage.style.display = 'none';
+          
+          // Render each submission
+          currentPageSubmissions.forEach(submission => {
+            const tr = document.createElement('tr');
+            
+            // Add unread class if not read
+            if (!submission.is_read) {
+              tr.classList.add('unread');
+            }
+            
+            // Format date
+            const date = new Date(submission.submission_date);
+            const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            
+            // Determine status class
+            let statusClass = '';
+            let statusText = '';
+            
+            switch (submission.status) {
+              case 'new':
+                statusClass = 'status-new';
+                statusText = 'New';
+                break;
+              case 'in_progress':
+                statusClass = 'status-in-progress';
+                statusText = 'In Progress';
+                break;
+              case 'completed':
+                statusClass = 'status-completed';
+                statusText = 'Completed';
+                break;
+            }
+            
+            tr.innerHTML = `
+              <td>${submission.name}</td>
+              <td>${submission.email}</td>
+              <td>${submission.subject}</td>
+              <td>${formattedDate}</td>
+              <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+              <td class="action-buttons">
+                <button class="btn btn-sm btn-primary view-btn" data-id="${submission.id}">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-danger delete-btn" data-id="${submission.id}">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            `;
+            
+            submissionsTable.appendChild(tr);
+          });
+          
+          // Add event listeners to view buttons
+          document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const submissionId = btn.getAttribute('data-id');
+              viewSubmission(submissionId);
+            });
+          });
+          
+          // Add event listeners to delete buttons
+          document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const submissionId = btn.getAttribute('data-id');
+              showDeleteConfirmation(submissionId);
+            });
+          });
+        }
+      }
+      
+      // Render pagination links
+      function renderPagination() {
+        paginationEl.innerHTML = '';
+        
+        const totalPages = Math.ceil(totalSubmissions / itemsPerPage);
+        
+        // Previous page
+        if (currentPage > 1) {
+          const prev = document.createElement('a');
+          prev.href = '#';
+          prev.className = 'pagination-item';
+          prev.innerHTML = '<i class="fas fa-chevron-left"></i>';
+          prev.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentPage--;
+            filterSubmissions();
+          });
+          paginationEl.appendChild(prev);
+        }
+        
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+          const pageLink = document.createElement('a');
+          pageLink.href = '#';
+          pageLink.className = `pagination-item${i === currentPage ? ' active' : ''}`;
+          pageLink.textContent = i;
+          
+          pageLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentPage = i;
+            filterSubmissions();
+          });
+          
+          paginationEl.appendChild(pageLink);
+        }
+        
+        // Next page
+        if (currentPage < totalPages) {
+          const next = document.createElement('a');
+          next.href = '#';
+          next.className = 'pagination-item';
+          next.innerHTML = '<i class="fas fa-chevron-right"></i>';
+          next.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentPage++;
+            filterSubmissions();
+          });
+          paginationEl.appendChild(next);
+        }
+      }
+      
+      // View submission details
+      async function viewSubmission(id) {
+        try {
+          // Find the submission in our cache
+          const submission = allSubmissions.find(s => s.id == id);
+          
+          if (!submission) {
+            throw new Error('Submission not found');
+          }
+          
+          // Save selected submission ID
+          selectedSubmissionId = id;
+          
+          // Fill detail view
+          document.getElementById('message-subject').textContent = submission.subject;
+          document.getElementById('message-name').textContent = submission.name;
+          document.getElementById('message-email').textContent = submission.email;
+          document.getElementById('message-content').textContent = submission.message;
+          
+          // Format date
+          const date = new Date(submission.submission_date);
+          document.getElementById('message-date').textContent = date.toLocaleString();
+          
+          // Set user info if available
+          if (submission.user_id && submission.username) {
+            document.getElementById('message-user-info').style.display = 'block';
+            document.getElementById('message-username').textContent = submission.username;
+            document.getElementById('message-user-id').textContent = submission.user_id;
+          } else {
+            document.getElementById('message-user-info').style.display = 'none';
+          }
+          
+          // Set notes
+          adminNotes.value = submission.admin_notes || '';
+          
+          // Set status
+          statusUpdate.value = submission.status;
+          
+          // Show detail view
+          messageDetail.style.display = 'block';
+          
+          // Mark as read if it wasn't already
+          if (!submission.is_read) {
+            await updateSubmission(id, { is_read: true });
+            
+            // Update in our local cache
+            submission.is_read = true;
+            
+            // Refresh the table
+            filterSubmissions();
+          }
+        } catch (error) {
+          showAlert(error.message, 'danger');
+        }
+      }
+      
+      // Hide message detail
+      function hideMessageDetail() {
+        messageDetail.style.display = 'none';
+        selectedSubmissionId = null;
+      }
+      
+      // Update a submission
+      async function updateSubmission(id, updates) {
+        try {
+          const response = await fetch(`http://localhost:3000/api/contact-us/${id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-auth-token': token
+            },
+            body: JSON.stringify(updates)
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to update submission');
+          }
+          
+          // Update local cache
+          const submission = allSubmissions.find(s => s.id == id);
+          if (submission) {
+            Object.assign(submission, updates);
+          }
+          
+          return await response.json();
+        } catch (error) {
+          showAlert(error.message, 'danger');
+        }
+      }
+      
+      // Delete a submission
+      async function deleteSubmission(id) {
+        try {
+          const response = await fetch(`http://localhost:3000/api/contact-us/${id}`, {
+            method: 'DELETE',
+            headers: {
+              'x-auth-token': token
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to delete submission');
+          }
+          
+          // Remove from local cache
+          allSubmissions = allSubmissions.filter(s => s.id != id);
+          
+          // Hide detail view if this was the selected submission
+          if (selectedSubmissionId == id) {
+            hideMessageDetail();
+          }
+          
+          // Update the table
+          filterSubmissions();
+          
+          showAlert('Submission deleted successfully', 'success');
+        } catch (error) {
+          showAlert(error.message, 'danger');
+        }
+      }
+      
+      // Show delete confirmation modal
+      function showDeleteConfirmation(id) {
+        selectedSubmissionId = id;
+        confirmationModal.style.display = 'flex';
+        
+        // Set up confirm button
+        modalConfirm.onclick = () => {
+          deleteSubmission(id);
+          confirmationModal.style.display = 'none';
+        };
+      }
+      
+      // Show alert message
+      function showAlert(message, type) {
+        const alertEl = document.getElementById('system-alert');
+        alertEl.className = `alert alert-${type}`;
+        alertEl.textContent = message;
+        alertEl.style.display = 'block';
+        
+        // Hide after 5 seconds
+        setTimeout(() => {
+          alertEl.style.display = 'none';
+        }, 5000);
+      }
+      
+      // Event listeners for filters
+      statusFilter.addEventListener('change', () => {
+        currentFilters.status = statusFilter.value;
+        currentPage = 1;
+        filterSubmissions();
+      });
+      
+      readFilter.addEventListener('change', () => {
+        currentFilters.read = readFilter.value;
+        currentPage = 1;
+        filterSubmissions();
+      });
+      
+      searchInput.addEventListener('input', () => {
+        currentFilters.search = searchInput.value;
+        currentPage = 1;
+        filterSubmissions();
+      });
+      
+      // Event listeners for detail view
+      closeDetailBtn.addEventListener('click', hideMessageDetail);
+      
+      updateStatusBtn.addEventListener('click', async () => {
+        if (!selectedSubmissionId) return;
+        
+        const newStatus = statusUpdate.value;
+        await updateSubmission(selectedSubmissionId, { status: newStatus });
+        
+        // Refresh the table
+        filterSubmissions();
+        
+        showAlert('Status updated successfully', 'success');
+      });
+      
+      saveNotesBtn.addEventListener('click', async () => {
+        if (!selectedSubmissionId) return;
+        
+        const notes = adminNotes.value;
+        await updateSubmission(selectedSubmissionId, { admin_notes: notes });
+        
+        showAlert('Notes saved successfully', 'success');
+      });
+      
+      // Modal event listeners
+      modalClose.addEventListener('click', () => {
+        confirmationModal.style.display = 'none';
+      });
+      
+      modalCancel.addEventListener('click', () => {
+        confirmationModal.style.display = 'none';
+      });
+      
+      // Fetch submissions on load
+      fetchSubmissions();
+      
+      // Sidebar toggle functionality
+      document.getElementById('sidebar-toggle').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('active');
+      });
+      
+      // Logout functionality
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        localStorage.removeItem('phishguardToken');
+        localStorage.removeItem('phishguardUser');
+        window.location.href = '../frontend/login.html';
+      });
+    });
+  </script>
+</body>
+</html>

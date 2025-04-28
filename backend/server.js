@@ -112,6 +112,7 @@ async function initializeServer() {
     const passwordCheckRouter = require('./routes/password-check');
     const reportsRouter = require('./routes/reports');
     const adminReportsRouter = require('./routes/admin-reports');
+    const contactRouter = require('./routes/contact'); // Keep this declaration
     
     // Mount analyzeRoutes here, not in the API route block since it handles /analyze-url at the root level
     setupRoute('/', analyzeRoutes);
@@ -207,7 +208,12 @@ async function initializeServer() {
     setupRoute('/api/check-password', passwordCheckRouter);
     setupRoute('/api/reports', reportsRouter);
     setupRoute('/api/admin/reports', adminReportsRouter);
+    setupRoute('/api/contact-us', contactRouter); 
     app.use('/api', analysisRoutes);
+    
+    // Make sure contact route is properly registered
+    app.use('/api/contact-us', contactRouter);
+    console.log('✅ Contact router mounted at /api/contact-us');
     
     // Start the server
     const PORT = process.env.PORT || 3000;

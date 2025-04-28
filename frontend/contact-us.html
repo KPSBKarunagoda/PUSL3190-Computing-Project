@@ -403,6 +403,21 @@
       margin-right: 8px;
     }
 
+    /* Style for pre-filled email field */
+    .contact-input.pre-filled {
+      background-color: rgba(61, 133, 198, 0.05);
+      border-color: var(--border-color);
+      color: var(--text-secondary);
+      cursor: not-allowed;
+    }
+    
+    .form-group .pre-filled-note {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 5px;
+      font-style: italic;
+    }
+
     /* Responsive Adjustments */
     @media (max-width: 992px) {
       .contact-content {
@@ -455,44 +470,36 @@
     <div class="contact-header">
       <h1><i class="fas fa-headset"></i> Contact Us</h1>
     </div>
-    
     <div class="contact-content">
       <div class="contact-form-container">
-        <div id="form-message" class="form-message">
-          <i class="fas fa-check-circle"></i>
-          <span id="message-text">Your message has been sent successfully!</span>
-        </div>
-
         <form id="contact-form" class="contact-form">
           <div class="form-group">
             <label for="name"><i class="fas fa-user"></i> Name</label>
             <input type="text" id="name" name="name" class="contact-input" placeholder="Your full name" required>
           </div>
-          
           <div class="form-group">
             <label for="email"><i class="fas fa-envelope"></i> Email</label>
             <input type="email" id="email" name="email" class="contact-input" placeholder="Your email address" required>
           </div>
-          
           <div class="form-group">
             <label for="subject"><i class="fas fa-tag"></i> Subject</label>
             <input type="text" id="subject" name="subject" class="contact-input" placeholder="What is your message about?" required>
           </div>
-          
           <div class="form-group">
             <label for="message"><i class="fas fa-comment"></i> Message</label>
             <textarea id="message" name="message" class="contact-textarea" placeholder="Your message here..." required></textarea>
           </div>
-          
           <button type="submit" id="submit-btn" class="contact-submit-btn">
             <i class="fas fa-paper-plane"></i> Send Message
           </button>
         </form>
+        <div id="form-message" class="form-message">
+          <i></i> <span id="message-text"></span>
+        </div>
       </div>
-      
       <div class="contact-info-container">
         <h2 class="contact-info-header"><i class="fas fa-info-circle"></i> Get in Touch</h2>
-        <p>Have questions or feedback? We'd love to hear from you. Reach out to our team using any of the channels below.</p>
+        <p>Have questions or feedback? We'd love to hear from you. Reach out to our team using any of the channels below.</p>  
         
         <div class="contact-info-list">
           <div class="contact-info-item">
@@ -504,7 +511,6 @@
               <p>NSBM Green University Town, Pitipana, Homagama, Sri Lanka</p>
             </div>
           </div>
-          
           <div class="contact-info-item">
             <div class="contact-info-icon">
               <i class="fas fa-phone"></i>
@@ -514,7 +520,6 @@
               <p>+94 11 544 5000</p>
             </div>
           </div>
-          
           <div class="contact-info-item">
             <div class="contact-info-icon">
               <i class="fas fa-envelope"></i>
@@ -524,7 +529,6 @@
               <p>support@phishguard.com</p>
             </div>
           </div>
-          
           <div class="contact-info-item">
             <div class="contact-info-icon">
               <i class="fas fa-clock"></i>
@@ -535,7 +539,6 @@
             </div>
           </div>
         </div>
-        
         <div class="social-links">
           <a href="#" class="social-link twitter" aria-label="Twitter">
             <i class="fab fa-twitter"></i>
@@ -572,7 +575,6 @@
           <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
         </div>
       </div>
-      
       <div class="pg-footer-column pg-footer-links">
         <h4>Quick Links</h4>
         <ul>
@@ -582,7 +584,6 @@
           <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
         </ul>
       </div>
-      
       <div class="pg-footer-column pg-footer-links">
         <h4>Resources</h4>
         <ul>
@@ -592,7 +593,6 @@
           <li><a href="#"><i class="fas fa-file-alt"></i> Blog</a></li>
         </ul>
       </div>
-      
       <div class="pg-footer-column pg-footer-links">
         <h4>Legal</h4>
         <ul>
@@ -603,7 +603,6 @@
         </ul>
       </div>
     </div>
-    
     <div class="pg-footer-copyright">
       <p>&copy; 2025 PhishGuard | Protecting the digital world, one scan at a time</p>
     </div>
@@ -611,18 +610,45 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // Check if user is logged in
-      const token = localStorage.getItem('phishguardToken');
-      if (!token) {
-        // Allow non-authenticated users to view the contact page
-        // but we'll remember to check auth state before form submission
-      }
-      
+      // Get form elements
       const contactForm = document.getElementById('contact-form');
       const formMessage = document.getElementById('form-message');
       const messageText = document.getElementById('message-text');
       const submitBtn = document.getElementById('submit-btn');
+      const emailInput = document.getElementById('email');
+      const nameInput = document.getElementById('name');
       
+      // Check if user is logged in and get their data
+      const userToken = localStorage.getItem('phishguardToken');
+      const userData = localStorage.getItem('phishguardUser');
+      
+      if (userToken && userData) {
+        try {
+          const user = JSON.parse(userData);
+          
+          // Pre-fill email field with user's email and make it read-only
+          if (user.email) {
+            emailInput.value = user.email;
+            emailInput.setAttribute('readonly', true);
+            emailInput.classList.add('pre-filled');
+            
+            // Add note under the email field
+            const noteElement = document.createElement('div');
+            noteElement.className = 'pre-filled-note';
+            noteElement.textContent = 'Using email from your account';
+            emailInput.parentNode.appendChild(noteElement);
+          }
+          
+          // Optionally pre-fill name field with username if available
+          if (user.username) {
+            nameInput.value = user.username;
+          }
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+        }
+      }
+      
+      // Contact form submission
       contactForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -661,7 +687,7 @@
             headers['x-auth-token'] = token;
           }
           
-          // Send form data to backend
+          // Send form data to backend - using full URL to avoid path issues
           const response = await fetch('http://localhost:3000/api/contact-us', {
             method: 'POST',
             headers: headers,
@@ -673,20 +699,36 @@
             })
           });
           
+          // Handle non-JSON responses
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server returned a non-JSON response');
+          }
+          
+          const data = await response.json();
+          
           if (response.ok) {
             // Show success message
             showMessage('Your message has been sent successfully! We\'ll get back to you shortly.', 'success');
             
             // Clear form
             contactForm.reset();
+            
+            // If email was pre-filled, restore it
+            if (emailInput.hasAttribute('readonly')) {
+              const userDataStr = localStorage.getItem('phishguardUser');
+              if (userDataStr) {
+                const userData = JSON.parse(userDataStr);
+                emailInput.value = userData.email || '';
+              }
+            }
           } else {
             // Handle error response
-            const data = await response.json();
             showMessage(data.message || 'Failed to send message. Please try again later.', 'error');
           }
         } catch (error) {
           console.error('Error sending message:', error);
-          showMessage('Failed to send message. Please try again later.', 'error');
+          showMessage('Failed to send message. Please ensure the server is running.', 'error');
         } finally {
           // Reset button state
           submitBtn.disabled = false;
