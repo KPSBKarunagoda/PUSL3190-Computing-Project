@@ -253,10 +253,14 @@ const listsAPI = {
     }
   },
   
-  // Add URL to whitelist
-  async addToWhitelist(url, token) {
+  // Add URL to whitelist with specific token (for external components)
+  addUrlToWhitelist: async (url, token) => {
     if (!token) {
-      throw new Error('Authentication required');
+      // Try to get token from Auth if available
+      token = Auth?.getToken() || localStorage.getItem('phishguard_admin_token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
     }
     
     try {
@@ -276,15 +280,19 @@ const listsAPI = {
       
       return await response.json();
     } catch (error) {
-      console.error('API error in addToWhitelist:', error);
+      console.error('API error in addUrlToWhitelist:', error);
       throw error;
     }
   },
   
-  // Add URL to blacklist
-  async addToBlacklist(url, token) {
+  // Add URL to blacklist with specific token (for external components)
+  addUrlToBlacklist: async (url, token) => {
     if (!token) {
-      throw new Error('Authentication required');
+      // Try to get token from Auth if available
+      token = Auth?.getToken() || localStorage.getItem('phishguard_admin_token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
     }
     
     try {
@@ -304,7 +312,7 @@ const listsAPI = {
       
       return await response.json();
     } catch (error) {
-      console.error('API error in addToBlacklist:', error);
+      console.error('API error in addUrlToBlacklist:', error);
       throw error;
     }
   }
