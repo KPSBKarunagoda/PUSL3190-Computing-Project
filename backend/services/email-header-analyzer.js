@@ -210,7 +210,7 @@ class EmailHeaderAnalyzer {
       // Count the number of received headers (mail server hops)
       let receivedHeaders = [];
       for (const key in headerFields) {
-        if (key === 'received' || key.startsWith('received-')) {
+        if (key.startsWith('received')) {
           receivedHeaders.push(headerFields[key]);
         }
       }
@@ -246,11 +246,10 @@ class EmailHeaderAnalyzer {
               description: `The email was routed through a potentially suspicious server (containing "${term}").`,
               severity: 'medium'
             });
-            routing.hasSuspiciousRouting = true;
+            routing.suspiciousRouting = true;
             break;
           }
         }
-        if (routing.hasSuspiciousRouting) break;
       }
     } catch (error) {
       console.error('Error analyzing routing:', error);
@@ -271,8 +270,11 @@ class EmailHeaderAnalyzer {
       
       // Extract domains using regex
       const extractDomain = (header) => {
-        const match = header.match(/@([a-zA-Z0-9][\-a-zA-Z0-9]*\.[\-a-zA-Z0-9\.]+)/i);
-        return match ? match[1].toLowerCase() : null;
+        const emailMatch = header.match(/<([^@]+@([^>]+))>/i) || header.match(/([^@\s]+@([^\s]+))/i);
+        if (emailMatch && emailMatch[2]) {
+          return emailMatch[2].toLowerCase();
+        }
+        return null;
       };
       
       const fromDomain = extractDomain(fromHeader);
@@ -283,26 +285,56 @@ class EmailHeaderAnalyzer {
       domainAnalysis.returnPathDomain = returnPathDomain;
       domainAnalysis.replyToDomain = replyToDomain;
       
-      // Check for domain mismatches
+      // Check for domain mismatches - improved logic to handle subdomains
       if (fromDomain && returnPathDomain && fromDomain !== returnPathDomain) {
-        results.findings.push({
-          text: 'Sender Domain Mismatch',
-          description: `The From domain (${fromDomain}) doesn't match the Return-Path domain (${returnPathDomain}). This is suspicious and may indicate email spoofing.`,
-          severity: 'high'
-        });
-        domainAnalysis.domainMismatch = true;
+        // Extract root domains to check if it's a subdomain situation
+        const getRootDomain = (domain) => {
+          const parts = domain.split('.');
+          // Get the root domain (usually last two parts, e.g., example.com)
+          if (parts.length >= 2) {
+            return parts.slice(-2).join('.');
+          }
+          return domain;
+        };
+        
+        const fromRootDomain = getRootDomain(fromDomain);
+        const returnPathRootDomain = getRootDomain(returnPathDomain);
+        
+        // Only flag as suspicious if root domains differ
+        if (fromRootDomain !== returnPathRootDomain) {
+          results.findings.push({
+            text: 'Completely Different Sender Domains',
+            description: `The From domain (${fromDomain}) doesn't match the Return-Path domain (${returnPathDomain}). Different root domains are a strong indicator of email spoofing.`,
+            severity: 'high'
+          });
+          domainAnalysis.domainMismatch = true;
+        } else {
+          // Subdomain case - less severe warning
+          results.findings.push({
+            text: 'Sender Domain Variation',
+            description: `The From domain (${fromDomain}) uses a different subdomain than the Return-Path (${returnPathDomain}). This is common for legitimate emails using email service providers, but worth noting.`,
+            severity: 'low'
+          });
+          domainAnalysis.subdomainVariation = true;
+        }
       }
       
       if (fromDomain && replyToDomain && fromDomain !== replyToDomain) {
-        results.findings.push({
-          text: 'Reply-To Domain Mismatch',
-          description: `The From domain (${fromDomain}) doesn't match the Reply-To domain (${replyToDomain}). Phishers often use this trick to capture replies.`,
-          severity: 'high'
-        });
-        domainAnalysis.replyToMismatch = true;
+        // Similar check for Reply-To domain
+        const fromRootDomain = fromDomain.split('.').slice(-2).join('.');
+        const replyToRootDomain = replyToDomain.split('.').slice(-2).join('.');
+        
+        if (fromRootDomain !== replyToRootDomain) {
+          results.findings.push({
+            text: 'Reply-To Domain Mismatch',
+            description: `The From domain (${fromDomain}) doesn't match the Reply-To domain (${replyToDomain}). This could indicate an attempt to capture replies to a different address.`,
+            severity: 'high'
+          });
+          domainAnalysis.replyToMismatch = true;
+        }
       }
       
-      // Check for display name deception
+      // Check for display name deception - keep this logic
       const displayNameMatch = fromHeader.match(/^([^<]+)</);
       if (displayNameMatch) {
         const displayName = displayNameMatch[1].trim();
