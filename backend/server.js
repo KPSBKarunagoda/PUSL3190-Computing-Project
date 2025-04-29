@@ -72,6 +72,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const analyzeRoutes = require('./routes/analyze');  
 const analysisRoutes = require('./routes/analysis'); 
+const emailAnalyzerRoutes = require('./routes/email-analyzer');  // Add this line
 
 // When setting up routes, make sure to properly initialize them
 console.log('Setting up API routes...');
@@ -81,7 +82,7 @@ app.use('/api/auth', authRoutes(pool));
 app.use('/api/user', userRoutes(pool));
 app.use('/', analyzeRoutes(pool));  // This will handle /analyze-url
 app.use('/api', analysisRoutes);    // This will handle /api/analyze-email-headers
-
+app.use('/api', emailAnalyzerRoutes); // This will handle /api/analyze-email-ai
 
 // Simple status check endpoint
 app.get('/api/status', (req, res) => {

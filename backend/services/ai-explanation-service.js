@@ -8,6 +8,7 @@ class AIExplanationService {
   constructor() {
     this.geminiAdapter = new GeminiAdapter();
     this.promptTemplate = this._loadPromptTemplate();
+    this.emailPromptTemplate = this._loadEmailPromptTemplate();
     this.cacheDir = path.join(__dirname, '..', 'data', 'ai-cache');
     
     // Create an in-memory map of normalized URLs to cache files
@@ -80,6 +81,33 @@ Important:
       }
     } catch (error) {
       console.error('Error loading prompt template:', error);
+      return null;
+    }
+  }
+  
+  _loadEmailPromptTemplate() {
+    try {
+      const promptPath = path.join(__dirname, '..', 'prompts', 'email-analysis.txt');
+      if (fs.existsSync(promptPath)) {
+        return fs.readFileSync(promptPath, 'utf8');
+      } else {
+        return `
+You are an expert email security analyst helping to determine if an email is potentially phishing or legitimate.
+I will provide you with the email headers analysis findings and I need your expert interpretation.
+
+Please analyze the following email header analysis data and provide:
+
+1. An overall assessment of whether this email is likely phishing, suspicious, or legitimate
+2. A detailed explanation of the key security indicators found in the headers
+3. What these findings mean from a security perspective
+4. Recommendations for the recipient on how to proceed with this email
+
+Keep your analysis concise but thorough, using professional security terminology where appropriate.
+Focus on patterns or anomalies that are strong indicators of either legitimacy or phishing attempts.
+`;
+      }
+    } catch (error) {
+      console.error('Error loading email prompt template:', error);
       return null;
     }
   }
@@ -445,6 +473,84 @@ Important:
     }
   }
 
+  async generateEmailAnalysis(emailHeaders, analysisResult) {
+    if (!this.emailPromptTemplate) {
+      throw new Error('Email prompt template not loaded');
+    }
+
+    try {
+      console.log(`====== AI Email Analysis Request ======`);
+      
+      // Create a unique identifier based on the email headers
+      const headerHash = crypto.createHash('md5').update(emailHeaders).digest('hex');
+      const cacheKey = `email-${headerHash.substring(0, 16)}`;
+      
+      console.log(`Email analysis request: ${cacheKey}`);
+      
+      // Check if there's already a request in progress for this email
+      if (this.inProgressRequests.has(cacheKey)) {
+        console.log(`Request for ${cacheKey} already in progress, waiting for result...`);
+        return await this.inProgressRequests.get(cacheKey);
+      }
+      
+      // Check cache first
+      const cachedContent = this._getEmailCachedContent(cacheKey);
+      if (cachedContent) {
+        console.log(`Using cached email analysis (cache hit)`);
+        return cachedContent;
+      }
+      
+      console.log(`No cache found for ${cacheKey}, generating new analysis...`);
+      
+      // Create promise for this request
+      const requestPromise = (async () => {
+        try {
+          // Generate new explanation since no cache exists
+          console.log(`Generating new AI email analysis...`);
+          
+          const context = {
+            subject: analysisResult.email_subject || 'Unknown',
+            risk_score: analysisResult.risk_score,
+            findings: analysisResult.findings,
+            authentication: {
+              spf: analysisResult.spf_result || 'unknown',
+              dkim: analysisResult.dkim_result || 'unknown',
+              dmarc: analysisResult.dmarc_result || 'unknown'
+            }
+          };
+
+          const analysis = await this.geminiAdapter.generateCompletion(
+            this.emailPromptTemplate, 
+            context,
+            {
+              temperature: 0.2,
+              topP: 0.9,
+              maxTokens: 1024
+            }
+          );
+
+          // Save to cache
+          await this._saveEmailToCache(cacheKey, analysis);
+          
+          return analysis;
+        } finally {
+          // Clean up when complete
+          this.inProgressRequests.delete(cacheKey);
+          console.log(`Request for ${cacheKey} completed`);
+        }
+      })();
+      
+      // Store the promise before awaiting it
+      this.inProgressRequests.set(cacheKey, requestPromise);
+      
+      // Await and return the result
+      return await requestPromise;
+    } catch (error) {
+      console.error('Error generating AI email analysis:', error);
+      throw new Error(`Failed to generate AI email analysis: ${error.message}`);
+    }
+  }
+  
   _getCachedContent(normalizedUrl) {
     try {
       // Generate a simple hash of the normalized URL for the cache filename
@@ -478,6 +584,34 @@ Important:
     }
   }
   
+  _getEmailCachedContent(cacheKey) {
+    try {
+      const cacheFilePath = path.join(this.cacheDir, `${cacheKey}.json`);
+      
+      if (!fs.existsSync(cacheFilePath)) {
+        console.log(`No cache file found at ${cacheFilePath}`);
+        return null;
+      }
+      
+      const cacheData = JSON.parse(fs.readFileSync(cacheFilePath, 'utf8'));
+      
+      const cacheAge = Date.now() - new Date(cacheData.timestamp).getTime();
+      const MAX_CACHE_AGE = this.cacheConfig.maxCacheAge;
+      
+      if (cacheAge > MAX_CACHE_AGE) {
+        console.log(`Cache expired for ${cacheKey} (${Math.round(cacheAge / 60000)} minutes old)`);
+        return null;
+      }
+      
+      console.log(`Cache hit for ${cacheKey} (${Math.round(cacheAge / 60000)} minutes old)`);
+      
+      return cacheData.content;
+    } catch (error) {
+      console.error(`Error reading email cache: ${error.message}`);
+      return null;
+    }
+  }
+  
   async _saveToCache(originalUrl, normalizedUrl, content) {
     try {
       // Generate a simple hash of the normalized URL for the cache filename
@@ -506,6 +640,31 @@ Important:
       return true;
     } catch (error) {
       console.error(`Failed to cache explanation: ${error.message}`);
+      return false;
+    }
+  }
+  
+  async _saveEmailToCache(cacheKey, content) {
+    try {
+      const cacheFile = path.join(this.cacheDir, `${cacheKey}.json`);
+      
+      console.log(`Creating/updating cache file ${cacheKey}.json`);
+      
+      const cacheData = {
+        timestamp: new Date().toISOString(),
+        content: content,
+        cacheKey: cacheKey
+      };
+      
+      fs.writeFileSync(cacheFile, JSON.stringify(cacheData, null, 2));
+      
+      console.log(`Email analysis cache saved successfully for ${cacheKey}`);
+      
+      this._cleanupOldCache();
+      
+      return true;
+    } catch (error) {
+      console.error(`Failed to cache email analysis: ${error.message}`);
       return false;
     }
   }
