@@ -862,6 +862,39 @@
         grid-template-columns: 1fr;
       }
     }
+
+    .analysis-message-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      max-width: 400px;
+    }
+    
+    .analysis-message {
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      margin-top: 10px;
+      transform: translateX(100%);
+      opacity: 0;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .analysis-message.visible {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    
+    .analysis-message i {
+      font-size: 1.2rem;
+      color: #3D85C6;
+    }
   </style>
   <link rel="stylesheet" href="footer-styles.css">
 </head>
@@ -1383,10 +1416,13 @@
       const processHeaders = async (headersText) => {
         console.log('Processing headers, length:', headersText.length);
         
-        // Check if headers are too large (over 100KB)
+        // Check if headers are very large
         if (headersText.length > 100000) {
           console.warn('Headers are very large, processing might take longer');
         }
+        
+        // Calculate approx size in MB for user-friendly messages
+        const sizeInMB = (headersText.length / (1024 * 1024)).toFixed(2);
         
         try {
           // First ensure the server is responding
@@ -1395,19 +1431,38 @@
             throw new Error('Server is not responding. Please try again later or check your connection.');
           }
           
+          // Check if headers exceed even our increased limit (19MB to be safe)
+          if (headersText.length > 19000000) {
+            throw new Error(`The email headers are too large to process (${sizeInMB}MB). Please use a smaller sample.`);
+          }
+          
+          // Handle large but acceptable headers (over 1MB)
+          if (headersText.length > 1000000) {
+            showAnalysisMessage(`Processing large email (${sizeInMB}MB)... This may take a moment.`);
+          }
+          
+          // Try to sanitize and reduce the size if possible
+          let processedHeaders = sanitizeHeaderText(headersText);
+          
           // Try to analyze the headers
           const response = await fetch('http://localhost:3000/api/analyze-email-headers', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'x-auth-token': localStorage.getItem('phishguardToken') || ''
             },
-            body: JSON.stringify({ headers: headersText })
+            body: JSON.stringify({ headers: processedHeaders })
           });
           
           if (!response.ok) {
+            if (response.status === 413) {
+              // Special handling for payload too large
+              throw new Error(`The email headers are too large to process (${sizeInMB}MB). Please try extracting only the header portion of the email or use a smaller sample.`);
+            }
+            
             const errorText = await response.text();
             console.error('Server error:', response.status, errorText);
-            throw new Error(`Server returned error ${response.status}: ${errorText || 'Unknown error'}`);
+            throw new Error(`Server returned error ${response.status}: ${errorText}`);
           }
           
           // Parse and return results
@@ -1419,6 +1474,45 @@
           throw error;
         }
       };
+      
+      // Try to sanitize and reduce header size by removing unnecessary content
+      function sanitizeHeaderText(text) {
+        // Remove any base64 encoded attachments
+        let sanitized = text.replace(/Content-Transfer-Encoding: base64[\s\S]*?(?=\n\n|\n--)/gi, '[ATTACHMENT REMOVED]');
+        
+        // Remove any HTML content
+        sanitized = sanitized.replace(/<html[\s\S]*?<\/html>/gi, '[HTML CONTENT REMOVED]');
+        
+        // Remove any inline images
+        sanitized = sanitized.replace(/Content-Type: image\/[^;]+;[\s\S]*?(?=\n\n|\n--)/gi, '[IMAGE REMOVED]');
+        
+        return sanitized;
+      }
+      
+      // Show analysis messages to the user
+      function showAnalysisMessage(message) {
+        const messageContainer = document.getElementById('analysis-messages') || 
+          (() => {
+            const container = document.createElement('div');
+            container.id = 'analysis-messages';
+            container.className = 'analysis-message-container';
+            document.querySelector('.email-analysis-card').appendChild(container);
+            return container;
+          })();
+        
+        const msgElement = document.createElement('div');
+        msgElement.className = 'analysis-message';
+        msgElement.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+        
+        messageContainer.appendChild(msgElement);
+        setTimeout(() => msgElement.classList.add('visible'), 10);
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+          msgElement.classList.remove('visible');
+          setTimeout(() => msgElement.remove(), 500);
+        }, 10000);
+      }
       
       try {
         const result = await processHeaders(headers);

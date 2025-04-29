@@ -20,8 +20,10 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+// Configure body parser with increased limits
+app.use(express.json({ limit: '20mb' })); // Increased from 10mb to 20mb
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 // Add security headers
 app.use((req, res, next) => {
@@ -84,6 +86,18 @@ app.use('/api', analysisRoutes);    // This will handle /api/analyze-email-heade
 // Simple status check endpoint
 app.get('/api/status', (req, res) => {
   res.json({ status: 'Server is running', uptime: process.uptime() });
+});
+
+// Add error handler for payload size errors
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 413) {
+    console.error('Request entity too large:', req.url);
+    return res.status(413).json({
+      error: 'PAYLOAD_TOO_LARGE',
+      message: 'Request entity too large - try a smaller sample or break into chunks'
+    });
+  }
+  next(err);
 });
 
 // Initialize server with database connection

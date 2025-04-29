@@ -34,36 +34,76 @@ router.post('/test-email-headers', (req, res) => {
   }
 });
 
-// Process email headers in chunks to handle large inputs
+// Process email headers with better error handling for large inputs
 router.post('/analyze-email-headers', async (req, res) => {
   try {
     const { headers } = req.body;
     
     if (!headers) {
-      return res.status(400).json({ message: 'Email headers are required' });
+      return res.status(400).json({ 
+        message: 'Email headers are required',
+        error: 'MISSING_HEADERS'
+      });
     }
     
-    console.log('Received email headers for analysis, processing...');
-    console.log(`Header length: ${headers.length} characters`);
+    console.log(`Received email headers for analysis, length: ${headers.length} characters (${(headers.length / (1024 * 1024)).toFixed(2)}MB)`);
     
-    // Analyze the headers
-    const analysis = await emailHeaderAnalyzer.analyzeHeaders(headers);
+    // Safety check for extremely large headers that might cause memory issues
+    if (headers.length > 19000000) { // 19MB limit (slightly under our 20MB express limit)
+      return res.status(413).json({ 
+        message: `Headers exceed maximum size limit (19MB). Current size: ${(headers.length / (1024 * 1024)).toFixed(2)}MB`,
+        error: 'PAYLOAD_TOO_LARGE',
+        size: headers.length
+      });
+    }
     
-    console.log('Analysis complete, sending response');
+    // Start timer for performance tracking
+    const startTime = Date.now();
     
-    // Return the analysis results
+    // Try to process the headers with aggressive timeouts
+    let analysisPromise = emailHeaderAnalyzer.analyzeHeaders(headers);
+    
+    // Set a timeout to prevent hanging on very complex headers
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Analysis timed out')), 30000); // 30 second timeout
+    });
+    
+    // Race the analysis against the timeout
+    const analysis = await Promise.race([analysisPromise, timeoutPromise]);
+    
+    // Calculate processing time
+    const processingTime = Date.now() - startTime;
+    console.log(`Email analysis completed in ${processingTime}ms`);
+    
+    // Return the analysis results with processing info
     res.json({
       risk_score: analysis.riskScore,
       is_phishing: analysis.isPhishing,
       summary: analysis.summary,
       findings: analysis.findings,
       headers: analysis.headers,
-      email_subject: analysis.email_subject
+      email_subject: analysis.email_subject,
+      processing_info: {
+        input_size: headers.length,
+        processing_time: `${processingTime}ms`
+      }
     });
     
   } catch (error) {
     console.error('Email header analysis error:', error);
-    res.status(500).json({ message: 'Error analyzing email headers: ' + error.message });
+    
+    // Specific error handling
+    if (error.message === 'Analysis timed out') {
+      return res.status(408).json({
+        message: 'Email analysis timed out - headers may be too complex to process',
+        error: 'ANALYSIS_TIMEOUT'
+      });
+    }
+    
+    res.status(500).json({ 
+      message: 'Error analyzing email headers: ' + error.message,
+      error: error.message
+    });
   }
 });
 
