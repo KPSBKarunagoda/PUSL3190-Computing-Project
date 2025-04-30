@@ -71,6 +71,28 @@ localStorage.removeItem = function(key) {
   }
 };
 
+// Check URL for session_expired param and show appropriate message
+document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('reason') === 'session_expired') {
+    // Show message that session expired
+    const alertContainer = document.querySelector('.alert-container') || document.createElement('div');
+    if (!alertContainer.classList.contains('alert-container')) {
+      alertContainer.className = 'alert-container';
+      document.body.insertBefore(alertContainer, document.body.firstChild);
+    }
+    
+    const alertEl = document.createElement('div');
+    alertEl.className = 'alert alert-warning';
+    alertEl.textContent = 'Your session has expired. Please log in again.';
+    alertContainer.appendChild(alertEl);
+    
+    // Remove the param from URL
+    const newUrl = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, document.title, newUrl);
+  }
+});
+
 // Monitor login form submissions
 document.addEventListener('submit', (e) => {
   const form = e.target;
@@ -85,3 +107,32 @@ document.addEventListener('submit', (e) => {
 // Check on page load and periodically
 syncAuthState();
 setInterval(syncAuthState, 30000); // Every 30 seconds
+
+// Also check for 401 responses to detect expired tokens
+(function() {
+  const originalFetch = window.fetch;
+  window.fetch = async function(...args) {
+    const response = await originalFetch.apply(this, args);
+    
+    // Check for expired token response
+    if (response.status === 401) {
+      try {
+        const clone = response.clone();
+        const data = await clone.json();
+        if (data.code === 'TOKEN_EXPIRED') {
+          console.log('Token expired, logging out user');
+          localStorage.removeItem('phishguardToken');
+          localStorage.removeItem('phishguardUser');
+          syncAuthState();
+          
+          // Redirect to login page with expired session message
+          window.location.href = 'login.html?reason=session_expired';
+        }
+      } catch (e) {
+        // If we can't parse the response as JSON, ignore
+      }
+    }
+    
+    return response;
+  };
+})();

@@ -778,9 +778,9 @@ function logout() {
 // More secure auth state check with improved error handling
 function getAuthState() {
   return new Promise((resolve) => {
-    // First check storage directly to avoid message passing when possible
     chrome.storage.local.get(['isLoggedIn', 'authToken', 'userData'], (data) => {
-      const localIsLoggedIn = !!data.isLoggedIn && !!data.authToken;
+      // Define localIsLoggedIn based on data instead of using undefined variable
+      const localIsLoggedIn = data.isLoggedIn && data.authToken;
       
       // If we have local data, use it directly
       if (localIsLoggedIn) {
@@ -802,11 +802,71 @@ function getAuthState() {
           return;
         }
         
-        resolve(response || { isLoggedIn: false });
+        // Check if token is expired from response
+        if (response && response.code === 'TOKEN_EXPIRED') {
+          console.log('Token has expired, logging out');
+          logoutUser();
+          resolve({ isLoggedIn: false });
+          return;
+        }
+        
+        // Otherwise use the response
+        resolve(response);
       });
     });
   });
 }
+
+// Add helper function to handle logout
+function logoutUser() {
+  localStorage.removeItem('phishguardToken');
+  localStorage.removeItem('phishguardUser');
+  
+  // Also clear from storage
+  chrome.storage.local.remove([
+    'isLoggedIn', 'authToken', 'userData', 'authTimestamp'
+  ], () => {
+    // Redirect to login page if we're not already there
+    const currentPage = window.location.pathname.split('/').pop();
+    if (currentPage !== 'login.html') {
+      window.location.href = 'login.html?reason=session_expired';
+    }
+  });
+}
+
+// Add API request wrapper function to handle token expiration
+function apiRequest(url, method = 'GET', body = null, headers = {}) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({
+      action: 'apiRequest',
+      url,
+      method,
+      body,
+      headers
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      
+      if (response && response.code === 'TOKEN_EXPIRED') {
+        // Handle expired token
+        logoutUser();
+        reject(new Error('Your session has expired. Please log in again.'));
+        return;
+      }
+      
+      resolve(response);
+    });
+  });
+}
+
+// Export the helper functions
+window.PhishGuard = {
+  getAuthState,
+  logoutUser,
+  apiRequest
+};
 
 // More secure authenticated API request
 function makeAuthenticatedRequest(endpoint, method = 'GET', body = null) {

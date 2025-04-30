@@ -84,6 +84,20 @@
       const loginForm = document.getElementById('login-form');
       const loginError = document.getElementById('login-error');
       
+      // Check for session expired message
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('reason') === 'session_expired') {
+        // Show message that session expired
+        if (loginError) {
+          loginError.textContent = 'Your session has expired. Please log in again.';
+          loginError.style.display = 'block';
+          
+          // Remove the param from URL
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
+        }
+      }
+      
       // Toggle password visibility
       const togglePassword = document.getElementById('toggle-password');
       const passwordField = document.getElementById('password');

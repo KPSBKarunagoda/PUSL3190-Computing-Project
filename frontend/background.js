@@ -81,6 +81,16 @@ async function validateToken(token) {
       }
     });
     
+    // Check status code specifically for expired token
+    if (response.status === 401) {
+      const data = await response.json();
+      if (data.code === 'TOKEN_EXPIRED') {
+        console.log('Token has expired, logging out user');
+        await logoutUser();
+        return false;
+      }
+    }
+    
     if (response.ok) {
       console.log('Token validation successful');
       authState.lastVerified = Date.now();
@@ -773,14 +783,47 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Actually send the processed message
     safelySendMessage(response);
   }
-});
 
-// Ensure our vote storage is cleared when the user logs out
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && (changes.isLoggedIn || changes.authToken)) {
-    if (changes.isLoggedIn?.newValue === false || !changes.authToken?.newValue) {
-      console.log('User logged out - clearing vote data');
-      chrome.storage.local.set({ voteCounts: {} }); // Use set with empty object instead of remove
-    }
+  // Handle API request proxying with token expiration check
+  if (message.action === 'apiRequest') {
+    (async () => {
+      try {
+        const data = await chrome.storage.local.get(['authToken']);
+        
+        const response = await fetch(message.url, {
+          method: message.method || 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': data.authToken,
+            ...message.headers
+          },
+          body: message.body ? JSON.stringify(message.body) : undefined
+        });
+        
+        // Check for token expiration
+        if (response.status === 401) {
+          try {
+            const responseData = await response.json();
+            if (responseData.code === 'TOKEN_EXPIRED') {
+              console.log('API request failed due to expired token, logging out');
+              await logoutUser();
+              sendResponse({ 
+                error: 'Your session has expired. Please log in again.',
+                code: 'TOKEN_EXPIRED'
+              });
+              return;
+            }
+          } catch (e) {
+            // If we can't parse the response as JSON, continue with normal processing
+          }
+        }
+        
+        const result = await response.json();
+        sendResponse(result);
+      } catch (error) {
+        sendResponse({ error: error.message });
+      }
+    })();
+    return true; // Keep message channel open for async response
   }
 });
