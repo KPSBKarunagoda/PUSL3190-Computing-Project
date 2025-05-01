@@ -88,11 +88,175 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     if (elements.updateStatusBtn) {
-      elements.updateStatusBtn.addEventListener('click', handleStatusUpdate);
+      elements.updateStatusBtn.addEventListener('click', async () => {
+        try {
+          // Show loading state
+          if (window.DOM && DOM.buttonState) {
+            DOM.buttonState(elements.updateStatusBtn, true, null, 'Updating...');
+          } else {
+            elements.updateStatusBtn.disabled = true;
+            elements.updateStatusBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+          }
+          
+          const status = elements.statusUpdate.value;
+          
+          // Send API request to update status
+          const response = await fetch(`http://localhost:3000/api/contact-us/${state.selectedSubmissionId}/status`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-auth-token': token
+            },
+            body: JSON.stringify({ status })
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to update status');
+          }
+          
+          // Show success state
+          if (window.DOM && DOM.buttonState) {
+            DOM.buttonState(elements.updateStatusBtn, false, 'fas fa-check', 'Updated!');
+          } else {
+            elements.updateStatusBtn.disabled = false;
+            elements.updateStatusBtn.innerHTML = '<i class="fas fa-check"></i> Updated!';
+          }
+          
+          // Restore original state after 2 seconds
+          setTimeout(() => {
+            if (window.DOM && DOM.buttonState) {
+              DOM.buttonState(elements.updateStatusBtn, false, 'fas fa-sync', 'Update Status');
+            } else {
+              elements.updateStatusBtn.disabled = false;
+              elements.updateStatusBtn.innerHTML = '<i class="fas fa-sync"></i> Update Status';
+            }
+          }, 2000);
+          
+          // Show notification
+          showNotification('Status updated successfully', 'success');
+          
+          // Update submission in state
+          const submission = state.allSubmissions.find(s => s.id == state.selectedSubmissionId);
+          if (submission) {
+            submission.status = status;
+            filterSubmissions();
+            updateStatistics();
+          }
+          
+          // Update status label in the UI
+          const statusLabel = document.querySelector('#message-detail .status-badge');
+          if (statusLabel) {
+            statusLabel.className = 'status-badge ' + status;
+            statusLabel.textContent = status.replace('_', ' ');
+          }
+          
+        } catch (error) {
+          console.error('Error updating status:', error);
+          
+          // Show error state
+          if (window.DOM && DOM.buttonState) {
+            DOM.buttonState(elements.updateStatusBtn, false, 'fas fa-times', 'Failed!');
+          } else {
+            elements.updateStatusBtn.disabled = false;
+            elements.updateStatusBtn.innerHTML = '<i class="fas fa-times"></i> Failed!';
+          }
+          
+          // Show error notification
+          showNotification('Failed to update status: ' + error.message, 'error');
+          
+          // Restore original state after 2 seconds
+          setTimeout(() => {
+            if (window.DOM && DOM.buttonState) {
+              DOM.buttonState(elements.updateStatusBtn, false, 'fas fa-sync', 'Update Status');
+            } else {
+              elements.updateStatusBtn.disabled = false;
+              elements.updateStatusBtn.innerHTML = '<i class="fas fa-sync"></i> Update Status';
+            }
+          }, 2000);
+        }
+      });
     }
     
     if (elements.saveNotesBtn) {
-      elements.saveNotesBtn.addEventListener('click', handleSaveNotes);
+      elements.saveNotesBtn.addEventListener('click', async () => {
+        try {
+          // Show loading state using DOM utility if available
+          if (window.DOM && DOM.buttonState) {
+            DOM.buttonState(elements.saveNotesBtn, true, null, 'Saving...');
+          } else {
+            // Fallback if DOM utility isn't available
+            elements.saveNotesBtn.disabled = true;
+            elements.saveNotesBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+          }
+          
+          const notes = elements.adminNotes.value;
+          
+          // Send API request to save notes
+          const response = await fetch(`http://localhost:3000/api/contact-us/${state.selectedSubmissionId}/notes`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-auth-token': token
+            },
+            body: JSON.stringify({ admin_notes: notes })
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to save notes');
+          }
+          
+          // Show success state
+          if (window.DOM && DOM.buttonState) {
+            DOM.buttonState(elements.saveNotesBtn, false, 'fas fa-check', 'Saved!');
+          } else {
+            elements.saveNotesBtn.disabled = false;
+            elements.saveNotesBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+          }
+          
+          // Restore original state after 2 seconds
+          setTimeout(() => {
+            if (window.DOM && DOM.buttonState) {
+              DOM.buttonState(elements.saveNotesBtn, false, 'fas fa-save', 'Save Notes');
+            } else {
+              elements.saveNotesBtn.disabled = false;
+              elements.saveNotesBtn.innerHTML = '<i class="fas fa-save"></i> Save Notes';
+            }
+          }, 2000);
+          
+          // Show small notification
+          showNotification('Notes saved successfully', 'success');
+          
+          // Update submission in state
+          const submission = state.allSubmissions.find(s => s.id == state.selectedSubmissionId);
+          if (submission) {
+            submission.admin_notes = notes;
+          }
+          
+        } catch (error) {
+          console.error('Error saving notes:', error);
+          
+          // Show error state
+          if (window.DOM && DOM.buttonState) {
+            DOM.buttonState(elements.saveNotesBtn, false, 'fas fa-times', 'Error!');
+          } else {
+            elements.saveNotesBtn.disabled = false;
+            elements.saveNotesBtn.innerHTML = '<i class="fas fa-times"></i> Error!';
+          }
+          
+          // Show error notification
+          showNotification('Failed to save notes: ' + error.message, 'error');
+          
+          // Restore original state after 2 seconds
+          setTimeout(() => {
+            if (window.DOM && DOM.buttonState) {
+              DOM.buttonState(elements.saveNotesBtn, false, 'fas fa-save', 'Save Notes');
+            } else {
+              elements.saveNotesBtn.disabled = false;
+              elements.saveNotesBtn.innerHTML = '<i class="fas fa-save"></i> Save Notes';
+            }
+          }, 2000);
+        }
+      });
     }
     
     if (elements.deleteMessageBtn) {
@@ -463,82 +627,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Handle status update
-  async function handleStatusUpdate() {
-    if (!state.selectedSubmissionId) return;
-    
-    const newStatus = elements.statusUpdate.value;
-    
-    try {
-      showButtonLoading(elements.updateStatusBtn, true);
-      
-      const response = await fetch(`http://localhost:3000/api/contact-us/${state.selectedSubmissionId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': token
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update status');
-      }
-      
-      showAlert(`Status updated to ${formatStatusText(newStatus)}`, 'success');
-      
-      // Update submission in state
-      const submission = state.allSubmissions.find(s => s.id == state.selectedSubmissionId);
-      if (submission) {
-        submission.status = newStatus;
-        filterSubmissions();
-        updateStatistics();
-      }
-    } catch (error) {
-      console.error('Error updating status:', error);
-      showAlert('Failed to update status', 'error');
-    } finally {
-      showButtonLoading(elements.updateStatusBtn, false);
-    }
-  }
-
-  // Handle saving notes
-  async function handleSaveNotes() {
-    if (!state.selectedSubmissionId) return;
-    
-    const notes = elements.adminNotes.value;
-    
-    try {
-      showButtonLoading(elements.saveNotesBtn, true);
-      
-      const response = await fetch(`http://localhost:3000/api/contact-us/${state.selectedSubmissionId}/notes`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': token
-        },
-        body: JSON.stringify({ admin_notes: notes })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save notes');
-      }
-      
-      showAlert('Notes saved successfully', 'success');
-      
-      // Update submission in state
-      const submission = state.allSubmissions.find(s => s.id == state.selectedSubmissionId);
-      if (submission) {
-        submission.admin_notes = notes;
-      }
-    } catch (error) {
-      console.error('Error saving notes:', error);
-      showAlert('Failed to save notes', 'error');
-    } finally {
-      showButtonLoading(elements.saveNotesBtn, false);
-    }
-  }
-  
   // Confirm delete action
   async function confirmDelete() {
     if (!state.selectedSubmissionId) return;
@@ -694,6 +782,45 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  // Add notification function for feedback
+  function showNotification(message, type = 'info') {
+    // Check if notification container exists, create if not
+    let notificationContainer = document.querySelector('.notification-container');
+    if (!notificationContainer) {
+      notificationContainer = document.createElement('div');
+      notificationContainer.className = 'notification-container';
+      document.body.appendChild(notificationContainer);
+    }
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+      <div class="notification-icon">
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+      </div>
+      <div class="notification-content">
+        ${message}
+      </div>
+    `;
+    
+    // Add to container
+    notificationContainer.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 10);
+    
+    // Remove after delay
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        notification.remove();
+      }, 300);
+    }, 3000);
   }
 
   // Initialize the page
