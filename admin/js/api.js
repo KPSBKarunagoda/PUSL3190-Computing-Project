@@ -586,6 +586,84 @@ const votesAPI = {
 };
 
 /**
+ * Contact API
+ */
+const api = {
+  // Generic fetch with auth
+  async fetch(endpoint, options = {}) {
+    const token = localStorage.getItem('phishguard_admin_token');
+    
+    const defaultOptions = {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': token
+      }
+    };
+    
+    const fetchOptions = {
+      ...defaultOptions,
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...(options.headers || {})
+      }
+    };
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `API Error: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error(`API Error (${endpoint}):`, error);
+      throw error;
+    }
+  },
+  
+  // Contact API
+  contact: {
+    // Get all submissions
+    async getAll() {
+      return await api.fetch('/contact-us');
+    },
+    
+    // Mark as read
+    async markAsRead(id) {
+      return await api.fetch(`/contact-us/${id}/read`, {
+        method: 'PUT'
+      });
+    },
+    
+    // Update status
+    async updateStatus(id, status) {
+      return await api.fetch(`/contact-us/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status })
+      });
+    },
+    
+    // Save notes
+    async saveNotes(id, notes) {
+      return await api.fetch(`/contact-us/${id}/notes`, {
+        method: 'PUT',
+        body: JSON.stringify({ admin_notes: notes })
+      });
+    },
+    
+    // Delete submission
+    async delete(id) {
+      return await api.fetch(`/contact-us/${id}`, {
+        method: 'DELETE'
+      });
+    }
+  }
+};
+
+/**
  * Helper function to extract domain from URL
  */
 function extractDomain(url) {
@@ -604,3 +682,4 @@ window.dashboardAPI = dashboardAPI;
 window.listsAPI = listsAPI;
 window.usersAPI = usersAPI;
 window.votesAPI = votesAPI;
+window.api = api;

@@ -1,57 +1,11 @@
 const express = require('express');
+const router = express.Router();
 
-// Export a function that accepts the pool parameter
 module.exports = (pool) => {
-  const router = express.Router();
-
-  /**
-   * @route   POST /
-   * @desc    Submit contact form
-   * @access  Public
-   */
+  // User endpoint to submit contact form
   router.post('/', async (req, res) => {
     try {
-      // Basic validation
-      const { name, email, subject, message } = req.body;
-      
-      if (!name || !email || !subject || !message) {
-        return res.status(400).json({ message: 'Please include all required fields' });
-      }
-      
-      // Basic email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({ message: 'Please include a valid email' });
-      }
-
-      // Get user info if authenticated
-      let userId = null;
-      let username = null;
-      
-      if (req.headers['x-auth-token']) {
-        try {
-          // Only try to verify token if one is provided
-          const jwt = require('jsonwebtoken');
-          const decoded = jwt.verify(
-            req.headers['x-auth-token'], 
-            process.env.JWT_SECRET
-          );
-          
-          userId = decoded.user.id;
-          
-          // Get username from database
-          const [userRows] = await pool.query('SELECT username FROM users WHERE id = ?', [userId]);
-          if (userRows.length > 0) {
-            username = userRows[0].username;
-            console.log('Username found:', username);
-          }
-        } catch (err) {
-          console.error('Token error in contact form:', err);
-          // Continue without user info
-        }
-      }
-
-      // Create database table if it doesn't exist
+      // Create the table if it doesn't exist
       await pool.query(`
         CREATE TABLE IF NOT EXISTS contact_submissions (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -67,6 +21,9 @@ module.exports = (pool) => {
           admin_notes TEXT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
+
+      // Extract data from request body
+      const { name, email, subject, message, userId, username } = req.body;
 
       // Insert into database
       const query = `
@@ -89,7 +46,115 @@ module.exports = (pool) => {
     }
   });
 
-  // You can add more contact-related routes here
-  
+  // ADMIN ENDPOINTS - Require admin authentication middleware
+  const adminAuth = require('../middleware/admin-auth')(pool);
+
+  // Get all contact submissions for admin
+  router.get('/', adminAuth, async (req, res) => {
+    try {
+      const [submissions] = await pool.query(`
+        SELECT * FROM contact_submissions 
+        ORDER BY submission_date DESC
+      `);
+      
+      res.json({ 
+        submissions, 
+        totalCount: submissions.length 
+      });
+    } catch (err) {
+      console.error('Error fetching contact submissions:', err);
+      res.status(500).json({ message: 'Server error, could not fetch submissions' });
+    }
+  });
+
+  // Mark submission as read
+  router.put('/:id/read', adminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      await pool.query(`
+        UPDATE contact_submissions 
+        SET is_read = 1 
+        WHERE id = ?
+      `, [id]);
+      
+      res.json({ 
+        success: true, 
+        message: 'Submission marked as read' 
+      });
+    } catch (err) {
+      console.error('Error marking submission as read:', err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+
+  // Update submission status
+  router.put('/:id/status', adminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!['new', 'in_progress', 'completed'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status' });
+      }
+      
+      await pool.query(`
+        UPDATE contact_submissions 
+        SET status = ? 
+        WHERE id = ?
+      `, [status, id]);
+      
+      res.json({ 
+        success: true, 
+        message: 'Status updated successfully' 
+      });
+    } catch (err) {
+      console.error('Error updating submission status:', err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+
+  // Update admin notes
+  router.put('/:id/notes', adminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { admin_notes } = req.body;
+      
+      await pool.query(`
+        UPDATE contact_submissions 
+        SET admin_notes = ? 
+        WHERE id = ?
+      `, [admin_notes, id]);
+      
+      res.json({ 
+        success: true, 
+        message: 'Notes updated successfully' 
+      });
+    } catch (err) {
+      console.error('Error updating admin notes:', err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+
+  // Delete submission
+  router.delete('/:id', adminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      await pool.query(`
+        DELETE FROM contact_submissions 
+        WHERE id = ?
+      `, [id]);
+      
+      res.json({ 
+        success: true, 
+        message: 'Submission deleted successfully' 
+      });
+    } catch (err) {
+      console.error('Error deleting submission:', err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+
   return router;
 };

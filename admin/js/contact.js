@@ -1,17 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Check authentication
-  const token = localStorage.getItem('phishguard_admin_token');
-  const userJson = localStorage.getItem('phishguard_admin');
-  let user;
-  
-  try {
-    user = JSON.parse(userJson);
-  } catch (e) {
-    console.error('Error parsing user data', e);
+  // Check authentication using common auth methods
+  if (!Auth.isAuthenticated()) {
+    window.location.href = 'index.html?error=auth_required';
+    return;
   }
   
-  if (!token || !user) {
-    window.location.href = 'index.html';
+  // Get admin user info and token
+  const token = Auth.getToken();
+  const user = Auth.getUser();
+  
+  if (!user) {
+    console.error('User data not found');
+    window.location.href = 'index.html?error=invalid_session';
     return;
   }
   
@@ -135,9 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('phishguard_admin_token');
-        localStorage.removeItem('phishguard_admin');
-        window.location.href = 'index.html';
+        Auth.logout();
       });
     }
     
