@@ -732,6 +732,33 @@
     #clear-history-btn i {
       font-size: 0.9rem;
     }
+
+    /* Scrollable container for activity overview */
+    .activity-scroll-container {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      background-color: var(--card-bg);
+    }
+    
+    .activity-scroll-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .activity-scroll-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .activity-scroll-container::-webkit-scrollbar-thumb {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+    
+    .activity-scroll-container::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 <body class="dark-theme">
@@ -824,10 +851,13 @@
             <h2><i class="fas fa-history"></i> Your Activity Overview</h2>
           </div>
           <div class="section-content">
-            <div id="scan-history" class="activity-container">
-              <!-- Activity will be loaded here via JavaScript -->
-              <div class="loading">
-                <i class="fas fa-spinner fa-spin"></i> Loading your activity...
+            <!-- Add scrollable container wrapper -->
+            <div class="activity-scroll-container">
+              <div id="scan-history" class="activity-container">
+                <!-- Activity will be loaded here via JavaScript -->
+                <div class="loading">
+                  <i class="fas fa-spinner fa-spin"></i> Loading your activity...
+                </div>
               </div>
             </div>
             <!-- Add this dedicated container for action buttons -->
