@@ -685,11 +685,6 @@
       color: #F44336;
     }
     
-    #clear-history-btn {
-      margin-top: 15px;
-      float: right;
-    }
-    
     .no-data, .error, .loading {
       padding: 20px;
       text-align: center;
@@ -698,6 +693,44 @@
     
     .error {
       color: #F44336;
+    }
+
+    /* Update Clear History button styling */
+    .activity-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 15px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-color);
+    }
+    
+    #clear-history-btn {
+      background-color: transparent;
+      border: 1px solid var(--danger-color);
+      color: var(--danger-color);
+      padding: 8px 16px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    #clear-history-btn:hover {
+      background-color: var(--danger-color);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(247, 37, 133, 0.2);
+    }
+    
+    #clear-history-btn:active {
+      transform: translateY(0);
+    }
+    
+    #clear-history-btn i {
+      font-size: 0.9rem;
     }
   </style>
 </head>
@@ -726,7 +759,6 @@
       </nav>
     </div>
   </header>
-
   <div class="dashboard-container">
     <div class="dashboard-header">
       <h1>PhishGuard Dashboard</h1>
@@ -735,14 +767,12 @@
         <button id="btn-logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
       </div>
     </div>
-    
     <div class="dashboard-content">
       <div class="main-column">
         <div class="welcome-section">
           <h2>Welcome <span id="welcome-message">User</span></h2>
           <p>Your account is ready. Start protecting yourself from phishing attacks with our powerful tools and advanced detection technology.</p>
         </div>
-        
         <section class="dashboard-section">
           <h2><i class="fas fa-chart-line"></i> Your Activity Overview</h2>
           <div class="stats-container">
@@ -763,7 +793,6 @@
             </div>
           </div>
         </section>
-        
         <section class="dashboard-section">
           <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
           <div class="quick-actions">
@@ -789,7 +818,6 @@
             </a>
           </div>
         </section>
-        
         <!-- Activity Overview Section -->
         <section class="dashboard-section">
           <div class="section-header">
@@ -802,9 +830,14 @@
                 <i class="fas fa-spinner fa-spin"></i> Loading your activity...
               </div>
             </div>
+            <!-- Add this dedicated container for action buttons -->
+            <div class="activity-actions">
+              <button id="clear-history-btn">
+                <i class="fas fa-trash"></i> Clear History
+              </button>
+            </div>
           </div>
         </section>
-        
         <!-- Email Header Analysis Section -->
         <section class="dashboard-section">
           <h2><i class="fas fa-envelope-open-text"></i> Email Header Analysis</h2>
@@ -827,7 +860,6 @@
             </div>
           </div>
         </section>
-        
         <section class="dashboard-section">
           <h2><i class="fas fa-shield-alt"></i> Security Tips</h2>
           <div class="security-tips-carousel">
@@ -854,7 +886,6 @@
             </div>
           </div>
         </section>
-        
         <!-- Need Help section - placed at the bottom of the page -->
         <section class="dashboard-section">
           <h2><i class="fas fa-headset"></i> Need Help?</h2>
@@ -868,7 +899,6 @@
           </div>
         </section>
       </div>
-      
       <div class="side-column">
         <div class="security-score-card">
           <div class="security-score-visual">
@@ -918,7 +948,6 @@
       </div>
     </div>
   </div>
-
   <footer class="footer">
     <div class="footer-container">
       <div class="footer-column">
@@ -936,7 +965,6 @@
           <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
         </div>
       </div>
-      
       <div class="footer-column footer-links">
         <h4>Quick Links</h4>
         <ul>
@@ -946,7 +974,6 @@
           <li><a href="settings.html"><i class="fas fa-cog"></i> Settings</a></li>
         </ul>
       </div>
-      
       <div class="footer-column footer-links">
         <h4>Resources</h4>
         <ul>
@@ -956,8 +983,7 @@
           <li><a href="#"><i class="fas fa-file-alt"></i> Blog</a></li>
         </ul>
       </div>
-      
-      <div class="pg-footer-column pg-footer-links">
+      <div class="footer-column footer-links">
         <h4>Legal</h4>
         <ul>
           <li><a href="#"><i class="fas fa-shield-alt"></i> Privacy Policy</a></li>
@@ -971,18 +997,15 @@
       <p>&copy; 2025 PhishGuard</p>
     </div>
   </footer>
-
   <script src="js/dashboard.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const token = localStorage.getItem('phishguardToken');
       const userJson = localStorage.getItem('phishguardUser');
-      
       if (!token || !userJson) {
         window.location.href = 'login.html';
         return;
       }
-      
       try {
         const user = JSON.parse(userJson);
         document.getElementById('username').textContent = user.username || 'User';
@@ -993,7 +1016,6 @@
         localStorage.removeItem('phishguardToken');
         window.location.href = 'login.html';
       }
-      
       document.getElementById('btn-logout').addEventListener('click', () => {
         localStorage.removeItem('phishguardToken');
         localStorage.removeItem('phishguardUser');
@@ -1002,18 +1024,15 @@
       
       // Initialize security score
       initSecurityScore();
-      
       // Add animation class to stats after small delay
       setTimeout(() => {
         document.querySelectorAll('.stat-card').forEach(card => {
           card.classList.add('stat-loaded');
         });
       }, 300);
-      
       // Setup security checklist item navigation
       setupChecklistNavigation();
     });
-    
     function initSecurityScore() {
       let score = 0;
       const securityChecklist = document.getElementById('security-checklist');
@@ -1027,7 +1046,6 @@
         emailAnalysis: localStorage.getItem('completed_email_analysis') === 'true',
         education: localStorage.getItem('completed_education') === 'true'
       };
-      
       // Update UI for each task
       const items = securityChecklist.querySelectorAll('.score-item');
       
@@ -1035,30 +1053,24 @@
         updateTaskItem(items[0], true);
         score += 25;
       }
-      
       if (completed.urlAnalysis) {
         updateTaskItem(items[1], true);
         score += 25;
       }
-      
       if (completed.emailAnalysis) {
         updateTaskItem(items[2], true);
         score += 25;
       }
-      
       if (completed.education) {
         updateTaskItem(items[3], true);
         score += 25;
       }
-      
       // Update score display with animation
       animateScoreChange(0, score);
     }
-    
     function updateTaskItem(item, completed) {
       const icon = item.querySelector('.score-item-icon');
       const status = item.querySelector('.score-item-status');
-      
       if (completed) {
         icon.className = 'score-item-icon score-item-complete';
         status.textContent = 'Completed';
@@ -1067,7 +1079,7 @@
         status.textContent = 'Pending';
       }
     }
-    
+      
     function animateScoreChange(from, to) {
       const scoreElement = document.getElementById('security-score');
       const scoreProgress = document.getElementById('score-progress');
@@ -1076,7 +1088,6 @@
       const interval = 20; // Update interval in ms
       const steps = duration / interval;
       const increment = (to - from) / steps;
-      
       // Animate score number
       const timer = setInterval(() => {
         current += increment;
@@ -1086,11 +1097,9 @@
         }
         
         scoreElement.textContent = Math.round(current) + '%';
-        
         // Animate circle progress
         const angle = 3.6 * Math.round(current); // 3.6 degrees per percentage
         scoreProgress.style.transform = `rotate(${angle}deg)`;
-        
         // Change color based on score
         if (current < 30) {
           scoreProgress.style.borderTopColor = '#f44336';
@@ -1107,28 +1116,23 @@
         }
       }, interval);
     }
-    
+        
     function setupChecklistNavigation() {
       const checklist = document.getElementById('security-checklist');
       if (!checklist) return;
-      
       const items = checklist.querySelectorAll('.score-item');
-      
       // Password health check
       items[0].addEventListener('click', () => {
         window.location.href = 'password-health.html';
       });
-      
       // URL analysis
       items[1].addEventListener('click', () => {
         window.location.href = 'analyze.html';
       });
-      
       // Email analysis
       items[2].addEventListener('click', () => {
         window.location.href = 'email-analysis.html';
       });
-      
       // Security education
       items[3].addEventListener('click', () => {
         window.location.href = 'education.html';

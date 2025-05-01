@@ -114,7 +114,14 @@ function setPlaceholderStatistics() {
 // Load user activity history
 async function loadUserActivity() {
   const activityContainer = document.getElementById('scan-history');
+  const clearHistoryBtn = document.getElementById('clear-history-btn');
+  
   if (!activityContainer) return;
+  
+  // Initially hide the clear button until we know there's activity
+  if (clearHistoryBtn) {
+    clearHistoryBtn.style.display = 'none';
+  }
   
   try {
     // Show loading state
@@ -180,15 +187,10 @@ async function loadUserActivity() {
       activityContainer.appendChild(activityItem);
     });
     
-    // Add clear history button if not already present
-    if (!document.getElementById('clear-history-btn')) {
-      const clearBtn = document.createElement('button');
-      clearBtn.id = 'clear-history-btn';
-      clearBtn.className = 'btn btn-outline';
-      clearBtn.innerHTML = '<i class="fas fa-trash"></i> Clear History';
-      clearBtn.addEventListener('click', clearUserActivity);
-      
-      activityContainer.parentNode.appendChild(clearBtn);
+    // Show the clear history button since we have activities
+    if (clearHistoryBtn) {
+      clearHistoryBtn.style.display = 'block';
+      clearHistoryBtn.addEventListener('click', clearUserActivity);
     }
   } catch (error) {
     console.error('Error loading activity:', error);
