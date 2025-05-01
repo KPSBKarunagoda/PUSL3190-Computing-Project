@@ -30,52 +30,50 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   // Initialize components
+  loadUserActivity();
   loadUserStatistics();
-  loadScanHistory();
   initializeCarousel();
   initializeSecurityScore();
+  
+  // Initialize clear history button if present
+  const clearHistoryBtn = document.getElementById('clear-history-btn');
+  if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener('click', clearUserActivity);
+  }
 });
 
 // Load user statistics from API or use placeholders
 async function loadUserStatistics() {
-  const statCards = document.querySelectorAll('.stat-card');
-  
   try {
-    // Try to fetch actual statistics from API
     const token = localStorage.getItem('phishguardToken');
+    if (!token) {
+      console.error('No auth token found');
+      setPlaceholderStatistics();
+      return;
+    }
+    
     const response = await fetch('http://localhost:3000/api/user/stats', {
       headers: {
-        'Content-Type': 'application/json',
         'x-auth-token': token
       }
     });
     
-    if (response.ok) {
-      const data = await response.json();
-      
-      // Update statistics with animation
-      animateStatChange('total-scans', 0, data.totalScans || 0);
-      animateStatChange('threats-detected', 0, data.threatsDetected || 0);
-      animateStatChange('safe-sites', 0, data.safeSites || 0);
-      
-      // Mark task as completed if user has analyzed any URLs
-      if (data.totalScans && data.totalScans > 0) {
-        localStorage.setItem('completed_url_analysis', 'true');
-        updateSecurityChecklistItem('urlAnalysis', true);
-      }
-    } else {
-      // Fall back to placeholders if API fails
+    if (!response.ok) {
+      console.error('Failed to load statistics:', response.status, response.statusText);
       setPlaceholderStatistics();
+      return;
     }
+    
+    const data = await response.json();
+    
+    // Update the UI with the statistics
+    document.getElementById('total-scans').textContent = data.totalScans || 0;
+    document.getElementById('threats-detected').textContent = data.threatsDetected || 0;
+    document.getElementById('safe-sites').textContent = data.safeSites || 0;
   } catch (error) {
-    console.error('Error loading statistics:', error);
+    console.error('Error loading user statistics:', error);
     setPlaceholderStatistics();
   }
-  
-  // Add loaded class to show animation
-  setTimeout(() => {
-    statCards.forEach(card => card.classList.add('stat-loaded'));
-  }, 200);
 }
 
 // Animate statistic value change
@@ -113,59 +111,149 @@ function setPlaceholderStatistics() {
   document.getElementById('safe-sites').textContent = '0';
 }
 
-// Load scan history or show placeholder
-async function loadScanHistory() {
-  const scanHistoryContainer = document.getElementById('scan-history');
-  if (!scanHistoryContainer) return;
+// Load user activity history
+async function loadUserActivity() {
+  const activityContainer = document.getElementById('scan-history');
+  if (!activityContainer) return;
   
   try {
-    // Try to fetch actual scan history from API
+    // Show loading state
+    activityContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading activity...</div>';
+    
     const token = localStorage.getItem('phishguardToken');
-    const response = await fetch('http://localhost:3000/api/scans/recent', {
+    if (!token) {
+      activityContainer.innerHTML = '<p class="no-data">Please log in to view your activity</p>';
+      return;
+    }
+    
+    const response = await fetch('http://localhost:3000/api/user/activity', {
       headers: {
-        'Content-Type': 'application/json',
+        'x-auth-token': token
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    const activities = await response.json();
+    
+    if (!activities || activities.length === 0) {
+      activityContainer.innerHTML = '<p class="no-data">No activity found. Start analyzing URLs to build your history.</p>';
+      return;
+    }
+    
+    // Clear container and add each activity
+    activityContainer.innerHTML = '';
+    
+    activities.forEach(activity => {
+      // Determine risk class
+      let riskClass = 'safe';
+      let riskText = 'Safe';
+      
+      if (activity.Risk >= 70) {
+        riskClass = 'danger';
+        riskText = 'High Risk';
+      } else if (activity.Risk >= 50) {
+        riskClass = 'warning';
+        riskText = 'Medium Risk';
+      }
+      
+      // Format date
+      const date = new Date(activity.Timestamp);
+      const formattedDate = date.toLocaleDateString() + ' ' + 
+                           date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      // Create activity item
+      const activityItem = document.createElement('div');
+      activityItem.className = `history-item risk-${riskClass}`;
+      activityItem.innerHTML = `
+        <div class="history-content">
+          <div class="history-title">${escapeHtml(activity.Title)}</div>
+          <div class="history-time">${formattedDate}</div>
+        </div>
+        <div class="history-status">
+          <span class="status-badge status-${riskClass}">${riskText}</span>
+        </div>
+      `;
+      
+      activityContainer.appendChild(activityItem);
+    });
+    
+    // Add clear history button if not already present
+    if (!document.getElementById('clear-history-btn')) {
+      const clearBtn = document.createElement('button');
+      clearBtn.id = 'clear-history-btn';
+      clearBtn.className = 'btn btn-outline';
+      clearBtn.innerHTML = '<i class="fas fa-trash"></i> Clear History';
+      clearBtn.addEventListener('click', clearUserActivity);
+      
+      activityContainer.parentNode.appendChild(clearBtn);
+    }
+  } catch (error) {
+    console.error('Error loading activity:', error);
+    activityContainer.innerHTML = '<p class="error">Failed to load activity history</p>';
+  }
+}
+
+// Function to clear user activity
+async function clearUserActivity() {
+  if (!confirm('Are you sure you want to clear your activity history?')) {
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('phishguardToken');
+    const response = await fetch('http://localhost:3000/api/user/activity', {
+      method: 'DELETE',
+      headers: {
         'x-auth-token': token
       }
     });
     
     if (response.ok) {
-      const scanData = await response.json();
+      // Reload activity and stats
+      loadUserActivity();
+      loadUserStatistics();
       
-      if (scanData && scanData.length > 0) {
-        // We have scan data, display it
-        scanHistoryContainer.innerHTML = '';
-        
-        scanData.forEach(scan => {
-          // Determine status class based on result
-          let statusClass = 'result-safe';
-          if (scan.is_phishing) {
-            statusClass = 'result-danger';
-          } else if (scan.risk_score > 30) {
-            statusClass = 'result-warning';
-          }
-          
-          // Create history item
-          const historyItem = document.createElement('div');
-          historyItem.className = 'history-item';
-          historyItem.innerHTML = `
-            <div class="history-url" title="${escapeHtml(scan.url)}">${truncateUrl(scan.url)}</div>
-            <div class="history-result ${statusClass}">${getStatusText(scan)}</div>
-          `;
-          
-          scanHistoryContainer.appendChild(historyItem);
-        });
-        
-        return;
-      }
+      // Show success message
+      showMessage('Activity history cleared successfully', 'success');
+    } else {
+      showMessage('Failed to clear activity history', 'error');
     }
-    
-    // If we get here, either API failed or returned no data
-    showPlaceholderHistory();
-    
   } catch (error) {
-    console.error('Error loading scan history:', error);
-    showPlaceholderHistory();
+    console.error('Error clearing activity history:', error);
+    showMessage('Error clearing activity history', 'error');
   }
+}
+
+// Helper function to show messages
+function showMessage(message, type = 'info') {
+  const alertElement = document.createElement('div');
+  alertElement.className = `alert alert-${type}`;
+  alertElement.textContent = message;
+  
+  document.body.appendChild(alertElement);
+  
+  // Remove after a delay
+  setTimeout(() => {
+    alertElement.classList.add('alert-fade-out');
+    setTimeout(() => {
+      document.body.removeChild(alertElement);
+    }, 500);
+  }, 3000);
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
 }
 
 // Show placeholder history instead of loading from localStorage
@@ -437,13 +525,6 @@ function getStatusText(scan) {
   } else {
     return 'Safe';
   }
-}
-
-// Helper function to escape HTML
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
 }
 
 // Helper function to truncate URLs

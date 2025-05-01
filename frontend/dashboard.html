@@ -635,6 +635,70 @@
         justify-content: space-between;
       }
     }
+
+    .activity-container {
+      margin-top: 10px;
+    }
+    
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--border-color);
+      transition: all 0.2s ease;
+    }
+    
+    .history-item:hover {
+      background-color: var(--hover-bg);
+    }
+    
+    .history-title {
+      font-weight: 500;
+      margin-bottom: 5px;
+    }
+    
+    .history-time {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    
+    .status-safe {
+      background-color: rgba(76, 175, 80, 0.2);
+      color: #4CAF50;
+    }
+    
+    .status-warning {
+      background-color: rgba(255, 152, 0, 0.2);
+      color: #FF9800;
+    }
+    
+    .status-danger {
+      background-color: rgba(244, 67, 54, 0.2);
+      color: #F44336;
+    }
+    
+    #clear-history-btn {
+      margin-top: 15px;
+      float: right;
+    }
+    
+    .no-data, .error, .loading {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+    
+    .error {
+      color: #F44336;
+    }
   </style>
 </head>
 <body class="dark-theme">
@@ -726,13 +790,18 @@
           </div>
         </section>
         
+        <!-- Activity Overview Section -->
         <section class="dashboard-section">
-          <h2><i class="fas fa-history"></i> Recent Scan History</h2>
-          <div class="scan-history" id="scan-history">
-            <div class="history-placeholder">
-              <p>Your recent URL scan results will appear here after analysis</p>
+          <div class="section-header">
+            <h2><i class="fas fa-history"></i> Your Activity Overview</h2>
+          </div>
+          <div class="section-content">
+            <div id="scan-history" class="activity-container">
+              <!-- Activity will be loaded here via JavaScript -->
+              <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading your activity...
+              </div>
             </div>
-            <!-- Scan history will be populated by JavaScript -->
           </div>
         </section>
         
@@ -1070,4 +1139,3 @@
   </script>
 </body>
 </html>
-``` 

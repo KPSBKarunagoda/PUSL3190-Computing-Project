@@ -69,7 +69,7 @@ app.use('/api/auth/admin-login', loginLimiter);
 
 // Import routes with proper require statements
 const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/user');
+const userRoutes = require('./routes/user')(pool);
 const analyzeRoutes = require('./routes/analyze');  
 const analysisRoutes = require('./routes/analysis'); 
 const emailAnalyzerRoutes = require('./routes/email-analyzer');  // Add this line
@@ -79,7 +79,7 @@ console.log('Setting up API routes...');
 
 // Register routes with correct database connection passed
 app.use('/api/auth', authRoutes(pool));
-app.use('/api/user', userRoutes(pool));
+app.use('/api/user', userRoutes);
 app.use('/', analyzeRoutes(pool));  // This will handle /analyze-url
 app.use('/api', analysisRoutes);    // This will handle /api/analyze-email-headers
 app.use('/api', emailAnalyzerRoutes); // This will handle /api/analyze-email-ai

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 let bcrypt;
+const ActivityService = require('../services/activity-service');
 
 // Try to load bcrypt modules in the correct order
 try {
@@ -27,6 +28,8 @@ const auth = require('../middleware/auth');
 
 // This is a factory function that takes a database connection and returns a router
 module.exports = function(dbConnection) {
+    const activityService = new ActivityService(dbConnection);
+  
     // Apply auth middleware to all routes in this router
     router.use(auth(dbConnection));
 
@@ -269,29 +272,78 @@ module.exports = function(dbConnection) {
         }
     });
 
-    // GET /api/user/scan-history - Get user scan history
-    router.get('/scan-history', auth, async (req, res) => {
+    // GET /api/user/activity - Get user activity history
+    router.get('/activity', async (req, res) => {
         try {
             const userId = req.user.id;
-            const limit = req.query.limit || 10; // Default to 10 items
+            const limit = req.query.limit ? parseInt(req.query.limit) : 10;
             
-            // Query the database for user's recent scans
-            const [scanHistory] = await dbConnection.execute(`
-                SELECT 
-                    url,
-                    scan_date as scanDate,
-                    risk_score as riskScore,
-                    is_phishing as isPhishing
-                FROM URL_Scans
-                WHERE user_id = ?
-                ORDER BY scan_date DESC
-                LIMIT ?
-            `, [userId, parseInt(limit)]);
+            console.log(`Fetching activity for user ${userId}, limit ${limit}`);
             
-            res.json(scanHistory || []);
+            // Get activities from DB
+            const [activities] = await dbConnection.execute(
+                `SELECT ActivityID, Title, Risk, Timestamp 
+                 FROM UserActivity 
+                 WHERE UserID = ? 
+                 ORDER BY Timestamp DESC 
+                 LIMIT ?`,
+                [userId, limit]
+            );
+            
+            console.log(`Found ${activities.length} activities for user ${userId}`);
+            res.json(activities);
         } catch (error) {
-            console.error('Error fetching scan history:', error);
-            res.status(500).json({ error: 'Server error fetching scan history' });
+            console.error('Error fetching user activity:', error);
+            res.status(500).json({ error: 'Server error fetching activity history' });
+        }
+    });
+
+    // GET /api/user/stats - Get user statistics including scan counts
+    router.get('/stats', async (req, res) => {
+        try {
+            const userId = req.user.id;
+            
+            console.log(`Fetching stats for user ${userId}`);
+            
+            // Get counts from UserActivity table
+            const [stats] = await dbConnection.execute(`
+                SELECT 
+                    COUNT(*) as totalScans,
+                    SUM(CASE WHEN Risk >= 50 THEN 1 ELSE 0 END) as threatsDetected,
+                    SUM(CASE WHEN Risk < 50 THEN 1 ELSE 0 END) as safeSites
+                FROM UserActivity 
+                WHERE UserID = ?
+            `, [userId]);
+            
+            res.json({
+                totalScans: stats[0]?.totalScans || 0,
+                threatsDetected: stats[0]?.threatsDetected || 0,
+                safeSites: stats[0]?.safeSites || 0
+            });
+        } catch (error) {
+            console.error('Error fetching user stats:', error);
+            res.status(500).json({ error: 'Server error fetching statistics' });
+        }
+    });
+
+    // DELETE /api/user/activity - Clear user activity history
+    router.delete('/activity', async (req, res) => {
+        try {
+            const userId = req.user.id;
+            
+            console.log(`Clearing activity for user ${userId}`);
+            
+            // Delete all user activities
+            const [result] = await dbConnection.execute(
+                'DELETE FROM UserActivity WHERE UserID = ?',
+                [userId]
+            );
+            
+            console.log(`Deleted ${result.affectedRows} activities for user ${userId}`);
+            res.json({ success: true, deletedCount: result.affectedRows });
+        } catch (error) {
+            console.error('Error clearing user activity:', error);
+            res.status(500).json({ error: 'Server error clearing activity history' });
         }
     });
 

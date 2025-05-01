@@ -1,11 +1,28 @@
 const express = require('express');
 const { spawn } = require('child_process');
+const ActivityService = require('../services/activity-service');
+const auth = require('../middleware/auth');
 
 // Convert to a function that receives database connection
 module.exports = function(db) {
   const router = express.Router();
+  const activityService = new ActivityService(db);
 
-  router.post('/analyze-url', async (req, res) => {
+  // Apply authentication middleware but make it optional
+  const optionalAuth = (req, res, next) => {
+    const token = req.header('x-auth-token');
+    if (!token) {
+      // No token, skip authentication
+      console.log('No auth token provided, continuing without user authentication');
+      next();
+    } else {
+      // Token provided, authenticate and attach user
+      auth(db)(req, res, next);
+    }
+  };
+
+  // Use optional authentication for analyze-url route
+  router.post('/analyze-url', optionalAuth, async (req, res) => {
     try {
       const { url, useSafeBrowsing } = req.body;
       
@@ -79,7 +96,8 @@ module.exports = function(db) {
           console.log('Python stderr:', data.toString());
         });
 
-        python.on('close', (code) => {
+        // Fix: Add 'async' keyword to make this callback an async function
+        python.on('close', async (code) => {
           console.log('Python process exited with code', code);
           try {
             if (jsonData.trim()) {
@@ -95,6 +113,35 @@ module.exports = function(db) {
                 ml_confidence: result.ml_confidence || result.ml_result?.confidence || 0,
                 timestamp: new Date().toISOString()
               };
+
+              // If user is authenticated, record activity
+              if (req.user && req.user.id) {
+                console.log(`User authenticated (ID: ${req.user.id}), recording activity...`);
+                try {
+                  // Extract the domain rather than using the full URL
+                  const domain = new URL(url).hostname;
+                  const safeTitle = `Scan: ${domain}`;
+                  
+                  const activityResult = await activityService.recordActivity(
+                    req.user.id,
+                    url,
+                    safeTitle, // Use domain-based title instead of full URL
+                    response.risk_score
+                  );
+                  console.log('Activity recording result:', activityResult);
+                  
+                  // Add activity info to response
+                  response.activity_recorded = true;
+                  response.activity_result = activityResult;
+                } catch (actError) {
+                  console.error('Failed to record activity:', actError);
+                  response.activity_recorded = false;
+                  response.activity_error = actError.message;
+                }
+              } else {
+                console.log('User not authenticated, skipping activity recording');
+                response.activity_recorded = false;
+              }
 
               console.log('Sending analysis response:', response);
               res.json(response);
