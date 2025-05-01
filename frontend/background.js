@@ -159,8 +159,7 @@ function safelySendMessage(message) {
   }
 }
 
-// Check token expiry every 5 minutes (instead of every minute)
-// This reduces the frequency of token validations
+// Check token expiry every 5 minutes
 setInterval(() => {
   if (authState.isLoggedIn && authState.token) {
     validateToken(authState.token).then(isValid => {
@@ -244,7 +243,7 @@ async function analyzeAndCacheURL(url) {
     const preferences = await chrome.storage.sync.get(['safeSearchEnabled']);
     const useSafeBrowsing = preferences.safeSearchEnabled !== false;
     
-    // Analyze the URL
+    // Analyze the URL with auth included
     const result = await analyzeURL(url, useSafeBrowsing);
     
     // Add timestamp to the result for time tracking
@@ -281,7 +280,12 @@ async function analyzeAndCacheURL(url) {
       chrome.storage.local.set({ analysisCache: cache });
     });
     
-    // Group results by domain to avoid storage limits - as before
+    // If activity wasn't recorded during analysis, try to record it locally
+    if (!result.activity_recorded && result.is_phishing !== undefined) {
+      await recordUserActivity(url, result);
+    }
+    
+    // Group results by domain to avoid storage limits
     const domain = new URL(url).hostname;
     const storageKey = `analysis_${domain}`;
     
@@ -304,14 +308,113 @@ async function analyzeAndCacheURL(url) {
   }
 }
 
-// Function to analyze URLs
-async function analyzeURL(url, useSafeBrowsing) {
-  // Implementation of your analysis function
+// Function to record user activity with proper authentication
+async function recordUserActivity(url, result) {
   try {
-    // Always use Safe Browsing, ignoring the parameter
+    console.log('Attempting to record activity for URL:', url);
+    console.log('Current auth state:', 
+      `isLoggedIn: ${authState.isLoggedIn}, ` + 
+      `hasToken: ${!!authState.token}, ` +
+      `username: ${authState.userData?.username || 'none'}`);
+    
+    // First try using the centralized auth state (more reliable)
+    if (authState.isLoggedIn && authState.token) {
+      console.log('Using centralized auth state for activity recording');
+      
+      // Send activity to backend
+      const response = await fetch('http://localhost:3000/api/user/record-activity', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': authState.token
+        },
+        body: JSON.stringify({
+          url: url,
+          riskScore: result.risk_score || 0
+        })
+      });
+      
+      if (response.ok) {
+        console.log('Activity recorded successfully');
+        return true;
+      } else {
+        // If status is 401, token might be expired
+        if (response.status === 401) {
+          console.warn('Authentication failed (401) when recording activity, token might be expired');
+          // Force token revalidation but don't wait for it
+          authState.lastVerified = 0;
+          validateToken(authState.token);
+        } else {
+          console.error('Failed to record activity:', await response.text());
+        }
+        return false;
+      }
+    }
+    
+    // Fallback to storage-based auth (for backward compatibility)
+    const authData = await chrome.storage.local.get(['authToken', 'isLoggedIn']);
+    
+    if (!authData.isLoggedIn || !authData.authToken) {
+      console.log('User not authenticated in storage, skipping activity recording');
+      return false;
+    }
+    
+    console.log('Using storage auth token for activity recording');
+    
+    // Calculate risk score
+    const riskScore = result.risk_score || 0;
+    
+    // Send activity to backend
+    const response = await fetch('http://localhost:3000/api/user/record-activity', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': authData.authToken
+      },
+      body: JSON.stringify({
+        url: url,
+        riskScore: riskScore
+      })
+    });
+    
+    if (response.ok) {
+      console.log('Activity recorded successfully (using storage token)');
+      return true;
+    } else {
+      console.error('Failed to record activity:', await response.text());
+      return false;
+    }
+  } catch (error) {
+    console.error('Error recording user activity:', error);
+    return false;
+  }
+}
+
+// Function to analyze URLs with proper authentication
+async function analyzeURL(url, useSafeBrowsing) {
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    
+    // Use centralized auth state first (more reliable)
+    if (authState.isLoggedIn && authState.token) {
+      headers['x-auth-token'] = authState.token;
+      console.log('Using auth token from central state for URL analysis');
+    } else {
+      // Fallback to directly checking storage
+      const authData = await chrome.storage.local.get(['authToken']);
+      if (authData.authToken) {
+        headers['x-auth-token'] = authData.authToken;
+        console.log('Using auth token from storage for URL analysis');
+      } else {
+        console.log('No auth token available for URL analysis');
+      }
+    }
+    
+    // Changed back to the original endpoint that's known to work
+    // but keeping all the auth improvements
     const response = await fetch('http://localhost:3000/analyze-url', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: headers,
       body: JSON.stringify({ 
         url: url,
         useSafeBrowsing: true // Always use Safe Browsing

@@ -347,5 +347,40 @@ module.exports = function(dbConnection) {
         }
     });
 
+    // POST /api/user/record-activity - Record URL scan activity from extension
+    router.post('/record-activity', async (req, res) => {
+        try {
+            const userId = req.user.id;
+            const { url, riskScore } = req.body;
+            
+            if (!url) {
+                return res.status(400).json({ error: 'URL is required' });
+            }
+            
+            console.log(`Recording activity from extension for user ${userId}`);
+            
+            // Use the activity service to record the activity with domain as title
+            const domain = new URL(url).hostname;
+            const safeTitle = `Scan: ${domain}`;
+            
+            // Use the activity service to record the activity
+            const result = await activityService.recordActivity(
+                userId, 
+                url, 
+                safeTitle,
+                riskScore || 0
+            );
+            
+            res.json({
+                success: true,
+                result: result,
+                activity_recorded: true
+            });
+        } catch (error) {
+            console.error('Error recording activity from extension:', error);
+            res.status(500).json({ error: 'Failed to record activity' });
+        }
+    });
+
     return router;
 };
