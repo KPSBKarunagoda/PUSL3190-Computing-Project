@@ -1,6 +1,5 @@
 # PhishGuard - Advanced Phishing Detection and Web Security Platform
 
-![PhishGuard Logo](frontend/assets/logo.png)
 
 ## 🛡️ Overview
 
@@ -118,13 +117,13 @@ PhishGuard includes a comprehensive admin dashboard to manage:
 
 ## 🔗 Contact
 
-KPSB Karuangoda-10899226 
+KPSB Karuangoda-10899226 <br>
 10899226@students.plymouth.ac.uk
 
 
 # Socials  
 
-https://www.linkedin.com/in/sanuth-karunagoda/ 
+https://www.linkedin.com/in/sanuth-karunagoda/ <br>
 https://www.instagram.com/sanuth.karunagoda?igsh=eWRjd2lzaTNheDlv&utm_source=qr
 
 ---
