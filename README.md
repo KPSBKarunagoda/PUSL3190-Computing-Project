@@ -123,8 +123,8 @@ KPSB Karuangoda-10899226 <br>
 
 # Socials  
 
-https://www.linkedin.com/in/sanuth-karunagoda/ <br>
-https://www.instagram.com/sanuth.karunagoda?igsh=eWRjd2lzaTNheDlv&utm_source=qr
+Linkdin - https://www.linkedin.com/in/sanuth-karunagoda/ <br>
+Instagram - https://www.instagram.com/sanuth.karunagoda?igsh=eWRjd2lzaTNheDlv&utm_source=qr
 
 ---
 
