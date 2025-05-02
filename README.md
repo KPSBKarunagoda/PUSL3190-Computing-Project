@@ -118,13 +118,13 @@ PhishGuard includes a comprehensive admin dashboard to manage:
 
 ## 🔗 Contact
 
-KPSB Karuangoda-10899226
+KPSB Karuangoda-10899226 
 10899226@students.plymouth.ac.uk
 
 
-Socials 
+# Socials  
 
-https://www.linkedin.com/in/sanuth-karunagoda/
+https://www.linkedin.com/in/sanuth-karunagoda/ 
 https://www.instagram.com/sanuth.karunagoda?igsh=eWRjd2lzaTNheDlv&utm_source=qr
 
 ---
