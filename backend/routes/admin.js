@@ -511,6 +511,141 @@ module.exports = function(dbConnection) {
             res.status(500).json({ message: 'Server error', details: err.message });
         }
     });
+
+    // GET /api/admin/analytics/activity - Get activity analytics data
+    router.get('/analytics/activity', async (req, res) => {
+        try {
+            console.log("Activity analytics API endpoint accessed");
+            
+            // Default to 30 days if not specified
+            const days = parseInt(req.query.days) || 30;
+            
+            console.log(`Fetching activity analytics for the past ${days} days`);
+            
+            // Create date for X days ago
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - days);
+            startDate.setHours(0, 0, 0, 0);
+            
+            // Format date for MySQL query
+            const formattedDate = startDate.toISOString().slice(0, 19).replace('T', ' ');
+            
+            console.log(`Start date for query: ${formattedDate}`);
+            
+            // First check if UserActivity table exists to avoid errors
+            let tableExists = false;
+            try {
+                const [tables] = await dbConnection.execute("SHOW TABLES LIKE 'UserActivity'");
+                tableExists = tables.length > 0;
+            } catch (err) {
+                console.error("Error checking for UserActivity table:", err.message);
+            }
+            
+            if (!tableExists) {
+                return res.json({
+                    labels: [],
+                    counts: [],
+                    totalActivities: 0,
+                    highRiskCount: 0,
+                    mediumRiskCount: 0,
+                    lowRiskCount: 0,
+                    message: "UserActivity table does not exist"
+                });
+            }
+            
+            // Get daily activity counts
+            const dailyActivityQuery = `
+                SELECT 
+                    DATE(Timestamp) as date,
+                    COUNT(*) as count
+                FROM UserActivity
+                WHERE Timestamp >= ?
+                GROUP BY DATE(Timestamp)
+                ORDER BY date ASC
+            `;
+            
+            console.log("Running daily activity query");
+            const [dailyActivity] = await dbConnection.execute(dailyActivityQuery, [formattedDate]);
+            
+            // Get risk category counts
+            const riskCountsQuery = `
+                SELECT 
+                    CASE 
+                        WHEN Risk >= 70 THEN 'high'
+                        WHEN Risk >= 40 THEN 'medium'
+                        ELSE 'low'
+                    END as riskCategory,
+                    COUNT(*) as count
+                FROM UserActivity
+                WHERE Timestamp >= ?
+                GROUP BY riskCategory
+            `;
+            
+            console.log("Running risk counts query");
+            const [riskCounts] = await dbConnection.execute(riskCountsQuery, [formattedDate]);
+            
+            // Format data for chart
+            const labels = [];
+            const counts = [];
+            
+            // Create a map of date -> count for faster lookup
+            const activityMap = {};
+            dailyActivity.forEach(day => {
+                // Format date as MM/DD
+                const date = new Date(day.date);
+                const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+                
+                activityMap[formattedDate] = parseInt(day.count);
+            });
+            
+            // Fill in all days in range (including days with no activity)
+            for (let i = 0; i < days; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - days + i + 1);
+                const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+                
+                labels.push(formattedDate);
+                counts.push(activityMap[formattedDate] || 0);
+            }
+            
+            // Get risk category totals
+            let highRiskCount = 0;
+            let mediumRiskCount = 0;
+            let lowRiskCount = 0;
+            
+            riskCounts.forEach(category => {
+                if (category.riskCategory === 'high') highRiskCount = parseInt(category.count);
+                else if (category.riskCategory === 'medium') mediumRiskCount = parseInt(category.count);
+                else if (category.riskCategory === 'low') lowRiskCount = parseInt(category.count);
+            });
+            
+            const totalActivities = highRiskCount + mediumRiskCount + lowRiskCount;
+            
+            console.log(`Analytics data prepared: ${labels.length} days, ${totalActivities} activities`);
+            
+            res.json({
+                labels,
+                counts,
+                totalActivities,
+                highRiskCount,
+                mediumRiskCount,
+                lowRiskCount
+            });
+        } catch (error) {
+            console.error('Error fetching activity analytics:', error);
+            res.status(500).json({ 
+                message: 'Error fetching activity analytics', 
+                error: error.message,
+                // Send empty data structure for client fallback
+                labels: [],
+                counts: [],
+                totalActivities: 0,
+                highRiskCount: 0,
+                mediumRiskCount: 0,
+                lowRiskCount: 0
+            });
+        }
+    });
     
     // Log all registered routes for debugging
     console.log('Admin router routes:');

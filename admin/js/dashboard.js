@@ -43,13 +43,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (usernameElement) {
         usernameElement.textContent = admin.username || 'Admin';
       }
+      const currentUser = document.getElementById('current-user');
+      if (currentUser) {
+        currentUser.textContent = admin.username || 'Admin';
+      }
     }
     
     // Initialize dashboard components
     initSidebarToggle();
     await loadSystemStats();
+    initActivityAnalytics();
     
-    // Add additional initializations here
   } catch (error) {
     console.error('Dashboard initialization error:', error);
     
@@ -157,3 +161,244 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// Analytics variables
+let activityChart = null;
+
+/**
+ * Initialize activity analytics components
+ */
+function initActivityAnalytics() {
+  // Get filter elements
+  const dateRangeFilter = document.getElementById('date-range');
+  const chartTypeFilter = document.getElementById('chart-type');
+  const refreshBtn = document.getElementById('refresh-analytics');
+  
+  // Add event listeners
+  if (dateRangeFilter) {
+    dateRangeFilter.addEventListener('change', loadActivityData);
+  }
+  
+  if (chartTypeFilter) {
+    chartTypeFilter.addEventListener('change', loadActivityData);
+  }
+  
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => {
+      const icon = refreshBtn.querySelector('i');
+      if (icon) icon.classList.add('fa-spin');
+      
+      loadActivityData().finally(() => {
+        setTimeout(() => {
+          if (icon) icon.classList.remove('fa-spin');
+        }, 500);
+      });
+    });
+  }
+  
+  // Initial data load
+  loadActivityData();
+}
+
+/**
+ * Load activity analytics data
+ */
+async function loadActivityData() {
+  // Show loading state
+  const loader = document.getElementById('analytics-loader');
+  if (loader) loader.style.display = 'flex';
+  
+  try {
+    // Get filter values
+    const daysValue = document.getElementById('date-range')?.value || 30;
+    const chartType = document.getElementById('chart-type')?.value || 'line';
+    
+    console.log(`Loading activity data for the past ${daysValue} days`);
+    
+    // Fetch data from API
+    const data = await analyticsAPI.getActivityAnalytics({ days: daysValue });
+    
+    // Update summary stats
+    updateSummaryStats(data);
+    
+    // Update chart
+    renderActivityChart(data, chartType);
+    
+  } catch (error) {
+    console.error('Error loading activity data:', error);
+    
+    // Generate sample data if API fails
+    const daysValue = document.getElementById('date-range')?.value || 30;
+    const chartType = document.getElementById('chart-type')?.value || 'line';
+    
+    const sampleData = generateSampleData(parseInt(daysValue));
+    updateSummaryStats(sampleData);
+    renderActivityChart(sampleData, chartType);
+    
+  } finally {
+    // Hide loading state
+    if (loader) loader.style.display = 'none';
+  }
+}
+
+/**
+ * Update summary statistics
+ */
+function updateSummaryStats(data) {
+  document.getElementById('total-activities').textContent = data.totalActivities || 0;
+  document.getElementById('high-risk-count').textContent = data.highRiskCount || 0;
+  document.getElementById('medium-risk-count').textContent = data.mediumRiskCount || 0;
+  document.getElementById('low-risk-count').textContent = data.lowRiskCount || 0;
+}
+
+/**
+ * Render activity chart
+ */
+function renderActivityChart(data, chartType) {
+  const ctx = document.getElementById('activity-chart');
+  if (!ctx) return;
+  
+  // Destroy existing chart if it exists
+  if (activityChart) {
+    activityChart.destroy();
+  }
+  
+  // Prepare chart data
+  let chartData;
+  let options;
+  
+  if (chartType === 'pie') {
+    // Pie chart for risk distribution
+    chartData = {
+      labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+      datasets: [{
+        data: [
+          data.lowRiskCount || 0,
+          data.mediumRiskCount || 0,
+          data.highRiskCount || 0
+        ],
+        backgroundColor: [
+          'rgba(76, 175, 80, 0.7)',  // Green for low risk
+          'rgba(255, 170, 0, 0.7)',   // Orange for medium risk
+          'rgba(255, 82, 82, 0.7)'    // Red for high risk
+        ],
+        borderWidth: 1
+      }]
+    };
+    
+    options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary')
+          }
+        },
+        title: {
+          display: true,
+          text: 'Risk Distribution',
+          color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary'),
+          font: {
+            size: 16
+          }
+        }
+      }
+    };
+  } else {
+    // Line or bar chart for activity over time
+    chartData = {
+      labels: data.labels || [],
+      datasets: [{
+        label: 'Activity Count',
+        data: data.counts || [],
+        backgroundColor: chartType === 'line' ? 'rgba(61, 133, 198, 0.2)' : 'rgba(61, 133, 198, 0.7)',
+        borderColor: 'rgba(61, 133, 198, 1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: chartType === 'line'
+      }]
+    };
+    
+    options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          },
+          ticks: {
+            color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary')
+          }
+        },
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          },
+          ticks: {
+            color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary')
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary')
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.7)'
+        }
+      }
+    };
+  }
+  
+  // Create chart
+  activityChart = new Chart(ctx, {
+    type: chartType,
+    data: chartData,
+    options: options
+  });
+}
+
+/**
+ * Generate sample data for testing when API is not available
+ */
+function generateSampleData(daysValue = 30) {
+  const labels = [];
+  const counts = [];
+  
+  // Generate dates for the past X days
+  const today = new Date();
+  
+  for (let i = daysValue - 1; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(today.getDate() - i);
+    
+    // Format as MM/DD
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    labels.push(`${month}/${day}`);
+    
+    // Generate random activity count (1-20)
+    counts.push(Math.floor(Math.random() * 20) + 1);
+  }
+  
+  // Generate risk counts
+  const highRiskCount = Math.floor(Math.random() * 50) + 20;
+  const mediumRiskCount = Math.floor(Math.random() * 100) + 50;
+  const lowRiskCount = Math.floor(Math.random() * 150) + 100;
+  const totalActivities = highRiskCount + mediumRiskCount + lowRiskCount;
+  
+  return {
+    labels,
+    counts,
+    totalActivities,
+    highRiskCount,
+    mediumRiskCount,
+    lowRiskCount
+  };
+}

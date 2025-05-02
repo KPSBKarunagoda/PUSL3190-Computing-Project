@@ -6,6 +6,8 @@
   <title>PhishGuard Admin | Dashboard</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js library from cdnjs to comply with CSP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <meta name="description" content="PhishGuard Admin Dashboard">
 </head>
 <body>
@@ -108,40 +110,68 @@
         </div>
       </section>
       
-      <!-- Recent Activity -->
+      <!-- Activity Analytics (replacing Recent Activity) -->
       <section class="card">
         <div class="card-header">
-          <h2>Recent Activity</h2>
+          <h2><i class="fas fa-chart-line"></i> Activity Analytics</h2>
           <div class="card-actions">
-            <button id="refresh-activity" class="btn btn-sm btn-icon" aria-label="Refresh">
+            <button id="refresh-analytics" class="btn btn-sm btn-icon" aria-label="Refresh">
               <i class="fas fa-sync-alt"></i>
             </button>
           </div>
         </div>
         
         <div class="card-body">
-          <div id="activity-loader" class="loader">
-            <i class="fas fa-circle-notch fa-spin"></i>
-            <span>Loading activity...</span>
+          <div class="analytics-filters">
+            <div class="filter-group">
+              <label for="date-range">Time Period:</label>
+              <select id="date-range" class="form-select">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 3 months</option>
+                <option value="180">Last 6 months</option>
+                <option value="365">Last year</option>
+              </select>
+            </div>
+            
+            <div class="filter-group">
+              <label for="chart-type">Chart Type:</label>
+              <select id="chart-type" class="form-select">
+                <option value="line">Line Chart</option>
+                <option value="bar">Bar Chart</option>
+                <option value="pie">Risk Distribution</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="analytics-loader" class="loader-container">
+            <div class="loader"></div>
+            <p>Loading analytics...</p>
           </div>
           
-          <table id="activity-table" class="data-table">
-            <thead>
-              <tr>
-                <th>Action</th>
-                <th>User</th>
-                <th>Details</th>
-                <th>Time</th>
-              </tr>
-            </thead>
-            <tbody id="activity-body">
-              <!-- Activity data will be loaded here -->
-            </tbody>
-          </table>
-          
-          <div id="no-activity" class="empty-state">
-            <i class="fas fa-info-circle"></i>
-            <p>No recent activity found</p>
+          <div class="analytics-charts">
+            <div class="chart-container">
+              <canvas id="activity-chart"></canvas>
+            </div>
+            
+            <div class="analytics-summary">
+              <div class="summary-item">
+                <span class="summary-label">Total Activities</span>
+                <span id="total-activities" class="summary-value">0</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">High Risk</span>
+                <span id="high-risk-count" class="summary-value risk-high">0</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Medium Risk</span>
+                <span id="medium-risk-count" class="summary-value risk-medium">0</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Low Risk</span>
+                <span id="low-risk-count" class="summary-value risk-low">0</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>

@@ -586,6 +586,39 @@ const votesAPI = {
 };
 
 /**
+ * Analytics APIs
+ */
+const analyticsAPI = {
+  // Get activity analytics data
+  getActivityAnalytics: async (params = {}) => {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add parameters to query string
+      if (params.days) queryParams.append('days', params.days);
+      
+      const queryString = queryParams.toString();
+      const endpoint = `/admin/analytics/activity${queryString ? `?${queryString}` : ''}`;
+      
+      console.log(`Fetching analytics data with params:`, params);
+      return await apiRequest(endpoint);
+    } catch (error) {
+      console.error('Error fetching activity analytics:', error);
+      // Return empty structure instead of throwing to improve error handling
+      return {
+        labels: [],
+        counts: [],
+        totalActivities: 0,
+        highRiskCount: 0,
+        mediumRiskCount: 0,
+        lowRiskCount: 0,
+        error: error.message
+      };
+    }
+  }
+};
+
+/**
  * Contact API
  */
 const api = {
@@ -682,4 +715,5 @@ window.dashboardAPI = dashboardAPI;
 window.listsAPI = listsAPI;
 window.usersAPI = usersAPI;
 window.votesAPI = votesAPI;
+window.analyticsAPI = analyticsAPI;
 window.api = api;
