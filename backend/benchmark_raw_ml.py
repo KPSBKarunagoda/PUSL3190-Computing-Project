@@ -10,38 +10,126 @@ from joblib import load
 from sklearn.metrics import classification_report, confusion_matrix, precision_recall_curve, roc_curve, auc
 from utils.feature_extractor import URLFeatureExtractor
 
-# Define the ground truth for benchmark URLs (copied from benchmark_model.py)
+# Define the ground truth for benchmark URLs (expanded benchmark set)
 BENCHMARK_URLS = {
     # Legitimate URLs (class 0)
     "https://www.google.com": 0,
-    "https://github.com/microsoft/vscode/tree/main/src/vs/editor/contrib": 0,
-    "https://chat.openai.com/c/3e0b0a14-3b5c-4af0-9b10-ed96f15790db": 0,
-    "https://www.amazon.com/dp/B09JFSMVH7/ref=sr_1_3?keywords=laptop&qid=1645544823": 0,
-    "https://stackoverflow.com/questions/56254925/how-to-fix-installation-error": 0,
-    "https://www.nytimes.com/2023/05/10/technology/ai-regulation-europe.html": 0,
-    "https://www.reddit.com/r/ProgrammerHumor/comments/13m2vsf/hello_world/": 0,
-    "https://www.linkedin.com/in/john-doe-12345678/": 0,
-    "https://twitter.com/elonmusk/status/1656141749259726850": 0,
-    "https://www.youtube.com/watch?v=dQw4w9WgXcQ": 0,
-    "https://www.instagram.com/p/CsdQ8-RLiKd/": 0,
-    "https://docs.google.com/document/d/1abcdefghijklmnopqrstuvwxyz1234567890/edit": 0,
-    "https://en.wikipedia.org/wiki/Machine_learning": 0,
-    "https://www.bbc.com/news/world-asia-india-65066094": 0,
+    "https://www.microsoft.com": 0,
+    "https://www.apple.com": 0, 
+    "https://www.amazon.com": 0,
+    "https://www.facebook.com": 0,
+    "https://www.youtube.com": 0,
+    "https://www.twitter.com": 0,
+    "https://www.instagram.com": 0,
+    "https://www.netflix.com": 0,
+    "https://www.linkedin.com": 0,
+    "https://www.github.com": 0,
+    "https://www.stackoverflow.com": 0,
+    "https://www.wikipedia.org": 0,
+    "https://www.reddit.com": 0,
+    "https://www.nytimes.com": 0,
+    "https://www.cnn.com": 0,
+    "https://www.bbc.com": 0,
+    "https://www.weather.com": 0,
+    "https://www.nasa.gov": 0,
+    "https://www.who.int": 0,
+    "https://www.mit.edu": 0,
+    "https://www.harvard.edu": 0,
+    "https://www.stanford.edu": 0,
+    "https://www.toyota.com": 0,
+    "https://www.bmw.com": 0,
+    "https://www.nike.com": 0,
+    "https://www.adidas.com": 0,
+    "https://www.steam.com": 0,
+    "https://www.spotify.com": 0,
+    "https://www.wordpress.org": 0,
+    "https://www.dropbox.com": 0,
+    "https://www.salesforce.com": 0,
+    "https://www.adobe.com": 0,
+    "https://www.ebay.com": 0,
+    "https://www.paypal.com": 0,
+    "https://www.walmart.com": 0,
+    "https://www.target.com": 0,
+    "https://www.imdb.com": 0,
+    "https://www.whatsapp.com": 0,
+    "https://www.zoom.us": 0,
+    "https://www.slack.com": 0,
+    "https://www.discord.com": 0,
+    "https://www.twitch.tv": 0,
+    "https://www.uber.com": 0,
+    "https://www.airbnb.com": 0,
+    "https://www.booking.com": 0,
+    "https://www.expedia.com": 0,
+    "https://www.npr.org": 0,
+    "https://www.nba.com": 0,
+    "https://www.fifa.com": 0,
     
-    # Phishing URLs (class 1)
-    "https://www.paypa1.com/signin/verify?account=user": 1,
-    "http://192.168.12.43/login/verify.php": 1,
-    "https://secure-paypal.phishing-domain.com/login": 1,
-    "https://login.microsoft.verify-account.tk/signin": 1,
-    "https://badsite.com/www.paypal.com/login.html": 1,
-    "https://www.faceb00k.com/login/recovery/password": 1,
-    "https://arnazon.net/account/login/confirmation": 1,
-    "https://microsoft-verify-security.com/account/update": 1,
-    "https://netfl1x-billing-update.xyz/login": 1,
-    "https://googledocs.security-viewdoc.ml/sharing": 1,
-    "https://appleid.apple.com.signin-verification.info/": 1,
-    "https://www.wellsfarg0-secure.com/account/verify.php": 1,
-    "https://bankofamerica-secure.tk/login/auth": 1
+    # Phishing URLs (class 1) from PhishTank
+    # Manually copy recent verified phishing URLs from https://phishtank.org/phish_archive.php?page=1
+    # Example format:
+    # "https://actual-phishing-url.example": 1,
+    
+    # Note: The following URLs were previously marked as legitimate (0) but appear to be potentially malicious
+    # Consider reviewing these classifications:
+    "https://linater.com": 1,  # Changed from 0 to 1
+    "https://cpamassurance.com/index.php": 1,  # Changed from 0 to 1
+    "https://cpamassurance.com/home/": 1,  # Changed from 0 to 1
+    "https://cpamassurance.com/": 1,  # Changed from 0 to 1
+    "https://abodisney-plus.com/how/calcul.php": 1,  # Changed from 0 to 1
+    "https://www.onlinebgr.vip/": 1,  # Changed from 0 to 1
+    "https://www.com-tolleix.icu/": 1,  # Changed from 0 to 1
+    "https://www.com-tolleis.icu/": 1,  # Changed from 0 to 1
+    "https://www.com-tolleiq.icu/": 1,  # Changed from 0 to 1
+    "https://uusdlx.top/": 1,  # Changed from 0 to 1
+    "https://uusdlb.top/": 1,  # Changed from 0 to 1
+    "https://uusdla.top/": 1,  # Changed from 0 to 1
+    "https://usps.com-aybap.vip/": 1,  # Changed from 0 to 1
+     
+
+    # Additional phishing URLs from recent dataset
+    "https://trezorwallertuc.webflow.io/": 1,
+    "http://trezorwallertuc.webflow.io": 1,
+    "https://davisinteriordesigner.com/tuny/": 1,
+    "http://new.valadar.ru/shiftlessly/derivator": 1,
+    "http://allegrolokalniepl.89518934189519.sbs": 1,
+    "https://allegrolokalnie.pl-65567845.cfd": 1,
+    "http://allegrolokalnie.pll-oferta-firmowa869204.icu": 1,
+    "https://allegrolokalnie.oferta-048262.shop": 1,
+    "https://allegrolokalnie.pll-oferta-firmowa857419.icu": 1,
+    "https://dsfgfhdsftrytuyi675erdgfhguyi8675645etdfyguyiuiytfrdsd222.pages.dev": 1,
+    "https://202307051011295385924.onamaeweb.jp/ionos.html": 1,
+    "https://dbukyjvrcgykn.xyz/pulglink/": 1,
+    "https://bycbmcmhxdqxx.xyz/pulglink/": 1,
+    "https://bvenchpwlkqsg.xyz/pulglink/": 1,
+    "https://aapjhfrtlcbgm.xyz/pulglink/": 1,
+    "https://gdmwynylnpdrh.xyz/pulglink/": 1,
+    "https://fzdwphetcphyk.xyz/pulglink/": 1,
+    "https://fhncoxpjtmeoq.xyz/pulglink/": 1,
+    "https://fcgy.weeblysite.com/": 1,
+    "https://charitable-act.org/86689144638.htm": 1,
+    "https://knowledgeable-west-taleggio.glitch.me/public/login.ea0f.html": 1,
+    "https://meimaibook.s3.us-east-1.amazonaws.com/onedrive.html": 1,
+    "https://sbcglobal-net-158882.webflow.io/": 1,
+    "https://wfppsatzgtzkoykm.magaka7182.workers.dev/": 1,
+    "https://ruideoklauswestphal.aafde5931dd29f9f4279.getmyip.com/": 1,
+    "https://nsaskuggdwfifzok.magaka7182.workers.dev": 1,
+    "https://getkunden.sbs/ak/login.php": 1,
+    "https://dkbidentifikation.su/de/Transaktionsverifizierung/": 1,
+    "http://bing515591433.813a85a2298fc76bc976.ham-radio-op.net/": 1,
+    "https://walletconnect-97k.pages.dev/wallet": 1,
+    "http://srv229936.hoster-test.ru/app/": 1,
+    "https://monespace-suivilivraison.com/": 1,
+    "https://monespace-suivilivraison.com/pac/calcul.php": 1,
+    "https://mettamskloginei.webflow.io": 1,
+    "https://openmintseas.site": 1,
+    "https://xy-finance.fi": 1,
+    "https://websolveclouddesk.xyz": 1,
+    "https://testnet-humanity.net": 1,
+    "https://coinfactoryapp.live": 1,
+    "https://berachajn.network": 1,
+    "https://829531-coinbase.com": 1,
+    "https://check-solayer.live": 1,
+    "https://web3dappfix-v2.pages.dev": 1,
 }
 
 class RawMLBenchmark:
@@ -478,3 +566,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
