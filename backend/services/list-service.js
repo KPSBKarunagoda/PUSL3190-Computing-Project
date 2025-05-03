@@ -169,6 +169,79 @@ class ListService {
             throw error;
         }
     }
+
+    /**
+     * Get blacklist statistics
+     */
+    async getBlacklistStats(timeframe = 'week') {
+        try {
+            let dateFormat;
+            let daysToLookBack;
+            let groupingQuery;
+            
+            // Configure the time period to analyze
+            switch(timeframe) {
+                case 'day':
+                    dateFormat = '%Y-%m-%d %H:00:00';
+                    daysToLookBack = 1;
+                    groupingQuery = 'HOUR(AddedDate)';
+                    break;
+                case 'year':
+                    dateFormat = '%Y-%m-01';
+                    daysToLookBack = 365;
+                    groupingQuery = 'YEAR(AddedDate), MONTH(AddedDate)';
+                    break;
+                case 'month':
+                    dateFormat = '%Y-%m-%d';
+                    daysToLookBack = 30;
+                    groupingQuery = 'DATE(AddedDate)';
+                    break;
+                case 'week':
+                default:
+                    dateFormat = '%Y-%m-%d';
+                    daysToLookBack = 7;
+                    groupingQuery = 'DATE(AddedDate)';
+                    break;
+            }
+            
+            // Get additions to blacklist for the specified period
+            const [rows] = await this.dbConnection.execute(`
+                SELECT 
+                    DATE_FORMAT(AddedDate, ?) as period,
+                    COUNT(*) as count
+                FROM Blacklist 
+                WHERE AddedDate >= DATE_SUB(NOW(), INTERVAL ? DAY)
+                GROUP BY ${groupingQuery}
+                ORDER BY AddedDate ASC
+            `, [dateFormat, daysToLookBack]);
+            
+            // Get total count
+            const [totalResult] = await this.dbConnection.execute('SELECT COUNT(*) as total FROM Blacklist');
+            const totalCount = totalResult[0].total;
+            
+            // Get recent additions (last 24 hours)
+            const [recentResult] = await this.dbConnection.execute(`
+                SELECT COUNT(*) as recent 
+                FROM Blacklist 
+                WHERE AddedDate >= DATE_SUB(NOW(), INTERVAL 1 DAY)
+            `);
+            const recentAdditions = recentResult[0].recent;
+            
+            // Format the result for chart display
+            const labels = rows.map(row => row.period);
+            const counts = rows.map(row => row.count);
+            
+            return {
+                labels,
+                counts,
+                totalCount,
+                recentAdditions
+            };
+        } catch (error) {
+            console.error('Error getting blacklist stats:', error);
+            throw error;
+        }
+    }
 }
 
 module.exports = ListService;

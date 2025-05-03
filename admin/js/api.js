@@ -227,6 +227,23 @@ const listsAPI = {
     }
   },
   
+  // Get blacklist statistics
+  getBlacklistStats: async (timeframe = 'week') => {
+    try {
+      return await apiRequest(`/lists/blacklist/stats?timeframe=${timeframe}`);
+    } catch (error) {
+      console.error('Error fetching blacklist stats:', error);
+      // Return default structure for error handling
+      return {
+        labels: [],
+        counts: [],
+        totalCount: 0,
+        recentAdditions: 0,
+        error: error.message
+      };
+    }
+  },
+  
   // Add domain to blacklist
   addToBlacklist: async (domain) => {
     try {

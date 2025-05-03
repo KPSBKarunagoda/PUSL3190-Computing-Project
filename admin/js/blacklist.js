@@ -15,10 +15,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Set up event handlers
     setupAddForm();
     setupRefreshButton();
-    setupSearchFunctionality(); // Add this line
+    setupSearchFunctionality();
+    setupBlacklistAnalytics();
     
     // Load blacklist data
     await loadBlacklist();
+    await loadBlacklistStats();
   } catch (error) {
     console.error('Blacklist initialization error:', error);
     showAlert('Failed to initialize blacklist page: ' + error.message, 'error');
@@ -212,7 +214,6 @@ function setupRefreshButton() {
   }
 }
 
-// Add this new function for search functionality
 function setupSearchFunctionality() {
   const searchInput = document.getElementById('search-input');
   const searchButton = document.querySelector('.search-button');
@@ -238,7 +239,6 @@ function setupSearchFunctionality() {
   }
 }
 
-// Add this function to filter domains
 function filterDomains(searchTerm) {
   const tableBody = document.getElementById('blacklist-body');
   if (!tableBody) return;
@@ -346,7 +346,6 @@ function showAlert(message, type = 'info') {
   }
 }
 
-// Add a toast notification function (identical to whitelist.js)
 function showToast(message, type = 'info') {
   // Create toast container if it doesn't exist
   let toastContainer = document.getElementById('toast-container');
@@ -402,4 +401,291 @@ function showToast(message, type = 'info') {
       toast.remove();
     }, 300);
   }, 3000);
+}
+
+// Add new functions for blacklist analytics
+function setupBlacklistAnalytics() {
+  const timeframeSelector = document.getElementById('timeframe-selector');
+  const chartTypeSelector = document.getElementById('chart-type-selector');
+  
+  if (timeframeSelector) {
+    timeframeSelector.addEventListener('change', async () => {
+      const chartType = chartTypeSelector ? chartTypeSelector.value : 'auto';
+      await loadBlacklistStats(timeframeSelector.value, chartType);
+    });
+  }
+  
+  if (chartTypeSelector) {
+    chartTypeSelector.addEventListener('change', async () => {
+      const timeframe = timeframeSelector ? timeframeSelector.value : 'week';
+      await loadBlacklistStats(timeframe, chartTypeSelector.value);
+    });
+  }
+}
+
+let blacklistChart = null;
+
+async function loadBlacklistStats(timeframe = 'week', chartType = 'auto') {
+  try {
+    // Show loading state
+    const chartLoader = document.getElementById('chart-loader');
+    const noChartData = document.getElementById('no-chart-data');
+    const chartContainer = document.getElementById('blacklist-chart-container');
+    
+    if (chartLoader) chartLoader.style.display = 'flex';
+    if (noChartData) noChartData.style.display = 'none';
+    
+    // Set chart container height based on timeframe for better visualization
+    if (chartContainer) {
+      if (timeframe === 'day') {
+        chartContainer.style.height = '250px';
+      } else if (timeframe === 'year') {
+        chartContainer.style.height = '350px';
+      } else {
+        chartContainer.style.height = '300px';
+      }
+    }
+    
+    // Fetch stats data
+    const stats = await listsAPI.getBlacklistStats(timeframe);
+    console.log('Blacklist stats:', stats);
+    
+    // Hide loader
+    if (chartLoader) chartLoader.style.display = 'none';
+    
+    // Update stat cards
+    document.getElementById('total-blacklisted').textContent = stats.totalCount || 0;
+    document.getElementById('recent-blacklisted').textContent = stats.recentAdditions || 0;
+    
+    // Update trend indicator
+    updateTrendIndicator(stats);
+    
+    // Check if there's data to display
+    if (!stats.labels || stats.labels.length === 0) {
+      if (noChartData) noChartData.style.display = 'flex';
+      return;
+    }
+    
+    // Create or update chart with enhanced styling
+    const ctx = document.getElementById('blacklist-chart').getContext('2d');
+    
+    // Generate gradient background
+    let gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(220, 53, 69, 0.7)');
+    gradient.addColorStop(1, 'rgba(220, 53, 69, 0.1)');
+    
+    // Format labels based on timeframe
+    const formattedLabels = formatLabels(stats.labels, timeframe);
+    
+    // Determine if we should use line chart based on type or timeframe
+    // If chartType is 'auto', use line for day view and bar for others
+    // Otherwise use the explicitly selected chart type
+    const useLineChart = chartType === 'line' || (chartType === 'auto' && timeframe === 'day');
+    
+    const chartConfig = {
+      type: useLineChart ? 'line' : 'bar',
+      data: {
+        labels: formattedLabels,
+        datasets: [{
+          label: 'Domains Added',
+          data: stats.counts,
+          backgroundColor: useLineChart ? gradient : 'rgba(220, 53, 69, 0.7)',
+          borderColor: 'rgba(220, 53, 69, 1)',
+          borderWidth: useLineChart ? 3 : 1,
+          tension: 0.4,
+          fill: useLineChart,
+          pointBackgroundColor: 'rgba(220, 53, 69, 1)',
+          pointBorderColor: '#fff',
+          pointRadius: useLineChart ? 4 : 0,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 1000,
+          easing: 'easeOutQuart'
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0,
+              font: {
+                weight: 'bold'
+              }
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            }
+          },
+          x: {
+            grid: {
+              display: timeframe !== 'year',
+              color: 'rgba(255, 255, 255, 0.1)'
+            },
+            ticks: {
+              maxRotation: 45,
+              minRotation: 0,
+              font: {
+                weight: 'bold'
+              }
+            }
+          }
+        },
+        plugins: {
+          title: {
+            display: true,
+            text: `Blacklisted Domains Added (${timeframeToTitle(timeframe)})`,
+            font: {
+              size: 16,
+              weight: 'bold'
+            },
+            padding: {
+              top: 10,
+              bottom: 20
+            }
+          },
+          legend: {
+            position: 'top',
+            labels: {
+              boxWidth: 15,
+              usePointStyle: true,
+              pointStyle: 'circle',
+              font: {
+                weight: 'bold'
+              }
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleFont: {
+              weight: 'bold'
+            },
+            bodyFont: {
+              weight: 'normal'
+            },
+            padding: 12,
+            cornerRadius: 6,
+            callbacks: {
+              title: function(tooltipItems) {
+                const item = tooltipItems[0];
+                return `Date: ${item.label}`;
+              },
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed.y !== null) {
+                  label += context.parsed.y + (context.parsed.y === 1 ? ' domain' : ' domains');
+                }
+                return label;
+              }
+            }
+          }
+        }
+      }
+    };
+    
+    if (blacklistChart) {
+      blacklistChart.data = chartConfig.data;
+      blacklistChart.options = chartConfig.options;
+      blacklistChart.config.type = chartConfig.type; // Update chart type
+      blacklistChart.update();
+    } else {
+      blacklistChart = new Chart(ctx, chartConfig);
+    }
+  } catch (error) {
+    console.error('Error loading blacklist stats:', error);
+    showAlert('Failed to load blacklist analytics: ' + error.message, 'error');
+    
+    const chartLoader = document.getElementById('chart-loader');
+    if (chartLoader) chartLoader.style.display = 'none';
+    
+    const noChartData = document.getElementById('no-chart-data');
+    if (noChartData) {
+      noChartData.style.display = 'flex';
+      noChartData.querySelector('p').textContent = 'Error loading chart data';
+    }
+  }
+}
+
+function updateTrendIndicator(stats) {
+  const trendElement = document.getElementById('trend-indicator');
+  if (!trendElement || !stats.counts || stats.counts.length < 2) {
+    if (trendElement) trendElement.innerHTML = '<i class="fas fa-minus"></i>';
+    return;
+  }
+  
+  // Calculate trend by comparing the latest two periods
+  const latestValue = stats.counts[stats.counts.length - 1];
+  const previousValue = stats.counts[stats.counts.length - 2];
+  
+  if (latestValue > previousValue) {
+    trendElement.innerHTML = '<i class="fas fa-arrow-up" style="color: #dc3545;"></i> Increasing';
+  } else if (latestValue < previousValue) {
+    trendElement.innerHTML = '<i class="fas fa-arrow-down" style="color: #28a745;"></i> Decreasing';
+  } else {
+    trendElement.innerHTML = '<i class="fas fa-equals" style="color: #ffc107;"></i> Stable';
+  }
+}
+
+function formatLabels(labels, timeframe) {
+  if (!labels) return [];
+  
+  // Format based on timeframe
+  switch(timeframe) {
+    case 'day':
+      // Format hours as "HH:00"
+      return labels.map(label => {
+        const parts = label.split(' ');
+        if (parts.length > 1) {
+          return parts[1].substr(0, 5); // Get hour part "HH:00"
+        }
+        return label;
+      });
+    case 'year':
+      // Format as Month abbreviation
+      return labels.map(label => {
+        try {
+          const date = new Date(label);
+          return date.toLocaleString('default', { month: 'short' });
+        } catch(e) {
+          return label;
+        }
+      });
+    default:
+      // For week/month, keep as is or format as needed
+      return labels;
+  }
+}
+
+function timeframeToTitle(timeframe) {
+  switch(timeframe) {
+    case 'day': return 'Last 24 Hours';
+    case 'month': return 'Last 30 Days';
+    case 'year': return 'Last 12 Months';
+    case 'week': 
+    default: return 'Last 7 Days';
+  }
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = () => {
+      console.log(`Successfully loaded script: ${src}`);
+      resolve();
+    };
+    script.onerror = (error) => {
+      console.error(`Error loading script ${src}:`, error);
+      reject(error);
+    };
+    document.head.appendChild(script);
+  });
 }

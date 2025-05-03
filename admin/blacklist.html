@@ -67,6 +67,76 @@
       
       <div id="system-alert" class="alert" role="alert"></div>
       
+      <!-- Blacklist Analytics - Moved above Add Domain section -->
+      <section class="card">
+        <div class="card-header">
+          <h2>Blacklist Analytics</h2>
+          <div class="card-actions">
+            <div class="action-group">
+              <select id="chart-type-selector" class="form-select">
+                <option value="auto">Auto Chart</option>
+                <option value="bar">Bar Chart</option>
+                <option value="line">Line Graph</option>
+              </select>
+              <select id="timeframe-selector" class="form-select">
+                <option value="day">Last 24 Hours</option>
+                <option value="week" selected>Last 7 Days</option>
+                <option value="month">Last 30 Days</option>
+                <option value="year">Last 12 Months</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <div class="analytics-container">
+            <div class="stat-cards">
+              <div class="stat-card">
+                <div class="stat-card-icon bg-danger">
+                  <i class="fas fa-ban"></i>
+                </div>
+                <div class="stat-card-info">
+                  <h3>Total Blacklisted</h3>
+                  <p id="total-blacklisted" class="stat-value">0</p>
+                </div>
+              </div>
+              
+              <div class="stat-card">
+                <div class="stat-card-icon bg-warning">
+                  <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-card-info">
+                  <h3>Added (24h)</h3>
+                  <p id="recent-blacklisted" class="stat-value">0</p>
+                </div>
+              </div>
+              
+              <div class="stat-card">
+                <div class="stat-card-icon bg-info">
+                  <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-card-info">
+                  <h3>Trend</h3>
+                  <p id="trend-indicator" class="stat-value"><i class="fas fa-minus"></i></p>
+                </div>
+              </div>
+            </div>
+            
+            <div id="blacklist-chart-container" class="chart-container">
+              <canvas id="blacklist-chart"></canvas>
+              <div id="chart-loader" class="loader">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                <span>Loading chart data...</span>
+              </div>
+              <div id="no-chart-data" class="empty-state" style="display: none;">
+                <i class="fas fa-chart-bar"></i>
+                <p>No data available for the selected timeframe</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
       <!-- Add to Blacklist Card -->
       <section class="card">
         <div class="card-header">
@@ -194,6 +264,7 @@
   <script src="js/common.js"></script>
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <script src="js/blacklist.js"></script>
 </body>
 </html>

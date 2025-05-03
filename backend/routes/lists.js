@@ -120,6 +120,18 @@ module.exports = function(dbConnection) {
             res.status(500).json({ message: 'Server error' });
         }
     });
+
+    // Get blacklist statistics
+    router.get('/blacklist/stats', async (req, res) => {
+        try {
+            const timeframe = req.query.timeframe || 'week';
+            const stats = await listService.getBlacklistStats(timeframe);
+            res.json(stats);
+        } catch (error) {
+            console.error('Get blacklist stats error:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    });
     
     return router;
 };
