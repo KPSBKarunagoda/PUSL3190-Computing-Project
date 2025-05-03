@@ -1248,20 +1248,16 @@ textarea:focus {
   color: var(--text-secondary);
 }
 
-.form-select {
-  padding: 8px 12px;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  background-color: var(--input-bg);
-  color: var(--text-primary);
-  min-width: 150px;
+.analytics-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .chart-container {
   position: relative;
   height: 300px;
   width: 100%;
-  margin-top: 20px;
   background-color: var(--dark-lighter);
   border-radius: var(--radius);
   padding: 15px;
@@ -1273,45 +1269,164 @@ textarea:focus {
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-#blacklist-chart {
-  width: 100%;
-  height: 100%;
+/* Analytics summary section */
+.analytics-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 25px;
+  margin-top: 25px;
+  padding: 10px;
 }
 
-/* Loading state improvements */
-#chart-loader {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: rgba(33, 37, 41, 0.7);
+.summary-item {
+  background-color: var(--dark-lighter);
   border-radius: var(--radius);
-  z-index: 5;
-}
-
-#no-chart-data {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  padding: 20px 15px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: rgba(33, 37, 41, 0.7);
-  border-radius: var(--radius);
-  z-index: 5;
+  text-align: center;
+  border: 1px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.2s;
+  min-height: 100px;
 }
 
-#no-chart-data i {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  opacity: 0.7;
+.summary-item:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+.summary-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.summary-value {
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.5px;
+}
+
+/* Risk indicators */
+.risk-high {
+  color: var(--danger);
+}
+
+.risk-medium {
+  color: var(--warning);
+}
+
+.risk-low {
+  color: var(--success);
+}
+
+/* Chart loader */
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--text-secondary);
+}
+
+.loader {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: var(--primary);
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Chart tooltip customization */
+.chartjs-tooltip {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  padding: 10px !important;
+  border-radius: var(--radius) !important;
+  color: white !important;
+  border: 1px solid var(--border) !important;
+  font-family: var(--font-family) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+.activity-tooltip-title {
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 5px;
+}
+
+.activity-tooltip-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+/* Chart legends */
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  margin-right: 5px;
+}
+
+/* Dashboard chart type specific styles */
+.chart-container.line-chart canvas {
+  height: calc(100% - 10px) !important;
+}
+
+.chart-container.bar-chart canvas {
+  height: calc(100% - 20px) !important;
+}
+
+.chart-container.pie-chart {
+  height: 350px !important;
+}
+
+.chart-container.pie-chart canvas {
+  max-height: 100% !important;
+}
+
+/* Responsive adjustments for charts */
+@media (max-width: 768px) {
+  .analytics-filters {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .chart-container {
+    height: 250px;
+  }
+  
+  .chart-container.pie-chart {
+    height: 300px !important;
+  }
+  
+  .analytics-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* Responsive adjustments */
@@ -1714,7 +1829,6 @@ select option {
 .action-group {
   display: flex;
   gap: 10px;
-  align-items: center;
 }
 
 .form-select {
