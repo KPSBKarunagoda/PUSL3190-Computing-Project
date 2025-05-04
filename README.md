@@ -58,33 +58,61 @@ The risk score is calculated using a weighted algorithm that considers:
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v14.0+)
-- Python (v3.8+) with pip
-- MySQL (v8.0+)
+- **Node.js** (v14.0+) - [Download](https://nodejs.org/)
+- **Python** (v3.8+) - [Download](https://www.python.org/downloads/)
+- **MySQL** (v8.0+) - [Download](https://dev.mysql.com/downloads/mysql/) or **XAMPP** - [Download](https://www.apachefriends.org/download.html)
+- **Git** - [Download](https://git-scm.com/downloads)
+- **Chrome Browser** (for extension) - [Download](https://www.google.com/chrome/)
 
 ### Installation
 
 1. Clone the repository
 ```
 git clone https://github.com/KPSBKarunagoda/PUSL3190-Computing-Project.git
-
 ```
 
 2. Install Node.js dependencies
 ```
-cd backend
+cd PUSL3190-Computing-Project
 npm install
 ```
+
+This will install all required Node.js packages:
+- axios
+- cors
+- express
+- mysql2
 
 3. Install Python dependencies
 ```
 pip install -r requirements.txt
 ```
 
-4. Set up the database
+This will install all Python dependencies:
+- pandas
+- numpy
+- scikit-learn
+- lightgbm
+- requests
+- dnspython
+- python-whois
+- pyOpenSSL
+- python-dotenv
+- matplotlib
+- seaborn
+- joblib
+- google-generativeai
+
+4. Set up the database (MySQL)
 ```
 mysql -u username -p < database/schema.sql
 ```
+
+Or if using XAMPP:
+- Start Apache and MySQL from the XAMPP Control Panel
+- Open http://localhost/phpmyadmin in your browser
+- Create a new database named 'phishing_detector'
+- Either import the schema.sql file or run the application once to auto-create tables
 
 5. Configure environment variables
 ```
