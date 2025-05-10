@@ -72,70 +72,7 @@
     }
     
     .message-detail {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 25px;
-      margin-bottom: 25px;
       display: none;
-    }
-    
-    .message-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 15px;
-    }
-    
-    .message-header h3 {
-      margin: 0;
-      color: var(--text-primary);
-    }
-    
-    .message-sender {
-      margin-bottom: 20px;
-    }
-    
-    .message-sender p {
-      margin: 5px 0;
-      color: var(--text-secondary);
-    }
-    
-    .message-sender strong {
-      color: var(--text-primary);
-    }
-    
-    .message-content {
-      background-color: rgba(0, 0, 0, 0.1);
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      color: var(--text-secondary);
-      white-space: pre-wrap;
-    }
-    
-    .message-actions {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 20px;
-    }
-    
-    .notes-section {
-      margin-top: 20px;
-    }
-    
-    .notes-section textarea {
-      width: 100%;
-      background-color: rgba(0, 0, 0, 0.1);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 12px 15px;
-      color: var(--text-primary);
-      min-height: 100px;
-      margin-bottom: 15px;
-      resize: vertical;
     }
     
     .filters {
@@ -218,6 +155,232 @@
       background-color: var(--primary-color);
       color: white;
       border-color: var(--primary-color);
+    }
+    
+    /* Enhanced Modal Styling - Complete Overhaul */
+    .message-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .message-modal.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .message-modal-content {
+        background-color: var(--dark-light);
+        width: 90%;
+        max-width: 800px;
+        max-height: 90vh;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-lg);
+        overflow-y: auto;
+        transform: translateY(-20px);
+        transition: transform 0.3s ease;
+        position: relative;
+        animation: modalIn 0.3s ease-in-out;
+    }
+    
+    .message-modal.show .message-modal-content {
+        transform: translateY(0);
+    }
+    
+    .message-close-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: var(--transition-fast);
+        z-index: 10;
+    }
+    
+    .message-close-btn:hover {
+        color: var(--text-primary);
+    }
+    
+    body.modal-open {
+        overflow: hidden;
+    }
+    
+    /* Modal Interior Styling */
+    .message-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacer-lg);
+        border-bottom: 1px solid var(--border);
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+    
+    .message-header h3 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: var(--font-size-lg);
+        padding-right: 30px;
+    }
+    
+    .message-date {
+        display: flex;
+        align-items: center;
+        color: var(--text-secondary);
+        font-size: var(--font-size-sm);
+        background-color: rgba(0, 0, 0, 0.2);
+        padding: 5px 10px;
+        border-radius: 4px;
+        white-space: nowrap;
+    }
+    
+    .message-date i {
+        margin-right: 5px;
+    }
+    
+    .message-body {
+        padding: var(--spacer-lg);
+    }
+    
+    .message-sender {
+        margin-bottom: var(--spacer-lg);
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: var(--radius);
+        padding: var(--spacer);
+        border: 1px solid var(--border);
+    }
+    
+    .message-sender p {
+        margin: 10px 0;
+        display: flex;
+        align-items: center;
+        color: var(--text-secondary);
+    }
+    
+    .message-sender p i {
+        width: 20px;
+        margin-right: 10px;
+        color: var(--primary);
+        text-align: center;
+    }
+    
+    .message-sender strong {
+        margin-right: 5px;
+        color: var(--text-primary);
+    }
+    
+    .message-content {
+        margin-bottom: var(--spacer-lg);
+        padding: var(--spacer-lg);
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: var(--radius);
+        color: var(--text-primary);
+        white-space: pre-wrap;
+        position: relative;
+        line-height: 1.6;
+        border-left: 4px solid var(--primary);
+        border: 1px solid var(--border);
+    }
+    
+    .notes-section {
+        margin-bottom: var(--spacer-lg);
+    }
+    
+    .notes-section h4 {
+        margin-top: 0;
+        margin-bottom: var(--spacer);
+        display: flex;
+        align-items: center;
+        color: var(--text-primary);
+    }
+    
+    .notes-section h4 i {
+        margin-right: 8px;
+        color: var(--info);
+    }
+    
+    .notes-section textarea {
+        width: 100%;
+        background-color: rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: var(--spacer);
+        color: var(--text-primary);
+        min-height: 100px;
+        margin-bottom: var(--spacer);
+        resize: vertical;
+        font-family: inherit;
+        transition: border-color 0.2s;
+    }
+    
+    .notes-section textarea:focus {
+        border-color: var(--primary);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(61, 133, 198, 0.2);
+    }
+    
+    .message-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: var(--spacer);
+        border-top: 1px solid var(--border);
+    }
+    
+    @keyframes modalIn {
+        from {
+            opacity: 0;
+            transform: translate(-50%, -60%);
+        }
+        to {
+            opacity: 1;
+            transform: translate(-50%, -50%);
+        }
+    }
+    
+    /* Customized scrollbar for modal */
+    .message-modal-content::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .message-modal-content::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+    }
+    
+    .message-modal-content::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+    }
+    
+    .message-modal-content::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.4);
+    }
+    
+    /* Enhanced filter select and buttons */
+    #status-update {
+        background-color: var(--input-bg);
+        border: 1px solid var(--input-border);
+        color: var(--text-primary);
+        border-radius: var(--radius-sm);
+        padding: 8px 12px;
+        transition: border-color 0.2s;
+    }
+    
+    #status-update:focus {
+        border-color: var(--primary);
+        outline: none;
     }
   </style>
 </head>
@@ -313,43 +476,6 @@
             </div>
           </div>
           
-          <!-- Message detail view -->
-          <div id="message-detail" class="message-detail">
-            <div class="message-header">
-              <h3 id="message-subject"></h3>
-              <span id="message-date"></span>
-            </div>
-            <div class="message-sender">
-              <p><strong>From:</strong> <span id="message-name"></span> (<span id="message-email"></span>)</p>
-              <p id="message-user-info" style="display: none;"><strong>User:</strong> <span id="message-username"></span> (ID: <span id="message-user-id"></span>)</p>
-            </div>
-            <div class="message-content" id="message-content"></div>
-            
-            <div class="notes-section">
-              <h4>Admin Notes</h4>
-              <textarea id="admin-notes" placeholder="Add your notes here..."></textarea>
-              <div>
-                <button id="save-notes-btn" class="btn btn-primary">Save Notes</button>
-              </div>
-            </div>
-            
-            <div class="message-actions">
-              <div class="filter-group">
-                <label class="filter-label">Update Status:</label>
-                <select id="status-update" class="filter-select">
-                  <option value="new">New</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                </select>
-                <button id="update-status-btn" class="btn btn-secondary">Update</button>
-              </div>
-              <div>
-                <button id="delete-message-btn" class="btn btn-danger">Delete</button>
-                <button id="close-detail-btn" class="btn btn-outline">Close</button>
-              </div>
-            </div>
-          </div>
-          
           <!-- Submissions table -->
           <table class="contact-list">
             <thead>
@@ -385,6 +511,74 @@
     </main>
   </div>
   
+  <!-- Modal for message details -->
+  <div id="message-modal" class="message-modal">
+    <div class="message-modal-content">
+        <div class="message-header">
+            <h3 id="message-subject">Message Subject</h3>
+            <span class="message-date">
+                <i class="far fa-clock"></i>
+                <span id="message-date">Date</span>
+            </span>
+            <button id="message-close-btn" class="message-close-btn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="message-body">
+            <div class="message-sender">
+                <p>
+                    <i class="fas fa-user"></i>
+                    <strong>From:</strong>
+                    <span id="message-name">Sender Name</span>
+                </p>
+                <p>
+                    <i class="fas fa-envelope"></i>
+                    <strong>Email:</strong>
+                    <span id="message-email">sender@example.com</span>
+                </p>
+                <p id="message-user-info" style="display: none;">
+                    <i class="fas fa-id-badge"></i>
+                    <strong>User:</strong>
+                    <span id="message-username">Username</span>
+                    (ID: <span id="message-user-id">123</span>)
+                </p>
+            </div>
+            
+            <div class="message-content" id="message-content">Message content will appear here</div>
+            
+            <div class="notes-section">
+                <h4><i class="fas fa-sticky-note"></i> Admin Notes</h4>
+                <textarea id="admin-notes" placeholder="Add your notes about this submission here..."></textarea>
+                <div>
+                    <button id="save-notes-btn" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Notes
+                    </button>
+                </div>
+            </div>
+            
+            <div class="message-actions">
+                <div class="filter-group">
+                    <label class="filter-label">Update Status:</label>
+                    <select id="status-update" class="filter-select">
+                        <option value="new">New</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <button id="update-status-btn" class="btn btn-secondary">
+                        <i class="fas fa-sync-alt"></i> Update
+                    </button>
+                </div>
+                <div>
+                    <button id="delete-message-btn" class="btn btn-danger">
+                        <i class="fas fa-trash-alt"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+
   <!-- Confirmation Modal -->
   <div id="confirmation-modal" class="modal" style="display: none;">
     <div class="modal-overlay"></div>

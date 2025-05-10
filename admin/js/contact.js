@@ -57,7 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
     confirmationModal: document.getElementById('confirmation-modal'),
     modalClose: document.querySelector('.modal-close'),
     modalCancel: document.getElementById('modal-cancel'),
-    modalConfirm: document.getElementById('modal-confirm')
+    modalConfirm: document.getElementById('modal-confirm'),
+    messageModal: document.getElementById('message-modal'),
+    messageCloseBtn: document.getElementById('message-close-btn')
   };
 
   // Setup Event Listeners
@@ -86,6 +88,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elements.closeDetailBtn) {
       elements.closeDetailBtn.addEventListener('click', closeDetailView);
     }
+    
+    if (elements.messageCloseBtn) {
+      elements.messageCloseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeDetailView();
+      });
+    }
+    
+    if (elements.messageModal) {
+      elements.messageModal.addEventListener('click', function(event) {
+        if (event.target === elements.messageModal) {
+          closeDetailView();
+        }
+      });
+    }
+    
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape' && elements.messageModal && 
+          elements.messageModal.classList.contains('show')) {
+        closeDetailView();
+      }
+    });
     
     if (elements.updateStatusBtn) {
       elements.updateStatusBtn.addEventListener('click', async () => {
@@ -563,14 +587,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const submissionDate = new Date(submission.submission_date);
       const formattedDate = formatDate(submissionDate);
       
-      // Update detail view fields
+      // Update modal fields
       document.getElementById('message-subject').textContent = submission.subject || 'No Subject';
       document.getElementById('message-date').textContent = formattedDate;
       document.getElementById('message-name').textContent = submission.name || 'Unknown';
       document.getElementById('message-email').textContent = submission.email || 'No Email';
       document.getElementById('message-content').textContent = submission.message || 'No Message Content';
-      elements.adminNotes.value = submission.admin_notes || '';
-      elements.statusUpdate.value = submission.status;
+      
+      if (elements.adminNotes) {
+        elements.adminNotes.value = submission.admin_notes || '';
+      }
+      
+      if (elements.statusUpdate) {
+        elements.statusUpdate.value = submission.status;
+      }
       
       // Show user info if available
       const userInfoElement = document.getElementById('message-user-info');
@@ -584,11 +614,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       
-      // Show detail view
-      elements.messageDetail.style.display = 'block';
+      console.log('Opening modal for submission:', id); // Debug logging
       
-      // Scroll detail into view
-      elements.messageDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Show modal
+      if (elements.messageModal) {
+        elements.messageModal.classList.add('show');
+        document.body.classList.add('modal-open');
+      } else {
+        console.error('Message modal element not found!');
+      }
       
       // Mark as read if not already read
       if (submission.is_read === 0) {
@@ -596,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       console.error('Error viewing submission:', error);
-      showAlert('Failed to load submission details', 'error');
+      showAlert('Failed to load submission details: ' + error.message, 'error');
     }
   }
 
@@ -655,7 +689,8 @@ document.addEventListener('DOMContentLoaded', () => {
       state.selectedSubmissionId = null;
       
       // Hide detail view and modal
-      elements.messageDetail.style.display = 'none';
+      elements.messageModal.classList.remove('show');
+      document.body.classList.remove('modal-open');
       elements.confirmationModal.style.display = 'none';
       
       // Update display and stats
@@ -673,9 +708,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Close detail view
   function closeDetailView() {
-    if (elements.messageDetail) {
-      elements.messageDetail.style.display = 'none';
+    console.log('Closing modal'); // Debug logging
+    
+    if (elements.messageModal) {
+      elements.messageModal.classList.remove('show');
+    } else {
+      console.error('Message modal element not found when attempting to close');
     }
+    
+    document.body.classList.remove('modal-open');
     state.selectedSubmissionId = null;
   }
   
