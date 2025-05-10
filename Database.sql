@@ -131,3 +131,13 @@ CREATE TABLE `whitelist` (
   KEY `AddedBy` (`AddedBy`),
   CONSTRAINT `whitelist_ibfk_1` FOREIGN KEY (`AddedBy`) REFERENCES `user` (`UserID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+
+
+
+-- Create admin account with email 'testUser@example.com' and password 'AdminPassword123!'
+-- Note: This uses a pre-generated bcrypt hash. In production, generate a unique hash.
+INSERT INTO User (Username, Email, PasswordHash, Role, Active) 
+VALUES ('admin', 'testUser@example.com', '$2b$10$IEYIfVMivfLS0SroB2/t/eyGd7ayeJ3Rs2PpfWxypGFtC3yevK8N6', 'Admin', 1);
