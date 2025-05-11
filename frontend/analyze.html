@@ -1341,6 +1341,7 @@
         
         try {
           console.log('Requesting key findings for URL:', url);
+          console.log('Analysis result contains blacklist_id:', result.blacklist_id ? 'Yes' : 'No');
           
           // Call the backend API for key findings with proper URL
           const response = await fetch('/api/education/key-findings', {
@@ -1349,7 +1350,15 @@
               'Content-Type': 'application/json',
               'x-auth-token': localStorage.getItem('phishguardToken') // Add auth token for authenticated requests
             },
-            body: JSON.stringify({ url, analysisResult: result })
+            body: JSON.stringify({ 
+              url, 
+              analysisResult: {
+                blacklist_id: result.blacklist_id,
+                is_phishing: result.is_phishing,
+                risk_score: result.risk_score,
+                features: result.features || {}
+              }
+            })
           });
           
           console.log('Key findings response status:', response.status);
@@ -1455,4 +1464,3 @@
   </script>
 </body>
 </html>
-``` 

@@ -73,6 +73,7 @@ const userRoutes = require('./routes/user')(pool);
 const analyzeRoutes = require('./routes/analyze');  
 const analysisRoutes = require('./routes/analysis'); 
 const emailAnalyzerRoutes = require('./routes/email-analyzer');  // Add this line
+const educationRoutes = require('./routes/education'); // Import the education routes
 
 // When setting up routes, make sure to properly initialize them
 console.log('Setting up API routes...');
@@ -83,6 +84,7 @@ app.use('/api/user', userRoutes);
 app.use('/', analyzeRoutes(pool));  // This will handle /analyze-url
 app.use('/api', analysisRoutes);    // This will handle /api/analyze-email-headers
 app.use('/api', emailAnalyzerRoutes); // This will handle /api/analyze-email-ai
+app.use('/api/education', educationRoutes(pool)); // Register education routes
 
 // Simple status check endpoint
 app.get('/api/status', (req, res) => {
@@ -121,7 +123,6 @@ async function initializeServer() {
   try {
     // Import routes modules - make sure analyzeRoutes is properly required
     const listRouter = require('./routes/lists');
-    const educationRouter = require('./routes/education');
     const adminRouter = require('./routes/admin');
     const votesRouter = require('./routes/votes');
     const passwordCheckRouter = require('./routes/password-check');
@@ -133,11 +134,11 @@ async function initializeServer() {
     setupRoute('/', analyzeRoutes);
     
     // Debug log for education router
-    console.log('Education router loaded:', educationRouter ? 'Yes' : 'No');
+    console.log('Education router loaded:', educationRoutes ? 'Yes' : 'No');
     
     // Mount routes with proper logging for setup
     console.log('Setting up /api/education route');
-    app.use('/api/education', educationRouter);
+    app.use('/api/education', educationRoutes(pool));
     console.log('Education router mounted at /api/education');
     
     // Add direct key-findings endpoint to server.js for redundancy

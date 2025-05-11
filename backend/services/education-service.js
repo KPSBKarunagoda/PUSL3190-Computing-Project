@@ -314,6 +314,69 @@ class EducationService {
       `;
     }).join('');
   }
+  
+  /**
+   * Generate educational content with key findings for database storage
+   * @param {Object} analysisResult - The analysis result
+   * @param {string} url - The URL analyzed
+   * @returns {Object} Educational content with title, content and key findings
+   */
+  generateEducationalContent(analysisResult, url) {
+    try {
+      // Generate HTML title for the content
+      const domain = new URL(url).hostname;
+      const title = `Phishing Analysis: ${domain}`;
+      
+      // Generate key findings
+      const findings = this.generateKeyFindings(analysisResult, url);
+      
+      // Format current date
+      const currentDate = new Date().toISOString().split('T')[0];
+      
+      // Build HTML content with findings
+      let content = `<h2>Phishing Analysis for ${domain}</h2>`;
+      content += `<p><strong>Detection Date:</strong> ${currentDate}</p>`;
+      content += `<p><strong>Risk Score:</strong> ${Math.round(analysisResult.risk_score)}%</p>`;
+      
+      content += `<h3>Detected Security Concerns</h3>`;
+      
+      if (findings && findings.length > 0) {
+        // Create HTML list of findings
+        content += '<ul class="findings-list">';
+        findings.forEach(finding => {
+          const severityClass = finding.severity === 'high' ? 'high-risk' : 
+                               finding.severity === 'medium' ? 'medium-risk' : 'low-risk';
+          content += `<li class="${severityClass}"><strong>${finding.text}</strong>: ${finding.description}</li>`;
+        });
+        content += '</ul>';
+      } else {
+        content += `<p>No specific suspicious features were identified, but the overall pattern matched known phishing techniques.</p>`;
+      }
+      
+      // Add educational information
+      content += `<h3>How to Protect Yourself</h3>`;
+      content += `<ul>
+        <li>Always verify the domain name before entering sensitive information</li>
+        <li>Look for HTTPS and a padlock icon in your browser's address bar</li>
+        <li>Be cautious of unexpected requests for personal information</li>
+        <li>Use unique passwords for different websites and consider a password manager</li>
+        <li>Enable two-factor authentication when available</li>
+      </ul>`;
+      
+      return {
+        title: title,
+        content: content,
+        findings: findings // Include raw findings for JSON storage
+      };
+    } catch (error) {
+      console.error('Error generating educational content:', error);
+      return {
+        title: `Phishing Analysis for ${url}`,
+        content: `<p>This URL was identified as potentially malicious.</p>`,
+        findings: [] 
+      };
+    }
+  }
 }
 
 module.exports = EducationService;

@@ -69,6 +69,10 @@ CREATE TABLE `educationalcontent` (
   CONSTRAINT `educationalcontent_ibfk_2` FOREIGN KEY (`BlacklistID`) REFERENCES `blacklist` (`BlacklistID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Add KeyFeatures column to EducationalContent table to store detected features
+ALTER TABLE `educationalcontent` 
+ADD COLUMN `KeyFeatures` JSON NULL AFTER `BlacklistID`;
+
 -- Table structure for table `passwordreset`
 CREATE TABLE `passwordreset` (
   `UserID` int(11) NOT NULL,
