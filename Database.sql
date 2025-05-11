@@ -66,12 +66,23 @@ CREATE TABLE `educationalcontent` (
   KEY `CreatedBy` (`CreatedBy`),
   KEY `BlacklistID` (`BlacklistID`),
   CONSTRAINT `educationalcontent_ibfk_1` FOREIGN KEY (`CreatedBy`) REFERENCES `user` (`UserID`),
-  CONSTRAINT `educationalcontent_ibfk_2` FOREIGN KEY (`BlacklistID`) REFERENCES `blacklist` (`BlacklistID`)
+  CONSTRAINT `educationalcontent_ibfk_2` FOREIGN KEY (`BlacklistID`) REFERENCES `blacklist` (`BlacklistID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Add KeyFeatures column to EducationalContent table to store detected features
 ALTER TABLE `educationalcontent` 
 ADD COLUMN `KeyFeatures` JSON NULL AFTER `BlacklistID`;
+
+-- Drop existing foreign key constraint
+ALTER TABLE `educationalcontent` 
+DROP FOREIGN KEY `educationalcontent_ibfk_2`;
+
+-- Add new constraint with ON DELETE CASCADE
+ALTER TABLE `educationalcontent` 
+ADD CONSTRAINT `educationalcontent_ibfk_2` 
+FOREIGN KEY (`BlacklistID`) 
+REFERENCES `blacklist` (`BlacklistID`) 
+ON DELETE CASCADE;
 
 -- Table structure for table `passwordreset`
 CREATE TABLE `passwordreset` (

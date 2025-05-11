@@ -207,38 +207,13 @@ class ListService {
             );
             
             if (exactMatch.length > 0) {
-                const blacklistId = exactMatch[0].BlacklistID;
-                
-                // First delete any related educational content
-                try {
-                    console.log(`Checking for related educational content for BlacklistID ${blacklistId}...`);
-                    const [eduContent] = await this.dbConnection.execute(
-                        'SELECT ContentID FROM EducationalContent WHERE BlacklistID = ?',
-                        [blacklistId]
-                    );
-                    
-                    if (eduContent && eduContent.length > 0) {
-                        console.log(`Found ${eduContent.length} educational content entries to delete`);
-                        await this.dbConnection.execute(
-                            'DELETE FROM EducationalContent WHERE BlacklistID = ?',
-                            [blacklistId]
-                        );
-                        console.log(`Deleted educational content for BlacklistID ${blacklistId}`);
-                    } else {
-                        console.log(`No educational content found for BlacklistID ${blacklistId}`);
-                    }
-                } catch (eduError) {
-                    console.error('Error handling educational content deletion:', eduError);
-                    // Continue with blacklist deletion attempt even if edu content deletion fails
-                }
-                
                 // Delete the found entry
                 const [result] = await this.dbConnection.execute(
                     'DELETE FROM Blacklist WHERE BlacklistID = ?',
-                    [blacklistId]
+                    [exactMatch[0].BlacklistID]
                 );
                 
-                console.log(`Deleted blacklist entry with ID ${blacklistId}`);
+                console.log(`Deleted blacklist entry with ID ${exactMatch[0].BlacklistID}`);
                 return { success: true, url };
             }
             
@@ -252,38 +227,13 @@ class ListService {
             );
             
             if (patternMatch.length > 0) {
-                const blacklistId = patternMatch[0].BlacklistID;
-                
-                // First delete any related educational content
-                try {
-                    console.log(`Checking for related educational content for BlacklistID ${blacklistId}...`);
-                    const [eduContent] = await this.dbConnection.execute(
-                        'SELECT ContentID FROM EducationalContent WHERE BlacklistID = ?',
-                        [blacklistId]
-                    );
-                    
-                    if (eduContent && eduContent.length > 0) {
-                        console.log(`Found ${eduContent.length} educational content entries to delete`);
-                        await this.dbConnection.execute(
-                            'DELETE FROM EducationalContent WHERE BlacklistID = ?',
-                            [blacklistId]
-                        );
-                        console.log(`Deleted educational content for BlacklistID ${blacklistId}`);
-                    } else {
-                        console.log(`No educational content found for BlacklistID ${blacklistId}`);
-                    }
-                } catch (eduError) {
-                    console.error('Error handling educational content deletion:', eduError);
-                    // Continue with blacklist deletion attempt even if edu content deletion fails
-                }
-                
                 // Delete the found entry
                 const [result] = await this.dbConnection.execute(
                     'DELETE FROM Blacklist WHERE BlacklistID = ?',
-                    [blacklistId]
+                    [patternMatch[0].BlacklistID]
                 );
                 
-                console.log(`Deleted blacklist entry with ID ${blacklistId} matching pattern`);
+                console.log(`Deleted blacklist entry with ID ${patternMatch[0].BlacklistID} matching pattern`);
                 return { success: true, url: patternMatch[0].URL };
             }
             
