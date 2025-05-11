@@ -150,6 +150,16 @@
               <input type="text" id="domain-input" name="domain" placeholder="Enter domain (e.g., malicious-site.com)" required>
             </div>
             
+            <!-- Add risk level selector -->
+            <div class="input-group risk-level-group">
+              <select id="risk-level" class="form-select">
+                <option value="100">High Risk (100%)</option>
+                <option value="75">Medium-High Risk (75%)</option>
+                <option value="50">Medium Risk (50%)</option>
+                <option value="25">Low-Medium Risk (25%)</option>
+              </select>
+            </div>
+            
             <button type="submit" class="btn btn-danger">
               <span class="btn-text"><i class="fas fa-plus"></i> Add Domain</span>
               <span class="btn-loader"><i class="fas fa-circle-notch fa-spin"></i></span>
@@ -158,7 +168,7 @@
           
           <p class="form-help">
             <i class="fas fa-info-circle"></i> 
-            Blacklisted domains will always be flagged as phishing attempts.
+            Blacklisted domains will be flagged as phishing attempts with the selected risk level.
           </p>
         </div>
       </section>
@@ -190,13 +200,14 @@
           <table id="blacklist-table" class="data-table">
             <thead>
               <tr>
-                <th>Domain</th>
+                <th>URL</th>
+                <th>Risk Level</th>
                 <th>Added By</th>
                 <th>Date Added</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="blacklist-body">
+            <tbody id="blacklist-table-body">
               <!-- Blacklist data will be loaded here -->
             </tbody>
           </table>

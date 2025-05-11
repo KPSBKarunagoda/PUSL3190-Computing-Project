@@ -24,6 +24,47 @@ module.exports = function(db) {
   // Use optional authentication for analyze-url route
   router.post('/analyze-url', optionalAuth, async (req, res) => {
     try {
+      // Add debug logging for blacklist checking
+      console.log('Analyze URL Request:', req.body);
+      
+      // Explicitly check if URL is in blacklist first
+      const urlToAnalyze = req.body.url;
+      console.log(`Checking if URL '${urlToAnalyze}' is in blacklist...`);
+
+      try {
+        // Simple URL variations for exact matching only
+        const urlObj = new URL(urlToAnalyze);
+        const hostname = urlObj.hostname.toLowerCase();
+        const urlLower = urlToAnalyze.toLowerCase();
+        const urlNoTrailingSlash = urlLower.endsWith('/') ? urlLower.slice(0, -1) : urlLower;
+        
+        console.log(`Checking blacklist with exact URL matching: ${urlToAnalyze}, ${hostname}`);
+        
+        // ONLY use exact matching - remove all pattern matching
+        const [blacklisted] = await db.execute(
+          'SELECT * FROM Blacklist WHERE URL = ? OR URL = ? OR URL = ? OR URL = ?',
+          [urlToAnalyze, urlLower, urlNoTrailingSlash, hostname]
+        );
+        
+        if (blacklisted && blacklisted.length > 0) {
+          console.log(`URL '${urlToAnalyze}' found in blacklist with exact match: '${blacklisted[0].URL}'`);
+          const riskLevel = blacklisted[0].RiskLevel || 100;
+          return res.json({
+            url: urlToAnalyze,
+            risk_score: riskLevel,
+            is_phishing: true,
+            ml_confidence: 100,
+            source: "Blacklist",
+            message: `URL is in known phishing blacklist (Risk: ${riskLevel}%)`
+          });
+        }
+        
+        console.log(`URL '${urlToAnalyze}' not found in blacklist`);
+      } catch (error) {
+        console.error(`Error checking blacklist: ${error.message}`);
+        // Continue with analysis even if there was an error checking the blacklist
+      }
+
       const { url, useSafeBrowsing } = req.body;
       
       // Input validation

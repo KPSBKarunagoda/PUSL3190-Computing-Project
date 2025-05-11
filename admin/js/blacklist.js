@@ -27,113 +27,185 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+/**
+ * Show or hide the loader element
+ * @param {boolean} show - Whether to show (true) or hide (false) the loader
+ */
+function showLoader(show) {
+  const loader = document.getElementById('blacklist-loader');
+  if (loader) {
+    loader.style.display = show ? 'flex' : 'none';
+  }
+}
+
+// Load blacklist entries from the API
 async function loadBlacklist() {
   try {
-    // Show loading state
-    const blacklistLoader = document.getElementById('blacklist-loader');
-    const blacklistTable = document.getElementById('blacklist-table');
-    const noBlacklist = document.getElementById('no-blacklist');
+    showLoader(true);
     
-    if (blacklistLoader) {
-      blacklistLoader.style.display = 'flex';
-    }
-    
-    if (blacklistTable) {
-      blacklistTable.style.display = 'none';
-    }
-    
-    if (noBlacklist) {
-      noBlacklist.style.display = 'none';
-    }
-    
-    // Fetch blacklist
     const blacklist = await listsAPI.getBlacklist();
     console.log('Loaded blacklist data:', blacklist);
     
-    // Hide loading indicator
-    if (blacklistLoader) {
-      blacklistLoader.style.display = 'none';
-    }
-    
-    // Check if empty
-    if (!blacklist || blacklist.length === 0) {
-      if (noBlacklist) {
-        noBlacklist.style.display = 'flex';
-      }
+    const tableBody = document.getElementById('blacklist-table-body');
+    if (!tableBody) {
+      console.error('blacklist-table-body element not found');
       return;
     }
     
-    // Show table and populate
-    if (blacklistTable) {
-      blacklistTable.style.display = 'table';
+    // Clear existing entries
+    tableBody.innerHTML = '';
+    
+    if (!blacklist || blacklist.length === 0) {
+      document.getElementById('no-blacklist').style.display = 'flex';
+      document.getElementById('blacklist-table').style.display = 'none';
+      return;
+    }
+    
+    // Display the table
+    document.getElementById('no-blacklist').style.display = 'none';
+    document.getElementById('blacklist-table').style.display = 'table';
+    
+    // Update the count display
+    const totalDisplay = document.getElementById('domains-count');
+    if (totalDisplay) {
+      totalDisplay.textContent = blacklist.length.toString();
+    }
+    
+    // Add each entry to the table
+    blacklist.forEach(entry => {
+      const tr = document.createElement('tr');
       
-      const tableBody = document.getElementById('blacklist-body');
-      if (!tableBody) {
-        console.error('blacklist-body element not found');
-        return;
+      // URL column (first column)
+      const urlTd = document.createElement('td');
+      urlTd.textContent = entry.URL;
+      tr.appendChild(urlTd);
+      
+      // Risk level column
+      const riskTd = document.createElement('td');
+      riskTd.className = 'text-center';
+      const riskLevel = entry.RiskLevel || 100;
+      
+      // Create risk level badge
+      const riskBadge = document.createElement('span');
+      riskBadge.classList.add('score-value');
+      
+      if (riskLevel >= 75) {
+        riskBadge.classList.add('score-high');
+        riskBadge.textContent = `${riskLevel}%`;
+      } else if (riskLevel >= 50) {
+        riskBadge.classList.add('score-medium');
+        riskBadge.textContent = `${riskLevel}%`;
+      } else {
+        riskBadge.classList.add('score-low');
+        riskBadge.textContent = `${riskLevel}%`;
       }
       
-      // Clear existing rows
-      tableBody.innerHTML = '';
+      riskTd.appendChild(riskBadge);
+      tr.appendChild(riskTd);
       
-      // Update pagination info
-      document.getElementById('blacklist-total').textContent = blacklist.length;
-      document.getElementById('blacklist-range').textContent = `1-${Math.min(blacklist.length, 10)}`;
+      // Added by column
+      const addedByTd = document.createElement('td');
+      addedByTd.textContent = entry.addedByUser || 'System';
+      tr.appendChild(addedByTd);
       
-      // Process each item
-      blacklist.forEach(item => {
-        const row = document.createElement('tr');
-        
-        // Check if item is a string or an object
-        if (typeof item === 'string') {
-          // Simple string format
-          row.innerHTML = `
-            <td>${item}</td>
-            <td>Unknown</td>
-            <td>Unknown</td>
-            <td>
-              <button class="btn btn-danger btn-sm delete-domain" data-domain="${item}">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          `;
-        } else {
-          // Object format with full details
-          const domain = item.Domain || item.domain || '';
-          const date = item.AddedDate || item.addedDate || new Date().toISOString();
-          const addedBy = item.addedByUser || 'Unknown';
-          
-          row.innerHTML = `
-            <td>${domain}</td>
-            <td>${addedBy}</td>
-            <td>${new Date(date).toLocaleString()}</td>
-            <td>
-              <button class="btn btn-danger btn-sm delete-domain" data-domain="${domain}">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          `;
-        }
-        
-        tableBody.appendChild(row);
-      });
+      // Date column
+      const dateTd = document.createElement('td');
+      dateTd.textContent = formatDate(entry.AddedDate);
+      tr.appendChild(dateTd);
       
-      // Add event listeners for delete buttons
-      document.querySelectorAll('.delete-domain').forEach(button => {
-        button.addEventListener('click', handleDeleteDomain);
-      });
-    }
+      // Actions column
+      const actionsTd = document.createElement('td');
+      actionsTd.className = 'actions';
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn btn-icon btn-sm';
+      deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+      deleteBtn.addEventListener('click', handleDeleteDomain);
+      deleteBtn.title = 'Remove from blacklist';
+      
+      actionsTd.appendChild(deleteBtn);
+      tr.appendChild(actionsTd);
+      
+      tableBody.appendChild(tr);
+    });
   } catch (error) {
     console.error('Error loading blacklist:', error);
-    
-    // Hide loader and table, show error
-    const blacklistLoader = document.getElementById('blacklist-loader');
-    if (blacklistLoader) {
-      blacklistLoader.style.display = 'none';
+    showAlert('Failed to load blacklist: ' + error.message, 'error');
+  } finally {
+    showLoader(false);
+  }
+}
+
+// Helper function to format dates
+function formatDate(dateString) {
+  if (!dateString) return 'Unknown';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid date';
+    return date.toLocaleDateString(undefined, { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (e) {
+    return 'Error';
+  }
+}
+
+// Function to handle deleting a URL from blacklist
+async function handleDeleteDomain(e) {
+  try {
+    // Find the closest table row
+    const row = e.target.closest('tr');
+    if (!row) {
+      console.error('Could not find table row for delete action');
+      return;
     }
     
-    // Show alert
-    showAlert('Failed to load blacklist: ' + error.message, 'error');
+    // Get the URL from the first cell in the row
+    const urlCell = row.querySelector('td:first-child');
+    if (!urlCell) {
+      console.error('Could not find URL cell');
+      return;
+    }
+    
+    const url = urlCell.textContent || urlCell.innerText;
+    if (!url) {
+      console.error('URL is empty');
+      return;
+    }
+    
+    console.log('Removing from blacklist:', url);
+    
+    // Confirm deletion
+    if (!confirm(`Are you sure you want to remove "${url}" from the blacklist?`)) {
+      return;
+    }
+    
+    // Show loading state
+    e.target.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+    e.target.disabled = true;
+    
+    // Call API to delete the URL
+    await listsAPI.removeFromBlacklist(url);
+    
+    // Show success message
+    showAlert(`URL "${url}" has been removed from the blacklist`, 'success');
+    
+    // Reload blacklist data
+    await loadBlacklist();
+    
+  } catch (error) {
+    console.error('Error removing domain from blacklist:', error);
+    showAlert('Failed to remove URL: ' + error.message, 'error');
+    
+    // Reset button state
+    if (e.target) {
+      e.target.innerHTML = '<i class="fas fa-trash-alt"></i>';
+      e.target.disabled = false;
+    }
   }
 }
 
@@ -157,6 +229,10 @@ function setupAddForm() {
         return;
       }
       
+      // Get risk level from select dropdown
+      const riskLevelSelect = document.getElementById('risk-level');
+      const riskLevel = riskLevelSelect ? parseInt(riskLevelSelect.value) : 100;
+      
       // Disable form during submission
       const submitButton = addForm.querySelector('button[type="submit"]');
       
@@ -167,15 +243,15 @@ function setupAddForm() {
       }
       
       try {
-        console.log('Adding domain to blacklist:', domain);
-        const response = await listsAPI.addToBlacklist(domain);
+        console.log(`Adding domain to blacklist: ${domain} with risk level: ${riskLevel}`);
+        const response = await listsAPI.addToBlacklist(domain, null, riskLevel);
         
         // Clear input and reload list
         domainInput.value = '';
         await loadBlacklist();
         
         // Show success message
-        showAlert(`Domain "${domain}" added to blacklist successfully`, 'success');
+        showAlert(`Domain "${domain}" added to blacklist successfully with risk level ${riskLevel}%`, 'success');
         
         // Add notification toast that fades out
         showToast(`"${domain}" has been added to the blacklist`, 'success');
@@ -240,7 +316,7 @@ function setupSearchFunctionality() {
 }
 
 function filterDomains(searchTerm) {
-  const tableBody = document.getElementById('blacklist-body');
+  const tableBody = document.getElementById('blacklist-table-body');
   if (!tableBody) return;
   
   const rows = tableBody.getElementsByTagName('tr');
@@ -248,13 +324,13 @@ function filterDomains(searchTerm) {
   
   // Loop through all table rows
   for (let i = 0; i < rows.length; i++) {
-    const domainCell = rows[i].cells[0]; // Assuming domain is in first column
+    const urlCell = rows[i].cells[0]; // URL is in first column
     
-    if (domainCell) {
-      const domain = domainCell.textContent.toLowerCase();
+    if (urlCell) {
+      const url = urlCell.textContent.toLowerCase();
       
       // Show/hide row based on search term
-      if (domain.includes(searchTerm)) {
+      if (url.includes(searchTerm)) {
         rows[i].style.display = '';
         visibleCount++;
       } else {
@@ -284,49 +360,7 @@ function filterDomains(searchTerm) {
   
   // Show explanatory message if no results
   if (visibleCount === 0 && searchTerm && rows.length > 0) {
-    showToast(`No domains match "${searchTerm}"`, 'info');
-  }
-}
-
-async function handleDeleteDomain(e) {
-  const button = e.currentTarget;
-  const domain = button.dataset.domain;
-  
-  // Simple confirmation
-  if (!confirm(`Are you sure you want to remove "${domain}" from the blacklist?`)) {
-    return;
-  }
-  
-  // Disable button during request and show loading
-  button.disabled = true;
-  const originalContent = button.innerHTML;
-  button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
-  
-  try {
-    console.log(`Removing domain from blacklist: ${domain}`);
-    
-    // Make API call with proper error handling
-    const response = await listsAPI.removeFromBlacklist(domain);
-    console.log(`Successfully removed ${domain} from blacklist`);
-    
-    // Reload blacklist to reflect changes
-    await loadBlacklist();
-    
-    // Show success message
-    showAlert(`Domain "${domain}" removed from blacklist`, 'success');
-    
-    // Add toast notification
-    showToast(`"${domain}" has been removed from the blacklist`, 'info');
-  } catch (error) {
-    console.error('Error removing domain from blacklist:', error);
-    
-    // Re-enable button
-    button.disabled = false;
-    button.innerHTML = originalContent;
-    
-    // Show error message
-    showAlert('Failed to remove domain: ' + (error.message || 'Unknown error'), 'error');
-    showToast(`Failed to remove "${domain}"`, 'error');
+    showToast(`No URLs match "${searchTerm}"`, 'info');
   }
 }
 

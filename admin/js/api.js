@@ -245,12 +245,22 @@ const listsAPI = {
   },
   
   // Add domain to blacklist
-  addToBlacklist: async (domain) => {
+  addToBlacklist: async (domain, token = null, riskLevel = 100) => {
     try {
-      console.log('API: Adding to blacklist:', domain);
+      console.log('API: Adding to blacklist:', domain, 'with risk level:', riskLevel);
+      
+      // If token is provided, use direct fetch method for external components
+      if (token) {
+        return await listsAPI.addUrlToBlacklist(domain, token, riskLevel);
+      }
+      
+      // Otherwise use standard apiRequest
       return await apiRequest('/lists/blacklist', {
         method: 'POST',
-        body: JSON.stringify({ domain })
+        body: JSON.stringify({ 
+          url: domain, // Send as URL
+          riskLevel: riskLevel // Include risk level
+        })
       });
     } catch (error) {
       console.error('Error adding to blacklist:', error);
@@ -259,9 +269,25 @@ const listsAPI = {
   },
   
   // Remove domain from blacklist
-  removeFromBlacklist: async (domain) => {
+  removeFromBlacklist: async (url) => {
     try {
-      return await apiRequest(`/lists/blacklist/${encodeURIComponent(domain)}`, {
+      // Validate URL parameter
+      if (!url || typeof url !== 'string') {
+        throw new Error('URL parameter is required for deletion');
+      }
+      
+      // Trim whitespace
+      const trimmedUrl = url.trim();
+      if (!trimmedUrl) {
+        throw new Error('URL cannot be empty');
+      }
+      
+      console.log(`Removing URL from blacklist: ${trimmedUrl}`);
+      
+      // URL encode the parameter
+      const encodedUrl = encodeURIComponent(trimmedUrl);
+      
+      return await apiRequest(`/lists/blacklist/${encodedUrl}`, {
         method: 'DELETE'
       });
     } catch (error) {
@@ -303,7 +329,7 @@ const listsAPI = {
   },
   
   // Add URL to blacklist with specific token (for external components)
-  addUrlToBlacklist: async (url, token) => {
+  addUrlToBlacklist: async (url, token, riskLevel = 100) => {
     if (!token) {
       // Try to get token from Auth if available
       token = Auth?.getToken() || localStorage.getItem('phishguard_admin_token');
@@ -313,13 +339,17 @@ const listsAPI = {
     }
     
     try {
+      // Send the complete URL as the primary identifier
       const response = await fetch('http://localhost:3000/api/lists/blacklist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-auth-token': token
         },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ 
+          url: url,  // Send the full URL as the primary field
+          riskLevel: riskLevel // Include risk level
+        })
       });
       
       if (!response.ok) {

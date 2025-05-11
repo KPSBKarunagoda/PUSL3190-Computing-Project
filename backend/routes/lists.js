@@ -80,14 +80,31 @@ module.exports = function(dbConnection) {
     // Add to blacklist
     router.post('/blacklist', async (req, res) => {
         try {
-            const { domain } = req.body;
+            // Extract both domain and url params for backward compatibility
+            const { domain, url, riskLevel } = req.body;
+            const valueToAdd = url || domain || '';
             
-            if (!domain) {
-                return res.status(400).json({ message: 'Domain is required' });
+            if (!valueToAdd) {
+                return res.status(400).json({ message: 'URL or domain is required' });
             }
             
-            const result = await listService.addToBlacklist(domain, req.user.id);
-            res.json({ message: 'Domain added to blacklist', domain });
+            // Parse risk level or use default (100)
+            const risk = parseInt(riskLevel) || 100;
+            
+            // Validate risk level is between 1-100
+            if (risk < 1 || risk > 100) {
+                return res.status(400).json({ message: 'Risk level must be between 1 and 100' });
+            }
+            
+            console.log(`Adding to blacklist: ${valueToAdd} with risk level ${risk}`);
+            
+            const result = await listService.addToBlacklist(valueToAdd, req.user.id, risk);
+            
+            res.json({ 
+                message: 'Added to blacklist successfully', 
+                url: result.url,
+                riskLevel: result.riskLevel
+            });
         } catch (error) {
             console.error('Add to blacklist error:', error);
             
@@ -99,16 +116,24 @@ module.exports = function(dbConnection) {
         }
     });
     
-    // Remove from blacklist - make sure this works correctly
-    router.delete('/blacklist/:domain', async (req, res) => {
+    // Remove from blacklist
+    router.delete('/blacklist/:url', async (req, res) => {
         try {
-            const domain = req.params.domain;
-            console.log(`Delete request for blacklist domain: ${domain}`);
+            // Get URL parameter and decode it
+            const url = decodeURIComponent(req.params.url);
             
-            await listService.removeFromBlacklist(domain);
+            if (!url) {
+                return res.status(400).json({ message: 'URL parameter is required' });
+            }
+            
+            console.log(`Delete request for blacklist URL: ${url}`);
+            
+            // Call service to remove URL
+            await listService.removeFromBlacklist(url);
+            
             res.json({ 
-                message: 'Domain removed from blacklist', 
-                domain 
+                message: 'URL removed from blacklist', 
+                url 
             });
         } catch (error) {
             console.error('Remove from blacklist error:', error);

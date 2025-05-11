@@ -292,21 +292,24 @@ class URLAnalyzer:
         return max(0, min(100, risk_score))
 
     async def analyze_url(self, url: str, use_safe_browsing: bool = True) -> Dict[str, Any]:
-        """Four-step URL analysis including blacklist and whitelist checks"""
+        """URL analysis including blacklist and whitelist checks"""
         try:
-            print(f"\n=== Starting Four-Step URL Analysis ===", file=sys.stderr)
+            print(f"\n=== Starting URL Analysis ===", file=sys.stderr)
             print(f"URL: {url}", file=sys.stderr)
             print(f"Using Safe Browsing API: {use_safe_browsing}", file=sys.stderr)
             
-            # Step 1: Check BLACKLIST first (highest priority)
+            # Check BLACKLIST first (highest priority)
             print("\nStep 1: Checking blacklist...", file=sys.stderr)
-            if self.blacklist_service.is_blacklisted(url):
-                print("URL is in blacklist - blocking access", file=sys.stderr)
+            blacklist_result = self.blacklist_service.is_blacklisted(url)
+            
+            if blacklist_result["blacklisted"]:
+                risk_score = blacklist_result["risk_level"]
+                print(f"URL is in blacklist with risk score {risk_score}", file=sys.stderr)
                 return {
-                    "risk_score": 100,
-                    "is_phishing": True,
+                    "risk_score": risk_score,
+                    "is_phishing": risk_score > 50,  # Consider it phishing if risk score > 50
                     "source": "Blacklist",
-                    "message": "Domain is in known phishing blacklist",
+                    "message": f"Domain is in known phishing blacklist (Risk: {risk_score}%)",
                     "ml_result": None,
                     "safe_browsing_result": None
                 }

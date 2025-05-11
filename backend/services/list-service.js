@@ -20,12 +20,12 @@ class ListService {
                 )
             `);
             
-            // Create Blacklist table if not exists
+            // Create Blacklist table with RiskLevel
             await this.dbConnection.execute(`
                 CREATE TABLE IF NOT EXISTS Blacklist (
                     BlacklistID INT AUTO_INCREMENT PRIMARY KEY,
-                    Domain VARCHAR(255) UNIQUE NOT NULL,
-                    URL VARCHAR(512),
+                    URL VARCHAR(512) UNIQUE NOT NULL,
+                    RiskLevel INT DEFAULT 100 NOT NULL, 
                     AddedDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     AddedBy INT,
                     FOREIGN KEY (AddedBy) REFERENCES User(UserID)
@@ -110,13 +110,13 @@ class ListService {
     }
 
     /**
-     * Get all blacklisted domains
+     * Get all blacklisted URLs
      */
     async getBlacklist() {
         try {
-            // Return full blacklist entries with user information
+            // Return full blacklist entries with user information and risk level
             const [rows] = await this.dbConnection.execute(`
-                SELECT b.BlacklistID, b.URL, b.Domain, b.AddedDate, b.AddedBy,
+                SELECT b.BlacklistID, b.URL, b.RiskLevel, b.AddedDate, b.AddedBy,
                        u.Username as addedByUser
                 FROM Blacklist b
                 LEFT JOIN User u ON b.AddedBy = u.UserID
@@ -130,40 +130,115 @@ class ListService {
             throw error;
         }
     }
-
+    
     /**
-     * Add a domain to blacklist
+     * Add URL to blacklist
      */
-    async addToBlacklist(domain, userId) {
+    async addToBlacklist(url, userId, riskLevel = 100) {
         try {
-            await this.dbConnection.execute(
-                'INSERT INTO Blacklist (Domain, AddedBy, AddedDate) VALUES (?, ?, NOW())',
-                [domain, userId]
+            console.log(`Adding to blacklist: ${url} with risk level ${riskLevel}`);
+            
+            // Normalize URL before storing
+            const normalizedUrl = this.normalizeUrl(url);
+            console.log(`Normalized URL: ${normalizedUrl}`);
+            
+            // Check if URL exists
+            const [existing] = await this.dbConnection.execute(
+                'SELECT * FROM Blacklist WHERE URL = ? OR URL = ?', 
+                [url, normalizedUrl]
             );
-            return { success: true, domain };
-        } catch (error) {
-            if (error.code === 'ER_DUP_ENTRY') {
-                throw new Error('Domain already exists in blacklist');
+            
+            if (existing && existing.length > 0) {
+                throw new Error(`URL already exists in blacklist as: ${existing[0].URL}`);
             }
+            
+            // Add to blacklist
+            const [result] = await this.dbConnection.execute(
+                'INSERT INTO Blacklist (URL, RiskLevel, AddedDate, AddedBy) VALUES (?, ?, NOW(), ?)',
+                [url, riskLevel, userId]
+            );
+            
+            return {
+                url: url,
+                riskLevel: riskLevel,
+                id: result.insertId
+            };
+        } catch (error) {
+            console.error('Error adding to blacklist:', error);
             throw error;
+        }
+    }
+    
+    /**
+     * Normalize URL for consistent storage and lookup
+     */
+    normalizeUrl(url) {
+        try {
+            // Ensure URL starts with http:// or https://
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+            
+            // Parse URL
+            const urlObj = new URL(url);
+            
+            // Convert to lowercase
+            urlObj.hostname = urlObj.hostname.toLowerCase();
+            
+            // Return normalized URL
+            return urlObj.href.replace(/\/$/, ''); // Remove trailing slash
+        } catch (error) {
+            console.error('URL normalization error:', error);
+            return url;
         }
     }
 
     /**
-     * Remove a domain from blacklist
+     * Remove a URL from blacklist
      */
-    async removeFromBlacklist(domain) {
+    async removeFromBlacklist(url) {
         try {
-            const [result] = await this.dbConnection.execute(
-                'DELETE FROM Blacklist WHERE Domain = ?',
-                [domain]
+            console.log(`Removing from blacklist - URL: ${url}`);
+            
+            // First try exact match
+            const [exactMatch] = await this.dbConnection.execute(
+                'SELECT * FROM Blacklist WHERE URL = ?',
+                [url]
             );
             
-            if (result.affectedRows === 0) {
-                throw new Error('Domain not found in blacklist');
+            if (exactMatch.length > 0) {
+                // Delete the found entry
+                const [result] = await this.dbConnection.execute(
+                    'DELETE FROM Blacklist WHERE BlacklistID = ?',
+                    [exactMatch[0].BlacklistID]
+                );
+                
+                console.log(`Deleted blacklist entry with ID ${exactMatch[0].BlacklistID}`);
+                return { success: true, url };
             }
             
-            return { success: true, domain };
+            // If no exact match, try normalized URL and pattern matching
+            const normalizedUrl = this.normalizeUrl(url);
+            console.log(`Looking up with normalized URL: ${normalizedUrl}`);
+            
+            const [patternMatch] = await this.dbConnection.execute(
+                'SELECT * FROM Blacklist WHERE URL LIKE ? OR URL LIKE ? OR URL = ?',
+                [`%${normalizedUrl}%`, `%${url}%`, normalizedUrl]
+            );
+            
+            if (patternMatch.length > 0) {
+                // Delete the found entry
+                const [result] = await this.dbConnection.execute(
+                    'DELETE FROM Blacklist WHERE BlacklistID = ?',
+                    [patternMatch[0].BlacklistID]
+                );
+                
+                console.log(`Deleted blacklist entry with ID ${patternMatch[0].BlacklistID} matching pattern`);
+                return { success: true, url: patternMatch[0].URL };
+            }
+            
+            // If we get here, we couldn't find the URL
+            throw new Error('URL not found in blacklist');
         } catch (error) {
             console.error('Error removing from blacklist:', error);
             throw error;
