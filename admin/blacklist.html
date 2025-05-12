@@ -435,6 +435,107 @@
     </div>
   </div>
 
+  <!-- Add new Key Findings Modal -->
+  <div id="key-findings-modal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="findings-modal-title">Key Findings</h3>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="url-display">
+          <h4>URL</h4>
+          <p id="findings-url" class="code-text"></p>
+        </div>
+        
+        <div id="findings-loader" class="loader-container">
+          <div class="loader"></div>
+          <p>Loading key findings...</p>
+        </div>
+        
+        <div id="no-findings" class="empty-state" style="display: none;">
+          <i class="fas fa-search"></i>
+          <p>No key findings available for this URL.</p>
+        </div>
+        
+        <div id="findings-content">
+          <h4>Security Analysis</h4>
+          <div id="findings-list" class="findings-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add CSS for key findings styling -->
+  <style>
+    .code-text {
+      font-family: monospace;
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 10px;
+      border-radius: 4px;
+      word-break: break-all;
+    }
+    
+    .url-display {
+      margin-bottom: 20px;
+    }
+    
+    .findings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .finding-item {
+      background-color: rgba(0, 0, 0, 0.1);
+      border-left: 4px solid;
+      padding: 15px;
+      border-radius: 4px;
+    }
+    
+    .finding-item.high {
+      border-left-color: #dc3545;
+    }
+    
+    .finding-item.medium {
+      border-left-color: #ffc107;
+    }
+    
+    .finding-item.low {
+      border-left-color: #28a745;
+    }
+    
+    .finding-title {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    
+    .finding-title i {
+      margin-right: 10px;
+    }
+    
+    .finding-title.high i {
+      color: #dc3545;
+    }
+    
+    .finding-title.medium i {
+      color: #ffc107;
+    }
+    
+    .finding-title.low i {
+      color: #28a745;
+    }
+    
+    .finding-description {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--text-secondary);
+    }
+  </style>
+
   <script src="js/common.js"></script>
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>

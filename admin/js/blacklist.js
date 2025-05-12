@@ -121,23 +121,34 @@ async function loadBlacklist() {
       // Actions column
       const actionsTd = document.createElement('td');
       
-      // Create a div to hold the button and apply the actions class to it
+      // Create a div to hold the buttons and apply the actions class to it
       const actionsDiv = document.createElement('div');
       actionsDiv.className = 'actions';
 
-      // Create the delete button with enhanced icon
+      // Create the view details button
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'btn btn-icon btn-sm view-details';
+      viewBtn.innerHTML = '<i class="fas fa-eye"></i>';
+      viewBtn.addEventListener('click', () => showKeyFindings(entry.BlacklistID, entry.URL));
+      viewBtn.title = 'View key findings for this domain';
+      viewBtn.setAttribute('aria-label', 'View details');
+      viewBtn.dataset.blacklistId = entry.BlacklistID;
+      viewBtn.dataset.url = entry.URL;
+      
+      // Create the delete button
       const deleteBtn = document.createElement('button');
       deleteBtn.className = 'btn btn-icon btn-sm';
-      // Use a slightly more modern trash icon variant
       deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
       deleteBtn.addEventListener('click', handleDeleteDomain);
       deleteBtn.title = 'Remove domain from blacklist';
       deleteBtn.setAttribute('aria-label', 'Delete domain');
-
-      // Add data attributes for potential future interactions
       deleteBtn.dataset.domain = entry.URL;
       
-      // Append button to the actions div
+      // Add spacing between buttons
+      viewBtn.style.marginRight = '8px';
+      
+      // Append buttons to the actions div
+      actionsDiv.appendChild(viewBtn);
       actionsDiv.appendChild(deleteBtn);
       
       // Append actions div to the cell
@@ -155,6 +166,159 @@ async function loadBlacklist() {
     showLoader(false);
   }
 }
+
+// Add new function to show key findings modal
+async function showKeyFindings(blacklistId, url) {
+  // Show modal
+  const modal = document.getElementById('key-findings-modal');
+  modal.classList.add('show');
+  
+  // Set URL in modal
+  const urlElement = document.getElementById('findings-url');
+  if (urlElement) urlElement.textContent = url || 'Unknown URL';
+  
+  // Set title
+  const titleElement = document.getElementById('findings-modal-title');
+  if (titleElement) titleElement.textContent = 'Key Findings for URL';
+  
+  // Show loader
+  const loader = document.getElementById('findings-loader');
+  const content = document.getElementById('findings-content');
+  const noFindings = document.getElementById('no-findings');
+  
+  if (loader) loader.style.display = 'flex';
+  if (content) content.style.display = 'none';
+  if (noFindings) noFindings.style.display = 'none';
+  
+  try {
+    // Fetch key findings data
+    const findings = await fetchKeyFindings(blacklistId);
+    
+    // Hide loader
+    if (loader) loader.style.display = 'none';
+    
+    // Check if we got findings data
+    if (!findings || findings.length === 0) {
+      if (noFindings) noFindings.style.display = 'flex';
+      return;
+    }
+    
+    // Show findings content
+    if (content) content.style.display = 'block';
+    
+    // Display findings
+    displayKeyFindings(findings);
+  } catch (error) {
+    console.error('Error fetching key findings:', error);
+    
+    // Hide loader
+    if (loader) loader.style.display = 'none';
+    
+    // Show error message
+    if (noFindings) {
+      noFindings.style.display = 'flex';
+      const message = noFindings.querySelector('p');
+      if (message) message.textContent = 'Error loading key findings data.';
+    }
+  }
+}
+
+// Function to fetch key findings data
+async function fetchKeyFindings(blacklistId) {
+  try {
+    // Check if we have a valid blacklist ID
+    if (!blacklistId) {
+      console.warn('No blacklist ID provided for key findings');
+      return [];
+    }
+    
+    // Fetch key findings from API
+    const response = await fetch(`${API_BASE_URL || 'http://localhost:3000/api'}/education/key-findings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': Auth.getToken()
+      },
+      body: JSON.stringify({
+        analysisResult: { blacklist_id: blacklistId }
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Key findings data:', data);
+    
+    return data.findings || [];
+  } catch (error) {
+    console.error('Error fetching key findings:', error);
+    throw error;
+  }
+}
+
+// Function to display key findings in the modal
+function displayKeyFindings(findings) {
+  const findingsList = document.getElementById('findings-list');
+  if (!findingsList) return;
+  
+  // Clear previous findings
+  findingsList.innerHTML = '';
+  
+  // Add each finding to the list
+  findings.forEach(finding => {
+    const item = document.createElement('div');
+    item.className = `finding-item ${finding.severity || 'medium'}`;
+    
+    const iconClass = finding.severity === 'high' ? 'exclamation-triangle' :
+                      finding.severity === 'low' ? 'info-circle' : 'exclamation-circle';
+    
+    item.innerHTML = `
+      <div class="finding-title ${finding.severity || 'medium'}">
+        <i class="fas fa-${iconClass}"></i>
+        ${escapeHtml(finding.text || 'Unknown finding')}
+      </div>
+      <div class="finding-description">
+        ${escapeHtml(finding.description || 'No description available')}
+      </div>
+    `;
+    
+    findingsList.appendChild(item);
+  });
+}
+
+// Helper function to escape HTML to prevent XSS
+function escapeHtml(unsafe) {
+  if (typeof unsafe !== 'string') return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Setup modal close button
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    const keyFindingsModal = document.getElementById('key-findings-modal');
+    const keyFindingsCloseBtn = keyFindingsModal?.querySelector('.modal-close');
+    
+    if (keyFindingsCloseBtn) {
+      keyFindingsCloseBtn.addEventListener('click', () => {
+        keyFindingsModal.classList.remove('show');
+      });
+    }
+    
+    // Close modal if overlay is clicked
+    keyFindingsModal?.querySelector('.modal-overlay')?.addEventListener('click', () => {
+      keyFindingsModal.classList.remove('show');
+    });
+  } catch (error) {
+    console.error('Error setting up modal close button:', error);
+  }
+});
 
 // Helper function to format dates
 function formatDate(dateString) {

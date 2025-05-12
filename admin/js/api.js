@@ -362,6 +362,21 @@ const listsAPI = {
       console.error('API error in addUrlToBlacklist:', error);
       throw error;
     }
+  },
+  
+  // Add function to get key findings for a blacklisted URL
+  getKeyFindings: async (blacklistId) => {
+    try {
+      return await apiRequest('/education/key-findings', {
+        method: 'POST',
+        body: JSON.stringify({
+          analysisResult: { blacklist_id: blacklistId }
+        })
+      });
+    } catch (error) {
+      console.error('Error fetching key findings:', error);
+      throw error;
+    }
   }
 };
 
