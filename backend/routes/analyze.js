@@ -171,6 +171,35 @@ module.exports = function(db) {
           // Check for educational content and key features
           await handleEducationalContent(blacklisted[0].BlacklistID, urlToAnalyze, riskLevel, response);
           
+          // Record activity for blacklisted URLs when user is authenticated
+          if (req.user && req.user.id) {
+            console.log(`User authenticated (ID: ${req.user.id}), recording blacklist activity...`);
+            try {
+              // Extract the domain rather than using the full URL
+              const domain = new URL(urlToAnalyze).hostname;
+              const safeTitle = `Scan: ${domain} (Blacklisted)`;
+              
+              const activityResult = await activityService.recordActivity(
+                req.user.id,
+                urlToAnalyze,
+                safeTitle,
+                riskLevel
+              );
+              console.log('Blacklist activity recording result:', activityResult);
+              
+              // Add activity info to response
+              response.activity_recorded = true;
+              response.activity_result = activityResult;
+            } catch (actError) {
+              console.error('Failed to record blacklist activity:', actError);
+              response.activity_recorded = false;
+              response.activity_error = actError.message;
+            }
+          } else {
+            console.log('User not authenticated, skipping blacklist activity recording');
+            response.activity_recorded = false;
+          }
+          
           return res.json(response);
         }
         
@@ -215,7 +244,7 @@ module.exports = function(db) {
       );
 
       if (whitelisted.length > 0) {
-        return res.json({
+        const response = {
           url: url,
           risk_score: 0,
           is_phishing: false,
@@ -225,7 +254,38 @@ module.exports = function(db) {
             whitelist_status: 'Approved',
             whitelist_entry: whitelisted[0]
           }
-        });
+        };
+        
+        // Record activity for whitelisted URLs when user is authenticated
+        if (req.user && req.user.id) {
+          console.log(`User authenticated (ID: ${req.user.id}), recording whitelist activity...`);
+          try {
+            // Extract the domain rather than using the full URL
+            const domain = new URL(url).hostname;
+            const safeTitle = `Scan: ${domain} (Whitelisted)`;
+            
+            const activityResult = await activityService.recordActivity(
+              req.user.id,
+              url,
+              safeTitle,
+              0  // Risk score 0 for whitelisted URLs
+            );
+            console.log('Whitelist activity recording result:', activityResult);
+            
+            // Add activity info to response
+            response.activity_recorded = true;
+            response.activity_result = activityResult;
+          } catch (actError) {
+            console.error('Failed to record whitelist activity:', actError);
+            response.activity_recorded = false;
+            response.activity_error = actError.message;
+          }
+        } else {
+          console.log('User not authenticated, skipping whitelist activity recording');
+          response.activity_recorded = false;
+        }
+        
+        return res.json(response);
       }
 
       // If not whitelisted, continue with Python analysis
