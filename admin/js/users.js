@@ -358,6 +358,13 @@ function showUserModal(userId = null) {
   // Reset form fields
   form.reset();
   
+  // Always clean up any existing admin warning message
+  const deleteContainer = deleteBtn ? deleteBtn.closest('.delete-user-container') || deleteBtn.parentNode : null;
+  if (deleteContainer) {
+    const existingNote = deleteContainer.querySelector('.text-danger');
+    if (existingNote) existingNote.remove();
+  }
+  
   // Set to add or edit mode
   if (userId) {
     // Edit mode
@@ -383,6 +390,24 @@ function showUserModal(userId = null) {
         // Make username and email read-only in edit mode
         document.getElementById('username').readOnly = true;
         document.getElementById('email').readOnly = true;
+        
+        // Check if the user is an admin and disable delete button if true
+        if (user.role === 'Admin' && deleteBtn) {
+          deleteBtn.disabled = true;
+          deleteBtn.classList.add('btn-disabled');
+          deleteBtn.setAttribute('title', 'Admin users cannot be deleted');
+          
+          // Add warning message for admin users only
+          const deleteNote = document.createElement('div');
+          deleteNote.className = 'form-help text-danger';
+          deleteNote.innerHTML = '<i class="fas fa-info-circle"></i> Admin users cannot be deleted.';
+          deleteContainer.appendChild(deleteNote);
+        } else if (deleteBtn) {
+          // If not an admin, ensure the button is enabled
+          deleteBtn.disabled = false;
+          deleteBtn.classList.remove('btn-disabled');
+          deleteBtn.setAttribute('title', 'Delete this user');
+        }
       }
     });
   } else {
@@ -391,7 +416,11 @@ function showUserModal(userId = null) {
     delete form.dataset.userId;
     
     // Hide delete button in add mode
-    if (deleteBtn) deleteBtn.style.display = 'none';
+    if (deleteBtn) {
+      deleteBtn.style.display = 'none';
+      deleteBtn.disabled = false; // Reset the disabled state
+      deleteBtn.classList.remove('btn-disabled'); // Remove the disabled styling
+    }
     
     // Show password fields in add mode
     if (passwordFields) {

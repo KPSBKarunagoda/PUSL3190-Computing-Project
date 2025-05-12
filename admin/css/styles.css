@@ -323,6 +323,13 @@ content-header h1 {
   width: 100%;
 }
 
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
 .auth-footer {
   text-align: center;
   color: var(--text-secondary);
@@ -1020,21 +1027,22 @@ textarea:focus {
   left: 50%;
   transform: translate(-50%, -50%);
   width: 100%;
-  max-width: 550px;
+  max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
   background-color: var(--dark-light);
-  border-radius: var(--radius);
+  border-radius: 8px;
   box-shadow: var(--shadow-lg);
   animation: modalIn 0.3s ease-in-out;
+  padding: 0;
 }
 
 .modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacer) var(--spacer-lg);
-  border-bottom: 1px solid var(--border);
 }
 
 .modal-header h3 {
@@ -1056,16 +1064,100 @@ textarea:focus {
 }
 
 .modal-body {
-  padding: var(--spacer-lg);
+  padding: 20px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .modal-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Enhanced Cancel Button */
+#cancel-user-btn {
+  background-color: rgba(108, 117, 125, 0.15);
+  border-color: rgba(108, 117, 125, 0.3);
+  color: #fff;
+}
+
+#cancel-user-btn:hover {
+  background-color: rgba(108, 117, 125, 0.3);
+  border-color: rgba(108, 117, 125, 0.5);
+}
+
+/* Make sure other modal cancel buttons match the style */
+.modal-footer .btn-outline:not(.btn-primary):not(.btn-danger) {
+  background-color: rgba(108, 117, 125, 0.15);
+  border-color: rgba(108, 117, 125, 0.3);
+  color: #fff;
+}
+
+.modal-footer .btn-outline:hover:not(.btn-primary):not(.btn-danger) {
+  background-color: rgba(108, 117, 125, 0.3);
+  border-color: rgba(108, 117, 125, 0.5);
+}
+
+#user-modal .modal-body {
+  padding-bottom: 0;
+}
+
+.user-modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 1rem 0;
+}
+
+.delete-user-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+#delete-user-btn {
+  background-color: rgba(255, 82, 82, 0.1);
+  border: 1px solid rgba(255, 82, 82, 0.3);
+  color: #FF5252;
+}
+
+#delete-user-btn:hover:not([disabled]) {
+  background-color: rgba(255, 82, 82, 0.2);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.text-danger {
+  color: #FF5252 !important;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.text-danger i {
+  font-size: 0.9rem;
+  color: #FF5252;
+}
+
+.modal-footer > div {
+  display: flex;
   gap: var(--spacer);
-  padding: var(--spacer) var(--spacer-lg);
-  border-top: 1px solid var(--border);
+  width: 100%;
+}
+
+.modal-footer > div button {
+  flex: 1;
 }
 
 @media (max-width: 600px) {
@@ -1076,16 +1168,6 @@ textarea:focus {
   
   .modal-footer button {
     width: 100%;
-  }
-  
-  .modal-footer > div {
-    display: flex;
-    gap: var(--spacer);
-    width: 100%;
-  }
-  
-  .modal-footer > div button {
-    flex: 1;
   }
 }
 
@@ -1656,6 +1738,12 @@ select option {
 /* Utilities */
 .hidden {
   display: none !important;
+}
+
+.text-danger {
+  color: #FF5252 !important;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
 }
 
 @keyframes fadeIn {
