@@ -75,9 +75,14 @@ async function loadBlacklist() {
     blacklist.forEach(entry => {
       const tr = document.createElement('tr');
       
-      // URL column (first column)
+      // URL column (first column) - UPDATED with proper overflow handling
       const urlTd = document.createElement('td');
-      urlTd.textContent = entry.URL;
+      urlTd.className = 'url-column';
+      const urlDiv = document.createElement('div');
+      urlDiv.className = 'url-cell';
+      urlDiv.title = entry.URL; // Add title for tooltip on hover
+      urlDiv.textContent = entry.URL || 'Unknown URL';
+      urlTd.appendChild(urlDiv);
       tr.appendChild(urlTd);
       
       // Risk level column
@@ -115,15 +120,30 @@ async function loadBlacklist() {
       
       // Actions column
       const actionsTd = document.createElement('td');
-      actionsTd.className = 'actions';
       
+      // Create a div to hold the button and apply the actions class to it
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'actions';
+
+      // Create the delete button with enhanced icon
       const deleteBtn = document.createElement('button');
       deleteBtn.className = 'btn btn-icon btn-sm';
+      // Use a slightly more modern trash icon variant
       deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
       deleteBtn.addEventListener('click', handleDeleteDomain);
-      deleteBtn.title = 'Remove from blacklist';
+      deleteBtn.title = 'Remove domain from blacklist';
+      deleteBtn.setAttribute('aria-label', 'Delete domain');
+
+      // Add data attributes for potential future interactions
+      deleteBtn.dataset.domain = entry.URL;
       
-      actionsTd.appendChild(deleteBtn);
+      // Append button to the actions div
+      actionsDiv.appendChild(deleteBtn);
+      
+      // Append actions div to the cell
+      actionsTd.appendChild(actionsDiv);
+      
+      // Append the cell to the row
       tr.appendChild(actionsTd);
       
       tableBody.appendChild(tr);

@@ -84,33 +84,73 @@ async function loadWhitelist() {
         
         // Check if item is a string or an object
         if (typeof item === 'string') {
-          // Simple string format
-          row.innerHTML = `
-            <td>${item}</td>
-            <td>Unknown</td>
-            <td>Unknown</td>
-            <td>
-              <button class="btn btn-danger btn-sm delete-domain" data-domain="${item}">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          `;
+          // Simple string format with domain overflow handling
+          const domain = item;
+          
+          // Create cells with enhanced styling
+          const domainCell = document.createElement('td');
+          domainCell.className = 'url-column';
+          
+          const domainDiv = document.createElement('div');
+          domainDiv.className = 'url-cell';
+          domainDiv.title = domain; // Add tooltip
+          domainDiv.textContent = domain;
+          domainCell.appendChild(domainDiv);
+          
+          row.appendChild(domainCell);
+          row.appendChild(document.createElement('td')).textContent = 'Unknown';
+          row.appendChild(document.createElement('td')).textContent = 'Unknown';
+          
+          // Create actions cell with enhanced button
+          const actionsCell = document.createElement('td');
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'actions';
+          
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'btn btn-icon btn-sm delete-domain';
+          deleteBtn.dataset.domain = domain;
+          deleteBtn.title = 'Remove domain from whitelist';
+          deleteBtn.setAttribute('aria-label', 'Delete domain');
+          deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+          
+          actionsDiv.appendChild(deleteBtn);
+          actionsCell.appendChild(actionsDiv);
+          row.appendChild(actionsCell);
         } else {
           // Object format with full details
           const domain = item.Domain || item.domain || '';
           const date = item.AddedDate || item.addedDate || new Date().toISOString();
           const addedBy = item.addedByUser || 'Unknown';
           
-          row.innerHTML = `
-            <td>${domain}</td>
-            <td>${addedBy}</td>
-            <td>${new Date(date).toLocaleString()}</td>
-            <td>
-              <button class="btn btn-danger btn-sm delete-domain" data-domain="${domain}">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          `;
+          // Create cells with enhanced styling
+          const domainCell = document.createElement('td');
+          domainCell.className = 'url-column';
+          
+          const domainDiv = document.createElement('div');
+          domainDiv.className = 'url-cell';
+          domainDiv.title = domain; // Add tooltip
+          domainDiv.textContent = domain;
+          domainCell.appendChild(domainDiv);
+          
+          row.appendChild(domainCell);
+          row.appendChild(document.createElement('td')).textContent = addedBy;
+          row.appendChild(document.createElement('td')).textContent = new Date(date).toLocaleString();
+          
+          // Create actions cell with enhanced button
+          const actionsCell = document.createElement('td');
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'actions';
+          
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'btn btn-icon btn-sm delete-domain';
+          deleteBtn.dataset.domain = domain;
+          deleteBtn.title = 'Remove domain from whitelist';
+          deleteBtn.setAttribute('aria-label', 'Delete domain');
+          deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+          
+          actionsDiv.appendChild(deleteBtn);
+          actionsCell.appendChild(actionsDiv);
+          row.appendChild(actionsCell);
         }
         
         tableBody.appendChild(row);
@@ -322,7 +362,7 @@ async function handleDeleteDomain(e) {
     
     // Re-enable button
     button.disabled = false;
-    button.innerHTML = originalContent;
+    button.innerHTML = '<i class="fas fa-trash-alt"></i>';
     
     // Show error message
     showAlert('Failed to remove domain: ' + (error.message || 'Unknown error'), 'error');
