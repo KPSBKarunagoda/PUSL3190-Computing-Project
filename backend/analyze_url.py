@@ -125,18 +125,44 @@ class URLAnalyzer:
     def _initialize_weights(self):
         """Initialize feature weights for risk scoring"""
         self.weights = {
-            'qty_dot_url': 0.05,
-            'qty_hyphen_url': 0.05,
-            'length_url': 0.1,
-            'qty_at_url': 0.1, 
-            'domain_in_ip': 0.35,         # Significantly increased weight for IP addresses 
-            'tls_ssl_certificate': -0.15,
-            'domain_google_index': -0.15,  # NEW: Strong negative weight (reduces risk) when domain is indexed
-            'url_google_index': -0.1,      # Increased impact when the URL is indexed
-            'qty_redirects': 0.1,
-            'time_domain_activation': -0.1,
-            'qty_ip_resolved': -0.05,
-            'domain_spf': -0.05           # NEW: Minor negative weight when SPF is present
+            # ===== EXISTING FEATURES WITH ADJUSTED WEIGHTS =====
+            'domain_in_ip': 0.35,         # [INCREASED] 40% if IP address is used instead of domain
+            'tls_ssl_certificate': -0.15,  # -15% if SSL/TLS certificate is valid
+            'domain_google_index': -0.15,  # -15% if domain is indexed by Google
+            'url_google_index': -0.10,     # -10% if specific URL is indexed
+            'qty_redirects': 0.15,         # [INCREASED] 15% per redirect
+            'time_domain_activation': -0.10, # -10% based on domain age
+            'qty_ip_resolved': -0.05,      # -5% per resolved IP (negative = good)
+            'domain_spf': -0.05,           # -5% if domain has SPF record
+            
+            # ===== URL STRUCTURE FEATURES =====
+            'qty_dot_url': 0.04,           # [ADJUSTED] 4% per dot in URL
+            'qty_hyphen_url': 0.04,        # [ADJUSTED] 4% per hyphen in URL
+            'qty_at_url': 0.15,            # [INCREASED] 15% per @ symbol in URL
+            'length_url': 0.003,           # [ADJUSTED] More fine-grained weight per character
+            
+            # ===== NEW FEATURES ALREADY BEING EXTRACTED =====
+            'qty_underline_url': 0.04,     # 4% per underline in URL
+            'qty_questionmark_url': 0.02,  # 2% per question mark beyond the first one
+            'domain_length': 0.002,        # 0.2% per character - suspicious if very long
+            'qty_dot_domain': 0.03,        # 3% per extra dot in domain (subdomain levels)
+            'url_shortened': 0.20,         # 20% if URL is shortened (bit.ly, t.co, etc.)
+            'ttl_hostname': -0.0005,       # Lower TTL is suspicious, higher is good
+            'time_domain_expiration': -0.0004, # Domains with longer expiration are more legitimate
+            'qty_vowels_domain': -0.005,   # Legitimate domains usually have proper vowel usage
+            'email_in_url': 0.30,          # 30% if email is in URL (highly suspicious)
+            'server_client_domain': 0.10,  # 10% if domain contains "server" or "client" (often phishing)
+            'qty_mx_servers': -0.02,       # -2% per MX server (legitimate domains often have multiple)
+            'qty_nameservers': -0.03,      # -3% per nameserver (legitimate domains have multiple)
+        }
+        
+        # Parameters that need special normalization 
+        self.normalization_params = {
+            'length_url': {'max': 150},  # Cap impact for URLs longer than 150 chars
+            'domain_length': {'max': 50}, # Cap impact for domains longer than 50 chars
+            'ttl_hostname': {'min': 300, 'max': 86400},  # Range for TTL normalization
+            'time_domain_activation': {'max': 365},  # Cap at 1 year
+            'time_domain_expiration': {'max': 730}   # Cap at 2 years
         }
 
     def _ml_analysis(self, features: Dict[str, Any]) -> Dict[str, Any]:
@@ -202,6 +228,32 @@ class URLAnalyzer:
                     print(f"Confidence: {ml_confidence:.2%}", file=sys.stderr)
                     print(f"Threshold: {self.threshold}", file=sys.stderr)
                     
+                    # NEW: Apply ML model contribution to risk score
+                    if ml_prediction == 1:  # If model predicts phishing
+                        # Calculate ML contribution based on confidence
+                        # High confidence (>90%) adds up to 25 points, lower confidence adds proportionally less
+                        ml_contribution = min(25, (phishing_prob - self.threshold) * 40)
+                        
+                        # Add ML contribution to risk score
+                        if ml_contribution > 0:
+                            print(f"ML predicts phishing with {phishing_prob:.1%} confidence: +{ml_contribution:.1f} points", file=sys.stderr)
+                            
+                            # Check if adding ML contribution would exceed 100
+                            if risk_score + ml_contribution > 100:
+                                print(f"Capping risk score to 100 (would have been {risk_score + ml_contribution:.1f})", file=sys.stderr)
+                                risk_score = 100
+                            else:
+                                risk_score += ml_contribution
+                            
+                            # If the ML model has extremely high confidence (>95%), ensure score is at least in suspicious range
+                            if phishing_prob > 0.95 and risk_score < 40:
+                                old_score = risk_score
+                                risk_score = max(risk_score, 40)
+                                print(f"ML has very high confidence: enforcing minimum score of 40 (was {old_score:.1f})", file=sys.stderr)
+                    else:
+                        # Model predicts legitimate - no additional risk
+                        print(f"ML predicts legitimate with {legitimate_prob:.1%} confidence: no risk adjustment", file=sys.stderr)
+                    
                 except Exception as e:
                     print(f"Error in prediction: {str(e)}", file=sys.stderr)
                     # Fallback to direct prediction
@@ -233,8 +285,14 @@ class URLAnalyzer:
                     is_phishing = ml_prediction == 1 and ml_confidence > 0.8
                     risk_explanation = "Medium risk score with high confidence ML prediction"
                 else:  # Low risk
-                    is_phishing = False
-                    risk_explanation = "Low risk score - unlikely to be phishing"
+                    # Even for low risk, if ML prediction is phishing with high confidence, flag it
+                    if ml_prediction == 1 and ml_confidence > 0.95:
+                        is_phishing = True
+                        risk_explanation = "Low risk score but ML model detects phishing with high confidence"
+                        print("Override: ML has high confidence this is phishing despite low risk score", file=sys.stderr)
+                    else:
+                        is_phishing = False
+                        risk_explanation = "Low risk score - unlikely to be phishing"
                 
                 print(f"\n=== Final Decision ===", file=sys.stderr)
                 result = {
@@ -276,16 +334,48 @@ class URLAnalyzer:
         """Calculate risk score based on weighted features"""
         risk_score = 50  # Base score
         
+        # Add special pattern detection
+        # High entropy/random-looking domains are very suspicious (already extracted but not used)
+        if features.get('domain_length', 0) > 15 and features.get('qty_vowels_domain', 0) / max(1, features.get('domain_length', 1)) < 0.2:
+            risk_score += 15  # Add 15% for suspicious character distribution
+        
+        # Multiple hyphens in domain is highly suspicious
+        if features.get('qty_hyphen_domain', 0) > 2:
+            risk_score += 10
+        
+        # Newly registered domains (less than 7 days) are highly suspicious
+        if features.get('time_domain_activation', 0) >= 0 and features.get('time_domain_activation', 0) < 7:
+            risk_score += 15
+            
+        # Short expiration is suspicious (less than 90 days)
+        if features.get('time_domain_expiration', 0) >= 0 and features.get('time_domain_expiration', 0) < 90:
+            risk_score += 10
+            
+        # NEW: Domain not indexed by Google is suspicious
+        if features.get('domain_google_index', 1) == 0:
+            risk_score += 10  # Add 10% risk bonus for non-indexed domains
+        
         for feature, weight in self.weights.items():
             if feature in features:
                 value = features[feature]
                 if isinstance(value, bool):
                     value = 1 if value else 0
                     
-                # Apply maximum impact cap for specific features
-                if feature == 'time_domain_activation' and value > 0:
-                    # Cap domain age impact to maximum of 365 days (1 year)
-                    value = min(value, 365)
+                # Apply normalization for specific features
+                if feature in self.normalization_params:
+                    params = self.normalization_params[feature]
+                    
+                    # Cap maximum value for this feature
+                    if 'max' in params and value > params['max']:
+                        value = params['max']
+                        
+                    # Set minimum value
+                    if 'min' in params and value < params['min']:
+                        value = params['min']
+                
+                # Special handling for questionmark - only suspicious if more than one
+                if feature == 'qty_questionmark_url' and value <= 1:
+                    continue  # Skip if there's only one or zero question marks
                 
                 risk_score += value * weight
         
