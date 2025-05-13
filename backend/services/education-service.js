@@ -532,7 +532,7 @@ class EducationService {
         }
       }
       
-      // Check for IP resolution
+      // Basic IP resolution check (keeping only the zero IPs check, removing enhanced analysis)
       if ('qty_ip_resolved' in features && features.qty_ip_resolved === 0) {
         findings.push({
           text: 'Domain does not resolve to IP',
@@ -542,36 +542,70 @@ class EducationService {
         });
       }
       
-      // Check for TTL (Time to Live) value
-      if ('ttl_hostname' in features && features.ttl_hostname < 300) {
-        findings.push({
-          text: 'Abnormally low DNS TTL',
-          description: 'This domain has an unusually short Time-To-Live value, which can indicate a temporary setup often used in phishing campaigns.',
-          severity: 'medium',
-          category: 'infrastructure'
-        });
-      }
-      
-      // Check for free hosting services
-      if ('free_hosting' in features && features.free_hosting) {
-        findings.push({
-          text: 'Free hosting service detected',
-          description: 'This site is hosted on a free hosting service often used by scammers due to minimal verification requirements.',
-          severity: 'medium', 
-          category: 'infrastructure'
-        });
-      }
-      
-      // Check for ASN data if available
-      if ('asn_ip' in features && features.asn_ip) {
-        // Check if ASN is in list of suspicious ASNs
-        const suspiciousASNs = ['16276', '14618', '4134']; // Example list: OVH, Amazon, Chinanet
-        if (suspiciousASNs.includes(String(features.asn_ip))) {
+      // Check for TTL (Time to Live) value - ENHANCED
+      if ('ttl_hostname' in features) {
+        if (features.ttl_hostname < 300) {
           findings.push({
-            text: 'Suspicious hosting provider',
-            description: 'This site is hosted on a provider commonly associated with phishing campaigns.',
+            text: 'Abnormally low DNS TTL',
+            description: 'This domain has an unusually short Time-To-Live value, which can indicate a temporary setup often used in phishing campaigns.',
             severity: 'medium',
             category: 'infrastructure'
+          });
+        } else if (features.ttl_hostname === 300) {
+          findings.push({
+            text: 'Standard DNS TTL value',
+            description: 'This domain uses a standard TTL value (300 seconds) for DNS records.',
+            severity: 'low',
+            category: 'infrastructure'
+          });
+        }
+      }
+
+      // NEW: Check for domain vs path length ratio
+      if ('length_url' in features && 'domain_length' in features) {
+        const urlLength = Number(features.length_url);
+        const domainLength = Number(features.domain_length);
+        const pathLength = urlLength - domainLength - 8; // Approximate, accounting for "https://" and "/"
+        
+        if (pathLength > 3 * domainLength && pathLength > 30) {
+          findings.push({
+            text: 'Disproportionately long URL path',
+            description: `The URL path is much longer (${pathLength} characters) than the domain name (${domainLength} characters), which can indicate obfuscation attempts.`,
+            severity: 'medium',
+            category: 'url'
+          });
+        }
+      }
+
+      // NEW: Check domain expiration details
+      if ('time_domain_expiration' in features) {
+        const expirationDays = Number(features.time_domain_expiration);
+        
+        if (expirationDays > 0 && expirationDays <= 365) {
+          findings.push({
+            text: 'Short-term domain registration',
+            description: `This domain is registered for only ${expirationDays} days (under a year). Legitimate business domains are typically registered for multiple years.`,
+            severity: 'medium',
+            category: 'domain'
+          });
+        }
+      }
+
+      // NEW: Check for unusual domain name composition
+      if ('domain_length' in features && 'qty_hyphen_domain' in features && 'qty_dot_domain' in features) {
+        const domainLength = Number(features.domain_length);
+        const hyphenCount = Number(features.qty_hyphen_domain);
+        const dotCount = Number(features.qty_dot_domain);
+        
+        // Calculate special character density
+        const specialCharDensity = (hyphenCount + dotCount - 1) / domainLength; // Subtract 1 from dotCount to account for the TLD dot
+        
+        if (specialCharDensity > 0.2 && domainLength > 10) {
+          findings.push({
+            text: 'High special character density in domain',
+            description: `This domain contains an unusual number of special characters (hyphens and dots) relative to its length, which is often seen in phishing domains.`,
+            severity: 'medium',
+            category: 'domain'
           });
         }
       }
