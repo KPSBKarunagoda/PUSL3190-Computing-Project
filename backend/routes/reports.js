@@ -153,6 +153,52 @@ module.exports = function(dbConnection) {
         }
     });
 
+    // DELETE /api/reports/:id - Delete user's own report
+    router.delete('/:id', auth, async (req, res) => {
+        try {
+            const reportId = req.params.id;
+            const userId = req.user.id;
+            
+            // First check if the report exists and belongs to this user
+            const [reports] = await dbConnection.execute(
+                'SELECT * FROM Reports WHERE ReportID = ? AND UserID = ?',
+                [reportId, userId]
+            );
+            
+            if (reports.length === 0) {
+                return res.status(404).json({ 
+                    message: 'Report not found or you do not have permission to delete it' 
+                });
+            }
+            
+            // Delete the report
+            await dbConnection.execute(
+                'DELETE FROM Reports WHERE ReportID = ? AND UserID = ?',
+                [reportId, userId]
+            );
+            
+            // Log the deletion in activity log if available
+            try {
+                await dbConnection.execute(
+                    `INSERT INTO ActivityLog (UserID, Action, Details) VALUES (?, ?, ?)`,
+                    [userId, 'delete_report', `Deleted report for URL: ${reports[0].URL}`]
+                );
+            } catch (logError) {
+                // Just log the error but don't fail the request
+                console.log('Activity log entry skipped:', logError.message);
+            }
+            
+            res.json({ 
+                success: true, 
+                message: 'Report deleted successfully' 
+            });
+            
+        } catch (error) {
+            console.error('Error deleting report:', error);
+            res.status(500).json({ message: 'Server error', error: error.message });
+        }
+    });
+
     // Admin endpoints - require admin auth
     
     // GET /api/reports - Get all reports (admin only)

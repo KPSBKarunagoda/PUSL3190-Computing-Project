@@ -18,6 +18,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const reportModal = document.getElementById('report-modal');
   const modalBody = document.getElementById('modal-body');
   
+  // Create confirmation modal for delete action
+  const confirmModal = createConfirmationModal();
+  document.body.appendChild(confirmModal);
+  
+  // Keep track of report to delete
+  let reportToDelete = null;
+  
   // Add event listener for refresh button
   refreshBtn.addEventListener('click', () => {
     loadUserReports();
@@ -25,6 +32,121 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Initial load of reports
   await loadUserReports();
+  
+  /**
+   * Create confirmation modal for delete actions
+   */
+  function createConfirmationModal() {
+    const modal = document.createElement('div');
+    modal.id = 'confirm-delete-modal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3><i class="fas fa-exclamation-triangle"></i> Confirm Deletion</h3>
+          <span class="close-confirm-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete this report? This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+          <button id="cancel-delete-btn" class="btn-secondary">Cancel</button>
+          <button id="confirm-delete-btn" class="btn-danger">Delete</button>
+        </div>
+      </div>
+    `;
+    
+    // Add event listeners once the modal is in the DOM
+    setTimeout(() => {
+      // Close button
+      const closeBtn = modal.querySelector('.close-confirm-modal');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          modal.classList.remove('show');
+        });
+      }
+      
+      // Cancel button
+      const cancelBtn = document.getElementById('cancel-delete-btn');
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+          modal.classList.remove('show');
+        });
+      }
+      
+      // Confirm delete button
+      const confirmBtn = document.getElementById('confirm-delete-btn');
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+          if (!reportToDelete) return;
+          
+          try {
+            // Show loading state
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+            
+            const response = await fetch(`http://localhost:3000/api/reports/${reportToDelete}`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-auth-token': token
+              }
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Error: ${response.status}`);
+            }
+            
+            // Success - hide modals and reload reports
+            modal.classList.remove('show');
+            if (reportModal.classList.contains('show')) {
+              reportModal.classList.remove('show');
+            }
+            
+            // Show success message
+            showNotification('Report deleted successfully', 'success');
+            
+            // Reload reports
+            await loadUserReports();
+            
+          } catch (error) {
+            console.error('Error deleting report:', error);
+            showNotification(`Failed to delete report: ${error.message}`, 'error');
+          } finally {
+            // Reset button state
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = 'Delete';
+            reportToDelete = null;
+          }
+        });
+      }
+    }, 100);
+    
+    return modal;
+  }
+  
+  /**
+   * Display a notification message
+   */
+  function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+      notification.style.opacity = '1';
+      notification.style.transform = 'translateY(0)';
+    }, 10);
+    
+    // Remove after delay
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      notification.style.transform = 'translateY(-20px)';
+      setTimeout(() => notification.remove(), 500);
+    }, 3000);
+  }
   
   /**
    * Load user reports from the API
@@ -106,8 +228,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td>${escapeHtml(formattedDate)}</td>
         <td><span class="status-badge status-${(report.Status || 'pending').toLowerCase()}">${escapeHtml(report.Status || 'Pending')}</span></td>
         <td class="action-buttons">
-          <button class="btn-view" data-report-id="${report.ReportID}">
+          <button class="btn-view" data-report-id="${report.ReportID}" title="View details">
             <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn-delete" data-report-id="${report.ReportID}" title="Delete report">
+            <i class="fas fa-trash-alt"></i>
           </button>
         </td>
       `;
@@ -120,6 +245,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.addEventListener('click', () => {
         const reportId = btn.dataset.reportId;
         showReportDetails(reportId);
+      });
+    });
+    
+    // Add event listeners for delete buttons
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const reportId = btn.dataset.reportId;
+        reportToDelete = reportId;
+        confirmModal.classList.add('show');
       });
     });
   }
@@ -160,8 +294,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         <div class="label">Description:</div>
         <div class="value description">${escapeHtml(report.Description || 'No additional details provided.')}</div>
+        
+        <div class="modal-actions">
+          <button class="btn-danger delete-report-btn" data-report-id="${report.ReportID}">
+            <i class="fas fa-trash-alt"></i> Delete Report
+          </button>
+        </div>
       </div>
     `;
+    
+    // Add event listener for delete button in modal
+    const deleteBtn = modalBody.querySelector('.delete-report-btn');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => {
+        reportToDelete = report.ReportID;
+        reportModal.classList.remove('show');
+        confirmModal.classList.add('show');
+      });
+    }
     
     // Show modal
     reportModal.classList.add('show');

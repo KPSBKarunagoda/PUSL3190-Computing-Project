@@ -446,6 +446,143 @@
       transform: scale(1.1);
     }
     
+    /* Add styles for delete button and related elements */
+    .btn-delete {
+      background: transparent;
+      border: none;
+      color: #dc3545;  /* Red color for delete button */
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 4px;
+      transition: all 0.2s;
+      margin-left: 5px;
+    }
+    
+    .btn-delete:hover {
+      background-color: rgba(220, 53, 69, 0.1);
+      transform: scale(1.1);
+    }
+    
+    /* Confirmation modal styles */
+    #delete-confirm-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 2100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    #delete-confirm-modal.show {
+      display: flex;
+    }
+    
+    .delete-confirm-content {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 400px;
+      animation: slideUp 0.3s;
+    }
+    
+    .delete-confirm-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .delete-confirm-header h3 {
+      margin: 0;
+      color: #dc3545;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .delete-confirm-body {
+      padding: 20px;
+    }
+    
+    .delete-confirm-footer {
+      padding: 15px 20px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .btn-danger:hover {
+      background: #bd2130;
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 8px;
+      background-color: var(--card-bg);
+      color: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      z-index: 2200;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateY(-20px);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    
+    .notification.success {
+      border-left: 4px solid #28a745;
+    }
+    
+    .notification.error {
+      border-left: 4px solid #dc3545;
+    }
+    
+    .notification.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Add delete button styling in modal */
+    .modal-footer .btn-danger {
+      margin-right: auto; /* Push to left side */
+    }
+    
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -578,6 +715,23 @@
     </div>
   </div>
 
+  <!-- Add confirmation modal for delete actions -->
+  <div id="delete-confirm-modal">
+    <div class="delete-confirm-content">
+      <div class="delete-confirm-header">
+        <h3><i class="fas fa-exclamation-triangle"></i> Confirm Deletion</h3>
+        <button class="modal-close" id="close-confirm-modal">&times;</button>
+      </div>
+      <div class="delete-confirm-body">
+        <p>Are you sure you want to delete this report? This action cannot be undone.</p>
+      </div>
+      <div class="delete-confirm-footer">
+        <button class="btn-secondary" id="cancel-delete">Cancel</button>
+        <button class="btn-danger" id="confirm-delete">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const token = localStorage.getItem('phishguardToken');
@@ -588,9 +742,16 @@
         return;
       }
       
+      // Store the ID of the report to delete
+      let reportToDelete = null;
+      
       // Modal handling
       const modal = document.getElementById('report-modal');
+      const deleteConfirmModal = document.getElementById('delete-confirm-modal');
       const closeModalButtons = document.querySelectorAll('#close-modal, #close-modal-footer');
+      const closeConfirmModalButton = document.getElementById('close-confirm-modal');
+      const cancelDeleteButton = document.getElementById('cancel-delete');
+      const confirmDeleteButton = document.getElementById('confirm-delete');
       
       closeModalButtons.forEach(button => {
         button.addEventListener('click', () => {
@@ -603,6 +764,58 @@
         if (e.target === modal) modal.classList.remove('show');
       });
       
+      // Close confirm modal
+      [closeConfirmModalButton, cancelDeleteButton].forEach(button => {
+        button.addEventListener('click', () => {
+          deleteConfirmModal.classList.remove('show');
+        });
+      });
+      
+      // Handle delete confirmation
+      confirmDeleteButton.addEventListener('click', async () => {
+        if (!reportToDelete) return;
+        
+        try {
+          // Show loading state
+          confirmDeleteButton.disabled = true;
+          confirmDeleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+          
+          // Send delete request to API
+          const response = await fetch(`http://localhost:3000/api/reports/${reportToDelete}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-auth-token': token
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to delete report');
+          }
+          
+          // Close modals
+          deleteConfirmModal.classList.remove('show');
+          if (modal.classList.contains('show')) {
+            modal.classList.remove('show');
+          }
+          
+          // Show success notification
+          showNotification('Report deleted successfully', 'success');
+          
+          // Reload reports to refresh the list
+          await loadUserReports();
+          
+        } catch (error) {
+          console.error('Error deleting report:', error);
+          showNotification('Failed to delete report: ' + error.message, 'error');
+        } finally {
+          // Reset button state
+          confirmDeleteButton.disabled = false;
+          confirmDeleteButton.innerHTML = 'Delete';
+          reportToDelete = null;
+        }
+      });
+      
       // Load user reports
       loadUserReports();
       
@@ -610,6 +823,27 @@
       document.getElementById('refresh-reports').addEventListener('click', () => {
         loadUserReports();
       });
+      
+      // Shows a notification message
+      function showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+          <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+          ${message}
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Show notification
+        setTimeout(() => notification.classList.add('show'), 10);
+        
+        // Hide and remove after delay
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => notification.remove(), 300);
+        }, 3000);
+      }
       
       async function loadUserReports() {
         const reportsLoader = document.getElementById('reports-loader');
@@ -661,8 +895,11 @@
                   <td>${escapeHtml(formattedDate)}</td>
                   <td><span class="status-badge status-${(report.Status || 'pending').toLowerCase()}">${escapeHtml(report.Status || 'Pending')}</span></td>
                   <td>
-                    <button class="btn-view" data-report-id="${report.ReportID}">
+                    <button class="btn-view" data-report-id="${report.ReportID}" title="View details">
                       <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn-delete" data-report-id="${report.ReportID}" title="Delete report">
+                      <i class="fas fa-trash-alt"></i>
                     </button>
                   </td>
                 `;
@@ -679,6 +916,14 @@
                   if (report) {
                     showReportDetails(report);
                   }
+                });
+              });
+              
+              // Add event listeners for delete buttons
+              document.querySelectorAll('.btn-delete').forEach(btn => {
+                btn.addEventListener('click', () => {
+                  reportToDelete = btn.dataset.reportId;
+                  deleteConfirmModal.classList.add('show');
                 });
               });
             }
@@ -736,6 +981,25 @@
         // Show modal
         const modal = document.getElementById('report-modal');
         modal.classList.add('show');
+        
+        // Update the modal footer to include delete button
+        const modalFooter = modal.querySelector('.modal-footer');
+        modalFooter.innerHTML = `
+          <button class="btn-danger" id="delete-report-modal"><i class="fas fa-trash-alt"></i> Delete Report</button>
+          <button class="btn" id="close-modal-footer">Close</button>
+        `;
+        
+        // Add event listener for delete button in modal
+        document.getElementById('delete-report-modal').addEventListener('click', () => {
+          reportToDelete = report.ReportID;
+          modal.classList.remove('show');
+          deleteConfirmModal.classList.add('show');
+        });
+        
+        // Add event listener for close button
+        document.getElementById('close-modal-footer').addEventListener('click', () => {
+          modal.classList.remove('show');
+        });
       }
       
       function escapeHtml(unsafe) {
