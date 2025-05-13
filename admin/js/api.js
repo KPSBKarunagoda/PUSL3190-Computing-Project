@@ -81,32 +81,19 @@ async function apiRequest(endpoint, options = {}) {
  * Authentication APIs
  */
 const authAPI = {
-  // Login with email and password
+  // Login with email and password - streamlined implementation
   login: async (email, password) => {
     try {
       console.log(`Attempting admin login for email: ${email}`);
       
-      // Use direct fetch for login to bypass any potential issues with apiRequest
       const response = await fetch(`${API_BASE_URL}/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
       
-      console.log(`Login response status: ${response.status}`);
-      
-      // Get response text for debugging
-      const responseText = await response.text();
-      console.log(`Login response text: ${responseText}`);
-      
-      // Parse the response
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('JSON parse error:', e);
-        throw new Error('Invalid response format from server');
-      }
+      // Parse the response directly
+      const data = await response.json();
       
       // Check for errors
       if (!response.ok) {
@@ -117,8 +104,6 @@ const authAPI = {
       if (!data.user || data.user.role !== 'Admin') {
         throw new Error('You do not have administrator privileges');
       }
-      
-      console.log('Login successful, user:', data.user);
       
       // Store token and basic user info
       localStorage.setItem('phishguard_admin_token', data.token);

@@ -715,77 +715,17 @@ function showAlreadyReportedMessage(elements, reportId) {
   showMessage('You have already reported this website', elements);
 }
 
-// Check authentication state and update UI - reverted to original implementation
-async function checkAuthState(elements) {
-  try {
-    // Get auth state directly from storage
-    const data = await new Promise(resolve => {
-      chrome.storage.local.get(['isLoggedIn', 'authToken', 'userData'], resolve);
-    });
-    
-    const isLoggedIn = !!data.isLoggedIn && !!data.authToken;
-    
-    // Update UI based on auth state
-    if (elements.loginBtn) elements.loginBtn.style.display = isLoggedIn ? 'none' : 'block';
-    if (elements.dashboardBtn) elements.dashboardBtn.style.display = isLoggedIn ? 'block' : 'none';
-    if (elements.logoutBtn) elements.logoutBtn.style.display = isLoggedIn ? 'block' : 'none';
-    
-    // Show user info if available - original implementation
-    if (elements.userInfo && isLoggedIn && data.userData) {
-      elements.userInfo.style.display = 'flex';
-      
-      if (elements.userName) {
-        const displayName = data.userData.username || data.userData.email || 'User';
-        elements.userName.textContent = displayName;
-      }
-      
-      if (elements.userAvatar) {
-        // Reset to default icon
-        elements.userAvatar.innerHTML = '<i class="fas fa-user"></i>';
-      }
-      
-      // Set user role if available
-      if (elements.userRole && data.userData.role) {
-        elements.userRole.textContent = data.userData.role;
-      } else if (elements.userRole) {
-        elements.userRole.textContent = 'Member';
-      }
-    } else if (elements.userInfo) {
-      elements.userInfo.style.display = 'none';
-    }
-    
-    return { isLoggedIn, userData: data.userData };
-  } catch (error) {
-    console.error('Error checking auth state:', error);
-    return { isLoggedIn: false };
-  }
-}
-
-// Improved logout function that properly clears all data
-function logout() {
-  return new Promise((resolve) => {
-    // Reset vote UI immediately if voting system exists
-    if (window.votingSystem) {
-      window.votingSystem.resetVoteUI();
-    }
-    
-    chrome.runtime.sendMessage({ action: 'logout' }, (response) => {
-      resolve(response);
-    });
-  });
-}
-
-// More secure auth state check with improved error handling
-function getAuthState() {
+/**
+ * Get unified authentication state with improved error handling
+ * Combines functionality of getAuthState and checkAuthState
+ */
+async function getAuthState() {
   return new Promise((resolve) => {
     chrome.storage.local.get(['isLoggedIn', 'authToken', 'userData'], (data) => {
-      // Define localIsLoggedIn based on data instead of using undefined variable
       const localIsLoggedIn = data.isLoggedIn && data.authToken;
       
       // If we have local data, use it directly
       if (localIsLoggedIn) {
-        // Return auth state immediately from storage without validation
-        // This prevents unnecessary token validations that can cause logout issues
         resolve({
           isLoggedIn: true,
           token: data.authToken,
@@ -817,7 +757,64 @@ function getAuthState() {
   });
 }
 
-// Add helper function to handle logout
+// Improved logout function that properly clears all data
+function logout() {
+  return new Promise((resolve) => {
+    // Reset vote UI immediately if voting system exists
+    if (window.votingSystem) {
+      window.votingSystem.resetVoteUI();
+    }
+    
+    chrome.runtime.sendMessage({ action: 'logout' }, (response) => {
+      resolve(response);
+    });
+  });
+}
+
+// Keep checkAuthState for UI updates but reuse getAuthState
+async function checkAuthState(elements) {
+  try {
+    // Get auth state directly using the unified function
+    const authState = await getAuthState();
+    const isLoggedIn = authState.isLoggedIn;
+    
+    // Update UI based on auth state
+    if (elements.loginBtn) elements.loginBtn.style.display = isLoggedIn ? 'none' : 'block';
+    if (elements.dashboardBtn) elements.dashboardBtn.style.display = isLoggedIn ? 'block' : 'none';
+    if (elements.logoutBtn) elements.logoutBtn.style.display = isLoggedIn ? 'block' : 'none';
+    
+    // Show user info if available
+    if (elements.userInfo && isLoggedIn && authState.userData) {
+      elements.userInfo.style.display = 'flex';
+      
+      if (elements.userName) {
+        const displayName = authState.userData.username || authState.userData.email || 'User';
+        elements.userName.textContent = displayName;
+      }
+      
+      if (elements.userAvatar) {
+        // Reset to default icon
+        elements.userAvatar.innerHTML = '<i class="fas fa-user"></i>';
+      }
+      
+      // Set user role if available
+      if (elements.userRole && authState.userData.role) {
+        elements.userRole.textContent = authState.userData.role;
+      } else if (elements.userRole) {
+        elements.userRole.textContent = 'Member';
+      }
+    } else if (elements.userInfo) {
+      elements.userInfo.style.display = 'none';
+    }
+    
+    return authState;
+  } catch (error) {
+    console.error('Error checking auth state:', error);
+    return { isLoggedIn: false };
+  }
+}
+
+// Remove redundant functions and keep helper function to handle logout
 function logoutUser() {
   localStorage.removeItem('phishguardToken');
   localStorage.removeItem('phishguardUser');
@@ -1178,9 +1175,9 @@ async function displayKeyFindings(container, result, url) {
               <i class="${iconClass}"></i>
               <span>${finding.text}</span>
             </div>
-            <p>${finding.description ? finding.description.split('.')[0] + '.' : 'Risk factor detected.'}</p>
-          </div>
-        `;
+              <p>${finding.description ? finding.description.split('.')[0] + '.' : 'Risk factor detected.'}</p>
+            </div>
+          `;
       });
       
       // If we limited the findings, add a note

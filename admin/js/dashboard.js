@@ -3,30 +3,7 @@
  */
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // Make sure Auth is defined - add fallback if not
-    if (typeof Auth === 'undefined') {
-      console.warn('Auth object not found, creating fallback');
-      
-      // Create fallback Auth object
-      window.Auth = {
-        isAuthenticated() {
-          return !!localStorage.getItem('phishguard_admin_token');
-        },
-        getUser() {
-          try {
-            const adminJson = localStorage.getItem('phishguard_admin');
-            return adminJson ? JSON.parse(adminJson) : null;
-          } catch (e) {
-            return null;
-          }
-        },
-        logout() {
-          localStorage.removeItem('phishguard_admin_token');
-          localStorage.removeItem('phishguard_admin');
-          window.location.href = 'index.html?action=logout';
-        }
-      };
-    }
+    // Remove redundant Auth fallback - rely on common.js
     
     // Verify authentication
     if (!Auth.isAuthenticated()) {

@@ -169,8 +169,10 @@
           
           console.log('Login successful, token received');
           
-          // Ensure proper storage of user tokens
-          // Store user token (never mix with admin tokens)
+          // 1. Check if user is already logged in as admin
+          const isAdminLoggedIn = !!localStorage.getItem('phishguard_admin_token');
+          
+          // 2. Store user token with proper namespacing
           localStorage.setItem('phishguardToken', data.token);
           localStorage.setItem('phishguardUser', JSON.stringify({
             id: data.user.id,
@@ -179,9 +181,18 @@
             role: data.user.role
           }));
           
-          // Clear any admin tokens to prevent mixing
-          localStorage.removeItem('phishguard_admin_token');
-          localStorage.removeItem('phishguard_admin');
+          // 3. Only clear admin tokens if this isn't an admin account
+          // This prevents inadvertent privilege escalation
+          if (data.user.role !== 'Admin') {
+            localStorage.removeItem('phishguard_admin_token');
+            localStorage.removeItem('phishguard_admin');
+            
+            // 4. If admin was logged in, show notification that admin session was ended
+            if (isAdminLoggedIn) {
+              console.warn('Admin session ended due to user login');
+              // Could show a toast notification here
+            }
+          }
           
           // Redirect to dashboard page
           window.location.href = 'dashboard.html';

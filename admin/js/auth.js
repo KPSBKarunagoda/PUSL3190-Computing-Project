@@ -209,31 +209,3 @@ function showAuthAlert(message, type = 'info') {
     }, 5000);
   }
 }
-
-// Ensure Auth functions are still available if not already declared
-if (typeof Auth === 'undefined') {
-  console.warn('Auth object not found in global scope. Creating fallback.');
-  window.Auth = {
-    isAuthenticated() {
-      return !!localStorage.getItem('phishguard_admin_token');
-    },
-    
-    getToken() {
-      return localStorage.getItem('phishguard_admin_token');
-    },
-    
-    getUser() {
-      try {
-        return JSON.parse(localStorage.getItem('phishguard_admin'));
-      } catch (e) {
-        return null;
-      }
-    },
-    
-    logout() {
-      localStorage.removeItem('phishguard_admin_token');
-      localStorage.removeItem('phishguard_admin');
-      window.location.href = 'index.html';
-    }
-  };
-}
