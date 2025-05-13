@@ -294,6 +294,1091 @@
       align-items: center;
       gap: 10px;
     }
+
+    /* Quiz & Interactive Content Styles */
+    .quiz-container {
+      background-color: rgba(0, 0, 0, 0.05);
+      border-radius: 12px;
+      padding: 25px;
+      margin-top: 20px;
+    }
+    
+    .quiz-start {
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .quiz-start h3 {
+      margin-bottom: 15px;
+      color: var(--accent-color);
+      font-size: 1.5rem;
+    }
+    
+    .quiz-questions {
+      padding: 20px 0;
+    }
+    
+    .quiz-progress {
+      margin-bottom: 30px;
+    }
+    
+    .progress-text {
+      text-align: center;
+      margin-bottom: 10px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    
+    .progress-bar {
+      height: 8px;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    #progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      width: 20%;
+      transition: width 0.4s ease;
+      border-radius: 4px;
+    }
+    
+    .question {
+      margin-bottom: 30px;
+    }
+    
+    .question h3 {
+      margin-bottom: 20px;
+      color: var(--text-primary);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 15px;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    
+    .option:hover {
+      background-color: rgba(0, 0, 0, 0.15);
+      transform: translateY(-2px);
+    }
+    
+    .option input {
+      margin-top: 3px;
+    }
+    
+    .option label {
+      cursor: pointer;
+      flex: 1;
+    }
+    
+    .quiz-buttons {
+      display: flex;
+      justify-content: center;
+      margin-top: 30px;
+    }
+    
+    .quiz-results {
+      text-align: center;
+      padding: 30px 0;
+    }
+    
+    .results-icon {
+      font-size: 3rem;
+      color: var(--accent-color);
+      margin-bottom: 20px;
+    }
+    
+    .score-container {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 20px 0;
+      color: var(--text-primary);
+    }
+    
+    .score-feedback {
+      margin-bottom: 30px;
+      color: var(--text-secondary);
+    }
+    
+    .results-actions {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .answers-review {
+      padding: 20px 0;
+    }
+    
+    .review-question {
+      background-color: rgba(0, 0, 0, 0.05);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border-left: 4px solid var(--border-color);
+    }
+    
+    .review-question.correct {
+      border-left-color: #4caf50;
+    }
+    
+    .review-question.incorrect {
+      border-left-color: #f44336;
+    }
+    
+    .review-question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .review-status {
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .review-question.correct .review-status {
+      color: #4caf50;
+    }
+    
+    .review-question.incorrect .review-status {
+      color: #f44336;
+    }
+    
+    .review-options {
+      margin: 15px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .review-option {
+      padding: 10px 15px;
+      background-color: rgba(0, 0, 0, 0.05);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .review-option.correct-answer {
+      background-color: rgba(76, 175, 80, 0.1);
+      border-left: 3px solid #4caf50;
+    }
+    
+    .review-option.wrong-answer {
+      background-color: rgba(244, 67, 54, 0.1);
+      border-left: 3px solid #f44336;
+    }
+    
+    .explanation {
+      background-color: rgba(61, 133, 198, 0.05);
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 15px;
+      color: var(--text-secondary);
+      border-left: 3px solid var(--primary-color);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    
+    .explanation i {
+      color: var(--primary-color);
+      margin-top: 3px;
+    }
+    
+    /* Phishing Simulator Styles */
+    .simulator-container {
+      margin: 25px 0;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    .simulator-tabs {
+      display: flex;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .simulator-tab {
+      padding: 15px 20px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-primary);
+      font-weight: 500;
+      transition: all 0.3s;
+      position: relative;
+    }
+    
+    .simulator-tab:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    .simulator-tab.active {
+      color: var(--primary-color);
+      background-color: rgba(61, 133, 198, 0.05);
+    }
+    
+    .simulator-tab.active:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      width: 100%;
+      background-color: var(--primary-color);
+    }
+    
+    .simulator-content {
+      display: none;
+      padding: 25px;
+    }
+    
+    .simulator-content.active {
+      display: block;
+      animation: fadeIn 0.5s;
+    }
+    
+    /* Email Simulator Styles */
+    .email-viewer {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      background-color: #f8f8f8;
+      color: #333;
+    }
+    
+    .email-header {
+      background-color: #f0f0f0;
+      padding: 15px;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .email-field {
+      margin-bottom: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .email-field:last-child {
+      margin-bottom: 0;
+    }
+    
+    .email-label {
+      font-weight: bold;
+      width: 60px;
+    }
+    
+    .email-value {
+      flex: 1;
+    }
+    
+    .email-body {
+      padding: 20px;
+      line-height: 1.6;
+      color: #333;
+    }
+    
+    /* Website Simulator Styles */
+    .website-viewer {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    
+    .browser-chrome {
+      background-color: #f0f0f0;
+      padding: 10px 15px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .browser-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .browser-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #ccc;
+    }
+    
+    .browser-address {
+      flex: 1;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      color: #333;
+    }
+    
+    .browser-address i {
+      color: #4CAF50;
+    }
+    
+    .website-content {
+      background-color: white;
+      padding: 20px;
+      color: #333;
+      min-height: 350px;
+    }
+    
+    .fake-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 30px;
+    }
+    
+    .fake-nav {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .nav-item {
+      font-weight: 500;
+      cursor: pointer;
+      color: #333;
+    }
+    
+    .fake-login {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .fake-login h3 {
+      margin-bottom: 20px;
+      text-align: center;
+      color: #333;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #555;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    
+    .fake-button {
+      width: 100%;
+      padding: 12px;
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    
+    .fake-links {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      font-size: 0.9rem;
+    }
+    
+    .fake-links a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+    
+    /* Simulator Controls */
+    .simulator-controls {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .sim-highlight-btn {
+      display: inline-block;
+      max-width: fit-content;
+    }
+    
+    .sim-highlight-btn.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .sim-legend {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-top: 5px;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    
+    .legend-marker {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: rgba(244, 67, 54, 0.8);
+    }
+    
+    /* Highlighting */
+    .suspicious {
+      position: relative;
+    }
+    
+    .suspicious.highlighted {
+      background-color: rgba(244, 67, 54, 0.1);
+      border-radius: 2px;
+      padding: 2px;
+    }
+    
+    .suspicious-link {
+      color: #0066cc;
+    }
+    
+    .suspicious-link.highlighted {
+      background-color: rgba(244, 67, 54, 0.1);
+      border-radius: 2px;
+      padding: 2px;
+    }
+    
+    .subtle-fake {
+      color: #cc0000;
+    }
+    
+    .suspicious i {
+      color: #f44336;
+      margin-left: 5px;
+      font-size: 0.85em;
+    }
+    
+    /* Tooltip */
+    .sim-tooltip {
+      position: fixed;
+      background-color: #333;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      max-width: 300px;
+      z-index: 1000;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+      font-size: 0.9rem;
+    }
+    
+    .sim-tooltip:after {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: 15px;
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 5px solid #333;
+    }
+    
+    /* Security Checklist Styles */
+    .checklist-container {
+      margin-top: 25px;
+    }
+    
+    .checklist-item {
+      margin-bottom: 15px;
+      padding: 15px;
+      background-color: rgba(0, 0, 0, 0.05);
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+    
+    .checklist-item.completed {
+      border-left: 4px solid #4caf50;
+    }
+    
+    .checklist-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .checklist-checkbox {
+      margin-right: 10px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    
+    .checklist-label {
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    .checklist-label:after {
+      content: '\f078';
+      font-family: 'Font Awesome 5 Free';
+      font-weight: 900;
+      margin-left: 10px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      transition: transform 0.3s;
+    }
+    
+    .checklist-item.expanded .checklist-label:after {
+      transform: rotate(180deg);
+    }
+    
+    .checklist-details {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px dashed var(--border-color);
+      color: var(--text-secondary);
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    
+    .checklist-progress {
+      margin-top: 30px;
+      background-color: rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      border-radius: 10px;
+    }
+    
+    .progress-label {
+      margin-bottom: 10px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    
+    .progress-percentage {
+      text-align: center;
+      margin-top: 8px;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+    
+    .learn-more-link {
+      display: inline-block;
+      margin-top: 10px;
+      color: var(--primary-color);
+      font-weight: 500;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    
+    .learn-more-link:hover {
+      text-decoration: underline;
+    }
+    
+    /* Common Button Styles for Interactive Elements */
+    .btn-primary {
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    }
+    
+    .btn-secondary {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+    }
+    
+    .btn-secondary:hover {
+      background-color: rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+    
+    .btn-secondary:disabled,
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Simulator Mode Selection */
+    .simulator-mode-selector {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    
+    .mode-btn {
+      padding: 10px 20px;
+      background-color: rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+    
+    .mode-btn.active {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .simulator-mode {
+      display: none;
+    }
+    
+    .simulator-mode.active {
+      display: block;
+    }
+    
+    /* SMS Phishing Styles */
+    .sms-viewer {
+      max-width: 350px;
+      margin: 0 auto;
+      border: 1px solid var(--border-color);
+      border-radius: 15px;
+      overflow: hidden;
+      background-color: #f8f8f8;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .sms-header {
+      background-color: #e0e0e0;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+    
+    .sms-from {
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .sms-time {
+      color: #777;
+    }
+    
+    .sms-body {
+      padding: 15px;
+      background-color: #f8f8f8;
+      min-height: 200px;
+    }
+    
+    .sms-bubble {
+      background-color: #e1ffc7; /* WhatsApp-like green */
+      padding: 12px;
+      border-radius: 8px;
+      max-width: 90%;
+      margin-left: auto;
+      position: relative;
+    }
+    
+    .sms-bubble:after {
+      content: "";
+      position: absolute;
+      right: -8px;
+      bottom: 0;
+      width: 0;
+      height: 0;
+      border: 8px solid transparent;
+      border-left-color: #e1ffc7;
+      border-right: 0;
+      border-bottom: 0;
+    }
+    
+    .sms-bubble p {
+      margin: 8px 0;
+      color: #333;
+      line-height: 1.4;
+    }
+    
+    .sms-bubble a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+    
+    /* Social Media Phishing Styles */
+    .social-media-viewer {
+      max-width: 500px;
+      margin: 0 auto;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      background-color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .social-header {
+      padding: 12px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .social-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .profile-pic {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+      font-size: 22px;
+    }
+    
+    .profile-info {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .profile-name {
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .profile-handle {
+      font-size: 0.8rem;
+      color: #777;
+    }
+    
+    .social-app {
+      font-size: 0.8rem;
+      color: #777;
+      font-weight: 500;
+    }
+    
+    .social-content {
+      padding: 15px;
+      color: #333;
+    }
+    
+    .social-attachment {
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    
+    .social-attachment i {
+      color: #777;
+      font-size: 18px;
+    }
+    
+    .social-actions {
+      margin-top: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .social-actions button {
+      background-color: #3d85c6;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    
+    .social-time {
+      color: #777;
+      font-size: 0.8rem;
+    }
+    
+    /* Statistics Panel */
+    .sim-stats-panel {
+      margin-top: 25px;
+      padding: 15px;
+      background-color: rgba(0, 0, 0, 0.05);
+      border-radius: 8px;
+      border-left: 3px solid var(--primary-color);
+    }
+    
+    .sim-stats-panel h4 {
+      margin-top: 0;
+      color: var(--primary-color);
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+    
+    .sim-prevention-tips {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px dashed var(--border-color);
+    }
+    
+    .sim-prevention-tips ul {
+      padding-left: 20px;
+      margin-top: 10px;
+    }
+    
+    .sim-prevention-tips li {
+      margin-bottom: 5px;
+      color: var(--text-secondary);
+    }
+    
+    /* Game Mode Styles */
+    .game-container {
+      background-color: rgba(0, 0, 0, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .game-stats {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .game-score, .game-timer {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .game-timer {
+      color: var(--accent-color);
+    }
+    
+    .game-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .difficulty-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .difficulty-selector select {
+      background-color: var(--card-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      padding: 6px 10px;
+      border-radius: 4px;
+    }
+    
+    .game-intro {
+      text-align: center;
+      padding: 30px;
+    }
+    
+    .game-intro h3 {
+      color: var(--accent-color);
+      margin-bottom: 20px;
+      font-size: 1.6rem;
+    }
+    
+    .game-levels {
+      display: flex;
+      justify-content: space-around;
+      gap: 20px;
+      margin: 30px 0;
+    }
+    
+    .game-level {
+      background-color: rgba(0, 0, 0, 0.05);
+      padding: 15px;
+      border-radius: 8px;
+      flex: 1;
+      text-align: left;
+    }
+    
+    .game-level h4 {
+      margin-top: 0;
+      color: var(--primary-color);
+    }
+    
+    .game-area {
+      min-height: 400px;
+      background-color: rgba(0, 0, 0, 0.02);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      padding: 20px;
+      position: relative;
+    }
+    
+    .game-results {
+      text-align: center;
+      padding: 30px;
+    }
+    
+    .game-results h3 {
+      color: var(--accent-color);
+      margin-bottom: 15px;
+      font-size: 1.6rem;
+    }
+    
+    .final-score {
+      font-size: 2rem;
+      color: var(--primary-color);
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    
+    .results-stats {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    
+    .results-feedback {
+      background-color: rgba(0, 0, 0, 0.05);
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    
+    .results-actions {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 25px;
+    }
+    
+    /* Highlight Animation */
+    @keyframes pulseHighlight {
+      0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(244, 67, 54, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+    }
+    
+    .found-element {
+      animation: pulseHighlight 1s;
+      background-color: rgba(244, 67, 54, 0.2) !important;
+      border-radius: 4px;
+      position: relative;
+    }
+    
+    .found-element:after {
+      content: '✓';
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      background: #4caf50;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body class="dark-theme">
@@ -432,14 +1517,332 @@
       </div>
     </div>
     
-    <!-- Quiz Section -->
-    <div class="quiz-section">
-      <h3><i class="fas fa-question-circle"></i> Test Your Knowledge</h3>
-      <p>Want to test how well you can identify phishing attempts? Take our interactive quiz!</p>
-      <div style="text-align: center; margin-top: 20px;">
-        <a href="#" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
-          <i class="fas fa-play"></i> Start Quiz
-        </a>
+    <!-- Interactive Quiz Section - Enhanced -->
+    <div class="education-card">
+      <div class="topic-header">
+        <i class="fas fa-question-circle"></i>
+        <h2>Test Your Knowledge</h2>
+      </div>
+      <div class="topic-content">
+        <p class="topic-description">
+          See how well you can identify phishing attempts. Complete this interactive quiz to test your knowledge.
+        </p>
+        
+        <div id="quiz-container" class="quiz-container">
+          <div id="quiz-start" class="quiz-start">
+            <h3>Phishing Knowledge Quiz</h3>
+            <p>This quiz contains 5 questions to test your understanding of phishing techniques and prevention.</p>
+            <button id="start-quiz-btn" class="btn-primary">
+              <i class="fas fa-play"></i> Start Quiz
+            </button>
+          </div>
+          
+          <div id="quiz-questions" class="quiz-questions" style="display: none;">
+            <div id="quiz-progress">
+              <div class="progress-text">Question <span id="current-question">1</span> of <span id="total-questions">5</span></div>
+              <div class="progress-bar">
+                <div id="progress-fill"></div>
+              </div>
+            </div>
+            
+            <div id="question-container" class="question-container">
+              <!-- Questions will be loaded dynamically -->
+            </div>
+            
+            <div class="quiz-buttons">
+              <button id="next-question" class="btn-primary">
+                Next <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div id="quiz-results" class="quiz-results" style="display: none;">
+            <div class="results-icon">
+              <i class="fas fa-award"></i>
+            </div>
+            <h3>Your Results</h3>
+            <div class="score-container">
+              You scored <span id="quiz-score">0</span> out of <span id="quiz-total">5</span>
+            </div>
+            <div id="score-feedback" class="score-feedback"></div>
+            <div class="results-actions">
+              <button id="retry-quiz" class="btn-secondary">
+                <i class="fas fa-redo"></i> Retry Quiz
+              </button>
+              <button id="view-answers" class="btn-secondary">
+                <i class="fas fa-eye"></i> Review Answers
+              </button>
+            </div>
+          </div>
+          
+          <div id="answers-review" class="answers-review" style="display: none;">
+            <h3>Review Your Answers</h3>
+            <div id="review-container"></div>
+            <button id="back-to-results" class="btn-secondary">
+              <i class="fas fa-arrow-left"></i> Back to Results
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Interactive Phishing Simulator Section -->
+    <div class="education-card">
+      <div class="topic-header">
+        <i class="fas fa-laptop-code"></i>
+        <h2>Phishing Simulator</h2>
+      </div>
+      <div class="topic-content">
+        <p class="topic-description">
+          This interactive simulator shows how phishing attacks actually work. Learn to identify subtle clues that can help you detect fraudulent messages and websites.
+        </p>
+        
+        <!-- Simulator game mode selection -->
+        <div class="simulator-mode-selector">
+          <button class="mode-btn active" data-mode="learn">
+            <i class="fas fa-book"></i> Learn Mode
+          </button>
+        </div>
+        
+        <!-- Learn Mode -->
+        <div id="learn-mode" class="simulator-mode active">
+          <div class="simulator-container">
+            <div class="simulator-tabs">
+              <button class="simulator-tab active" data-target="email-sim">Email Phishing</button>
+              <button class="simulator-tab" data-target="website-sim">Fake Website</button>
+              <button class="simulator-tab" data-target="sms-sim">SMS Phishing</button>
+              <button class="simulator-tab" data-target="social-sim">Social Media</button>
+            </div>
+            
+            <!-- Email phishing simulator (existing, with enhancements) -->
+            <div id="email-sim" class="simulator-content active">
+              <div class="email-viewer">
+                <div class="email-header">
+                  <div class="email-field">
+                    <span class="email-label">From:</span>
+                    <span class="email-value suspicious" data-tip="This email address doesn't match the real company domain">security-alert@bankk0famerica.com <i class="fas fa-exclamation-circle"></i></span>
+                  </div>
+                  <div class="email-field">
+                    <span class="email-label">To:</span>
+                    <span class="email-value">you@example.com</span>
+                  </div>
+                  <div class="email-field">
+                    <span class="email-label">Subject:</span>
+                    <span class="email-value suspicious" data-tip="Urgency is a common phishing tactic">URGENT: Your account has been compromised <i class="fas fa-exclamation-circle"></i></span>
+                  </div>
+                  <div class="email-field">
+                    <span class="email-label">Date:</span>
+                    <span class="email-value">Today, 10:24 AM</span>
+                  </div>
+                </div>
+                <div class="email-body">
+                  <p>Dear Valued Customer,</p>
+                  <p>We have detected <span class="suspicious" data-tip="Creating urgency to make you act without thinking">unusual activity on your account</span>. Your account has been temporarily limited.</p>
+                  <p>To restore your account access, please verify your information immediately by clicking the link below:</p>
+                  <p><a href="#" class="suspicious-link" data-tip="Hovering over links shows they lead to suspicious websites">https://security<span class="subtle-fake">.bankk0famerica</span>.com/verify</a></p>
+                  <p>If you don't verify within <span class="suspicious" data-tip="Creating a false deadline to pressure you">24 hours</span>, your account will be <span class="suspicious" data-tip="Using threats to make you act quickly">permanently suspended</span>.</p>
+                  <p>Thank you,<br>
+                  Bank Security Team</p>
+                </div>
+              </div>
+              <div class="simulator-controls">
+                <button class="sim-highlight-btn btn-secondary">
+                  <i class="fas fa-search"></i> Highlight Suspicious Elements
+                </button>
+                <div class="sim-legend" style="display: none;">
+                  <div class="legend-item">
+                    <span class="legend-marker"></span>
+                    <span class="legend-text">Suspicious elements</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Add statistics panel -->
+              <div class="sim-stats-panel">
+                <h4>Did you know?</h4>
+                <p>91% of successful cyberattacks begin with a phishing email. Most of these attacks use urgency and fear tactics to make recipients act without thinking.</p>
+                <div class="sim-prevention-tips">
+                  <h4>How to protect yourself:</h4>
+                  <ul>
+                    <li>Check the sender's full email address, not just the display name</li>
+                    <li>Hover over links to see where they actually lead before clicking</li>
+                    <li>Be suspicious of urgent requests for personal information</li>
+                    <li>Contact the company directly using their official phone number or website if you're unsure</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Website phishing simulator (existing) -->
+            <div id="website-sim" class="simulator-content">
+              <div class="website-viewer">
+                <div class="browser-chrome">
+                  <div class="browser-actions">
+                    <span class="browser-dot"></span>
+                    <span class="browser-dot"></span>
+                    <span class="browser-dot"></span>
+                  </div>
+                  <div class="browser-address">
+                    <i class="fas fa-lock suspicious" data-tip="The lock icon can be faked - always check the full URL"></i>
+                    <span class="browser-url suspicious" data-tip="Note the misspelling in the domain name">https://www.bankk0famerica.com/login</span>
+                  </div>
+                </div>
+                <div class="website-content">
+                  <div class="fake-header">
+                    <img src="https://via.placeholder.com/150x50?text=Bank+Logo" alt="Bank Logo" class="fake-logo">
+                    <div class="fake-nav">
+                      <div class="nav-item">Personal</div>
+                      <div class="nav-item">Business</div>
+                      <div class="nav-item">Wealth Management</div>
+                      <div class="nav-item">About Us</div>
+                    </div>
+                  </div>
+                  <div class="fake-login">
+                    <h3>Sign In to Online Banking</h3>
+                    <div class="form-group suspicious" data-tip="Phishing sites often request more information than necessary">
+                      <label>Full Name</label>
+                      <input type="text" placeholder="Enter your full name">
+                    </div>
+                    <div class="form-group">
+                      <label>User ID</label>
+                      <input type="text" placeholder="Enter your User ID">
+                    </div>
+                    <div class="form-group">
+                      <label>Password</label>
+                      <input type="password" placeholder="Enter your password">
+                    </div>
+                    <div class="form-group suspicious" data-tip="Asking for a full card number is suspicious">
+                      <label>16-digit Card Number</label>
+                      <input type="text" placeholder="XXXX-XXXX-XXXX-XXXX">
+                    </div>
+                    <button class="fake-button">Sign In</button>
+                    <div class="fake-links">
+                      <a href="#">Forgot User ID?</a>
+                      <a href="#">Forgot Password?</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="simulator-controls">
+                <button class="sim-highlight-btn btn-secondary">
+                  <i class="fas fa-search"></i> Highlight Suspicious Elements
+                </button>
+                <div class="sim-legend" style="display: none;">
+                  <div class="legend-item">
+                    <span class="legend-marker"></span>
+                    <span class="legend-text">Suspicious elements</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Add statistics panel -->
+              <div class="sim-stats-panel">
+                <h4>Did you know?</h4>
+                <p>Phishing websites often have URLs that closely mimic legitimate sites, with subtle misspellings or extra characters. Over 1.5 million new phishing sites are created each month.</p>
+                <div class="sim-prevention-tips">
+                  <h4>How to protect yourself:</h4>
+                  <ul>
+                    <li>Always check the URL in your browser's address bar</li>
+                    <li>Look for HTTPS, but remember it only means the connection is secure, not that the site is legitimate</li>
+                    <li>Be wary of sites asking for more information than necessary</li>
+                    <li>Use bookmarks for important financial websites instead of clicking links</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <!-- NEW: SMS Phishing Simulator -->
+            <div id="sms-sim" class="simulator-content">
+              <div class="sms-viewer">
+                <div class="sms-header">
+                  <span class="sms-from suspicious" data-tip="Unknown number claiming to be your bank">+1 (249) 876-5432</span>
+                  <span class="sms-time">Today, 2:14 PM</span>
+                </div>
+                <div class="sms-body">
+                  <div class="sms-bubble">
+                    <p><span class="suspicious" data-tip="Creating a sense of urgency">URGENT:</span> Your account has been <span class="suspicious" data-tip="Fear tactics to make you act quickly">temporarily suspended</span> due to suspicious activity. Verify your identity: <a href="#" class="suspicious-link" data-tip="Short links hide the actual destination">https://bit.ly/3xR92pL</a></p>
+                    <p>- <span class="suspicious" data-tip="Vague sender identification">YourBank Security Team</span></p>
+                  </div>
+                </div>
+              </div>
+              <div class="simulator-controls">
+                <button class="sim-highlight-btn btn-secondary">
+                  <i class="fas fa-search"></i> Highlight Suspicious Elements
+                </button>
+                <div class="sim-legend" style="display: none;">
+                  <div class="legend-item">
+                    <span class="legend-marker"></span>
+                    <span class="legend-text">Suspicious elements</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Add statistics panel -->
+              <div class="sim-stats-panel">
+                <h4>Did you know?</h4>
+                <p>"Smishing" (SMS phishing) attacks increased by 328% in 2022. Phone users are three times more likely to fall for phishing scams on mobile devices than on desktop.</p>
+                <div class="sim-prevention-tips">
+                  <h4>How to protect yourself:</h4>
+                  <ul>
+                    <li>Never click on links in text messages from unknown numbers</li>
+                    <li>Banks rarely send SMS messages with links</li>
+                    <li>Call your bank directly using the number on your card if you're concerned</li>
+                    <li>Report suspicious text messages to your mobile carrier</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <!-- NEW: Social Media Phishing Simulator -->
+            <div id="social-sim" class="simulator-content">
+              <div class="social-media-viewer">
+                <div class="social-header">
+                  <div class="social-profile">
+                    <div class="profile-pic"><i class="fas fa-user-circle"></i></div>
+                    <div class="profile-info">
+                      <span class="profile-name suspicious" data-tip="Similar but not identical to a friend's name">Mikayla Johnson</span>
+                      <span class="profile-handle suspicious" data-tip="New account with very few posts">@mikaylia_j92 · New account</span>
+                    </div>
+                  </div>
+                  <div class="social-app">SocialConnect</div>
+                </div>
+                <div class="social-content">
+                  <p>Hey! <span class="suspicious" data-tip="Overly familiar tone from a stranger">Did you see this photo of you</span> from last weekend? 😲 Can't believe someone posted this!</p>
+                  <div class="social-attachment suspicious" data-tip="Disguised malicious link that could download malware">
+                    <i class="far fa-image"></i>
+                    <span>photo_event_293.jpg.exe</span>
+                  </div>
+                  <div class="social-actions">
+                    <button class="suspicious" data-tip="Clicking would download malware">View Photo</button>
+                    <span class="social-time">2h ago</span>
+                  </div>
+                </div>
+              </div>
+              <div class="simulator-controls">
+                <button class="sim-highlight-btn btn-secondary">
+                  <i class="fas fa-search"></i> Highlight Suspicious Elements
+                </button>
+                <div class="sim-legend" style="display: none;">
+                  <div class="legend-item">
+                    <span class="legend-marker"></span>
+                    <span class="legend-text">Suspicious elements</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Add statistics panel -->
+              <div class="sim-stats-panel">
+                <h4>Did you know?</h4>
+                <p>Social media phishing attacks have increased by 500% in recent years. Attackers often impersonate friends or create fake profiles of celebrities to trick users.</p>
+                <div class="sim-prevention-tips">
+                  <h4>How to protect yourself:</h4>
+                  <ul>
+                    <li>Verify the identity of contacts through another channel if they send suspicious links</li>
+                    <li>Be suspicious of new accounts or requests from people you're already friends with</li>
+                    <li>Never download attachments from social media messages</li>
+                    <li>Check the file extension - legitimate images won't end in .exe, .bat, or other executable formats</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -452,7 +1855,380 @@
         window.location.href = 'login.html';
         return;
       }
+      
+      // Mark education completion
+      localStorage.setItem('completed_education', 'true');
+      
+      // Quiz functionality
+      initQuiz();
+      
+      // Initialize simulator modes and functionality
+      initSimulatorModes();
+      initSimulator();
     });
+    
+    // Simulator mode switching
+    function initSimulatorModes() {
+      const modeBtns = document.querySelectorAll('.mode-btn');
+      const simulatorModes = document.querySelectorAll('.simulator-mode');
+      
+      modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          // Update active button
+          modeBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          // Show selected mode
+          const targetMode = btn.dataset.mode;
+          simulatorModes.forEach(mode => {
+            mode.classList.remove('active');
+            if (mode.id === `${targetMode}-mode`) {
+              mode.classList.add('active');
+            }
+          });
+        });
+      });
+    }
+    
+    // Enhanced simulator functionality
+    function initSimulator() {
+      // Tab functionality
+      const simulatorTabs = document.querySelectorAll('.simulator-tab');
+      const simulatorContents = document.querySelectorAll('.simulator-content');
+      
+      simulatorTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Remove active class from all tabs
+          simulatorTabs.forEach(t => t.classList.remove('active'));
+          // Add active class to clicked tab
+          tab.classList.add('active');
+          
+          // Hide all content panels
+          simulatorContents.forEach(content => {
+            content.classList.remove('active');
+          });
+          
+          // Show the selected content panel
+          const targetId = tab.dataset.target;
+          document.getElementById(targetId).classList.add('active');
+        });
+      });
+      
+      // Highlight functionality
+      const highlightBtns = document.querySelectorAll('.sim-highlight-btn');
+      
+      highlightBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+          const simContainer = this.closest('.simulator-content');
+          const suspiciousElements = simContainer.querySelectorAll('.suspicious, .suspicious-link');
+          const legend = this.nextElementSibling;
+          
+          if (this.classList.contains('active')) {
+            // Disable highlighting
+            this.classList.remove('active');
+            this.innerHTML = '<i class="fas fa-search"></i> Highlight Suspicious Elements';
+            suspiciousElements.forEach(el => {
+              el.classList.remove('highlighted');
+            });
+            legend.style.display = 'none';
+          } else {
+            // Enable highlighting
+            this.classList.add('active');
+            this.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Highlights';
+            suspiciousElements.forEach(el => {
+              el.classList.add('highlighted');
+            });
+            legend.style.display = 'flex';
+          }
+        });
+      });
+      
+      // Tooltip functionality
+      document.addEventListener('mouseover', function(e) {
+        if (e.target.classList.contains('suspicious') || e.target.classList.contains('suspicious-link')) {
+          const tip = e.target.dataset.tip;
+          if (!tip) return;
+          
+          // Remove any existing tooltips first
+          const existingTooltips = document.querySelectorAll('.sim-tooltip');
+          existingTooltips.forEach(tooltip => tooltip.remove());
+          
+          const tooltip = document.createElement('div');
+          tooltip.className = 'sim-tooltip';
+          tooltip.textContent = tip;
+          
+          // Position tooltip
+          const rect = e.target.getBoundingClientRect();
+          tooltip.style.left = rect.left + 'px';
+          tooltip.style.top = (rect.bottom + 10) + 'px';
+          
+          document.body.appendChild(tooltip);
+          
+          // Ensure tooltip stays within viewport
+          const tooltipRect = tooltip.getBoundingClientRect();
+          if (tooltipRect.right > window.innerWidth) {
+            tooltip.style.left = (window.innerWidth - tooltipRect.width - 10) + 'px';
+          }
+          
+          const removeTooltip = function() {
+            tooltip.remove();
+            e.target.removeEventListener('mouseleave', removeTooltip);
+          };
+          
+          e.target.addEventListener('mouseleave', removeTooltip);
+        }
+      });
+    }
+    
+    // Quiz functionality
+    function initQuiz() {
+      const quizData = [
+        {
+          question: "Which of these is a common sign of a phishing email?",
+          options: [
+            "The email comes from someone in your contact list",
+            "The email creates a sense of urgency or threat",
+            "The email has the company's correct logo",
+            "The email has perfect grammar and spelling"
+          ],
+          correct: 1,
+          explanation: "Phishing emails often try to create urgency to make you act without thinking. They might claim your account will be closed or that there's a security problem requiring immediate action."
+        },
+        {
+          question: "What should you check before clicking a link in an email?",
+          options: [
+            "Whether the email includes images",
+            "The actual URL destination by hovering over the link",
+            "The color of the link",
+            "The font used in the email"
+          ],
+          correct: 1,
+          explanation: "Always hover over links to see the actual URL destination before clicking. Phishing emails often disguise malicious URLs behind text that looks legitimate."
+        },
+        {
+          question: "What does 'https://' at the beginning of a URL indicate?",
+          options: [
+            "The site is a government website",
+            "The site is popular",
+            "The connection to the site is encrypted",
+            "The site was created recently"
+          ],
+          correct: 2,
+          explanation: "HTTPS indicates that your connection to the website is encrypted, protecting data you send or receive. However, remember that phishing sites can also use HTTPS, so this alone doesn't guarantee legitimacy."
+        },
+        {
+          question: "Which of these practices helps protect against phishing?",
+          options: [
+            "Opening all email attachments to check them",
+            "Clicking links to verify they work",
+            "Using the same password across multiple sites",
+            "Enabling two-factor authentication"
+          ],
+          correct: 3,
+          explanation: "Two-factor authentication adds an extra layer of security. Even if phishers obtain your password, they still need the second factor (typically a code sent to your phone) to access your account."
+        },
+        {
+          question: "What type of information should you never provide in response to an email?",
+          options: [
+            "Your name",
+            "Your favorite color",
+            "Your password or PIN",
+            "Your email address"
+          ],
+          correct: 2,
+          explanation: "Never share passwords, PINs, or complete Social Security Numbers via email. Legitimate companies will never ask for this information through email."
+        }
+      ];
+      
+      const startBtn = document.getElementById('start-quiz-btn');
+      const quizStart = document.getElementById('quiz-start');
+      const quizQuestions = document.getElementById('quiz-questions');
+      const questionContainer = document.getElementById('question-container');
+      const nextButton = document.getElementById('next-question');
+      const quizResults = document.getElementById('quiz-results');
+      const currentQuestionElem = document.getElementById('current-question');
+      const totalQuestionsElem = document.getElementById('total-questions');
+      const progressFill = document.getElementById('progress-fill');
+      const quizScore = document.getElementById('quiz-score');
+      const quizTotal = document.getElementById('quiz-total');
+      const scoreFeedback = document.getElementById('score-feedback');
+      const retryQuiz = document.getElementById('retry-quiz');
+      const viewAnswers = document.getElementById('view-answers');
+      const answersReview = document.getElementById('answers-review');
+      const reviewContainer = document.getElementById('review-container');
+      const backToResults = document.getElementById('back-to-results');
+      
+      let currentQuestion = 0;
+      let score = 0;
+      let userAnswers = [];
+      
+      // Set total questions
+      totalQuestionsElem.textContent = quizData.length;
+      quizTotal.textContent = quizData.length;
+      
+      // Start Quiz button
+      startBtn.addEventListener('click', () => {
+        quizStart.style.display = 'none';
+        quizQuestions.style.display = 'block';
+        loadQuestion(0);
+      });
+      
+      // Load question function
+      function loadQuestion(questionIndex) {
+        const question = quizData[questionIndex];
+        currentQuestionElem.textContent = questionIndex + 1;
+        progressFill.style.width = `${((questionIndex + 1) / quizData.length) * 100}%`;
+        
+        let questionHTML = `
+          <div class="question">
+            <h3>${questionIndex + 1}. ${question.question}</h3>
+            <div class="options">
+        `;
+        
+        question.options.forEach((option, index) => {
+          questionHTML += `
+            <div class="option">
+              <input type="radio" id="option${index}" name="answer" value="${index}" ${userAnswers[questionIndex] === index ? 'checked' : ''}>
+              <label for="option${index}">${option}</label>
+            </div>
+          `;
+        });
+        
+        questionHTML += `</div></div>`;
+        questionContainer.innerHTML = questionHTML;
+        
+        // Disable next button if no answer is selected
+        if (userAnswers[questionIndex] === undefined) {
+          nextButton.disabled = true;
+        } else {
+          nextButton.disabled = false;
+        }
+        
+        // Enable next button when option is selected
+        const options = document.querySelectorAll('input[name="answer"]');
+        options.forEach(option => {
+          option.addEventListener('change', () => {
+            nextButton.disabled = false;
+          });
+        });
+      }
+      
+      // Next button handling
+      nextButton.addEventListener('click', () => {
+        const selectedOption = document.querySelector('input[name="answer"]:checked');
+        
+        if (!selectedOption) return;
+        
+        userAnswers[currentQuestion] = parseInt(selectedOption.value);
+        
+        if (parseInt(selectedOption.value) === quizData[currentQuestion].correct) {
+          score++;
+        }
+        
+        currentQuestion++;
+        
+        if (currentQuestion < quizData.length) {
+          loadQuestion(currentQuestion);
+        } else {
+          showResults();
+        }
+      });
+      
+      // Show results function
+      function showResults() {
+        quizQuestions.style.display = 'none';
+        quizResults.style.display = 'block';
+        
+        quizScore.textContent = score;
+        
+        // Feedback based on score
+        const percentage = (score / quizData.length) * 100;
+        let feedbackMessage;
+        
+        if (percentage >= 80) {
+          feedbackMessage = 'Excellent! You have a strong understanding of phishing prevention.';
+        } else if (percentage >= 60) {
+          feedbackMessage = 'Good job! You know the basics but could benefit from reviewing some concepts.';
+        } else {
+          feedbackMessage = 'You should review the material to better protect yourself from phishing attacks.';
+        }
+        
+        scoreFeedback.textContent = feedbackMessage;
+      }
+      
+      // Retry quiz button
+      retryQuiz.addEventListener('click', () => {
+        currentQuestion = 0;
+        score = 0;
+        userAnswers = [];
+        quizResults.style.display = 'none';
+        answersReview.style.display = 'none';
+        quizQuestions.style.display = 'block';
+        loadQuestion(0);
+      });
+      
+      // View answers button
+      viewAnswers.addEventListener('click', () => {
+        quizResults.style.display = 'none';
+        answersReview.style.display = 'block';
+        
+        let reviewHTML = '';
+        
+        quizData.forEach((question, index) => {
+          const userAnswer = userAnswers[index];
+          const isCorrect = userAnswer === question.correct;
+          
+          reviewHTML += `
+            <div class="review-question ${isCorrect ? 'correct' : 'incorrect'}">
+              <div class="review-question-header">
+                <h4>Question ${index + 1}:</h4>
+                <span class="review-status">
+                  ${isCorrect ? 
+                    '<i class="fas fa-check-circle"></i> Correct' : 
+                    '<i class="fas fa-times-circle"></i> Incorrect'
+                  }
+                </span>
+              </div>
+              <p>${question.question}</p>
+              <div class="review-options">
+          `;
+          
+          question.options.forEach((option, optIndex) => {
+            const isUserAnswer = userAnswer === optIndex;
+            const isCorrectAnswer = question.correct === optIndex;
+            
+            let optionClass = '';
+            if (isUserAnswer && isCorrectAnswer) optionClass = 'correct-answer';
+            else if (isUserAnswer) optionClass = 'wrong-answer';
+            else if (isCorrectAnswer) optionClass = 'correct-answer';
+            
+            reviewHTML += `
+              <div class="review-option ${optionClass}">
+                ${isUserAnswer ? '<i class="fas fa-user"></i> ' : ''}
+                ${isCorrectAnswer ? '<i class="fas fa-check"></i> ' : ''}
+                ${option}
+              </div>
+            `;
+          });
+          
+          reviewHTML += `
+              </div>
+              <div class="explanation">
+                <i class="fas fa-info-circle"></i> ${question.explanation}
+              </div>
+            </div>
+          `;
+        });
+        
+        reviewContainer.innerHTML = reviewHTML;
+      });
+      
+      // Back to results button
+      backToResults.addEventListener('click', () => {
+        answersReview.style.display = 'none';
+        quizResults.style.display = 'block';
+      });
+    }
   </script>
   
   <!-- Footer Section -->
@@ -511,4 +2287,5 @@
   </footer>
 </body>
 </html>
+``` 
 
