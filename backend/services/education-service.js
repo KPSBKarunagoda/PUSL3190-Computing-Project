@@ -62,13 +62,7 @@ class EducationService {
       'qty_ip_resolved': 'dns_resolution'
     };
   }
-  
-  /**
-   * Generate key findings based on analysis result
-   * @param {Object} analysisResult - The analysis result containing features
-   * @param {string} url - The URL that was analyzed
-   * @returns {Array} Array of findings objects with text, description, and severity
-   */
+
   generateKeyFindings(analysisResult, url) {
     const findings = [];
     const features = analysisResult.features || 
@@ -80,7 +74,8 @@ class EducationService {
       findings.push({
         text: 'IP address used instead of domain name',
         description: 'This is the HIGHEST risk indicator in our analysis. Legitimate sites use domain names, not raw IP addresses.',
-        severity: 'high'
+        severity: 'high',
+        category: 'domain'
       });
     }
     
@@ -88,30 +83,45 @@ class EducationService {
       findings.push({
         text: 'No HTTPS',
         description: 'This site uses insecure HTTP instead of HTTPS. Any information you send could be intercepted. Modern legitimate websites use HTTPS encryption.',
-        severity: 'high'
+        severity: 'high',
+        category: 'certificate'
       });
     }
     
-    // Check URL length
+    // Check URL length - URLs over 75 characters are suspicious
     if (url.length > 75) {
       findings.push({
         text: 'Unusually long URL',
         description: 'This URL is longer than typical legitimate URLs, which can be a sign of obfuscation.',
-        severity: 'medium'
+        severity: 'medium',
+        category: 'url'
       });
     }
   
     // Process features if available
     if (features && Object.keys(features).length > 0) {
-      // Check for TLS/SSL certificate feature explicitly
-      if ('tls_ssl_certificate' in features && features.tls_ssl_certificate === 0) {
-        findings.push({
-          text: 'SSL/TLS certificate validation failed',
-          description: 'This site either has no SSL/TLS certificate or has an invalid certificate. Secure sites use valid certificates to encrypt your data and verify their identity.',
-          severity: 'high'
-        });
-      }
-
+      // ===== DOMAIN CHECKS =====
+      this._addDomainChecks(url, findings, features);
+      
+      // ===== CERTIFICATE CHECKS =====
+      this._addCertificateChecks(findings, features);
+      
+      // ===== URL STRUCTURE CHECKS =====
+      this._addUrlStructureChecks(url, findings, features);
+      
+      // ===== CONTENT CHECKS =====
+      this._addContentChecks(findings, features);
+      
+      // ===== INFRASTRUCTURE CHECKS =====
+      this._addInfrastructureChecks(findings, features);
+    }
+    
+    // Deduplicate findings to avoid repetition
+    return this._deduplicateFindings(findings);
+  }
+  
+  _addDomainChecks(url, findings, features) {
+    try {
       // Domain Google indexing
       if ('domain_google_index' in features) {
         const domainIndexValue = Number(features.domain_google_index);
@@ -120,13 +130,15 @@ class EducationService {
           findings.push({
             text: 'Domain properly indexed by Google',
             description: 'This domain is properly indexed by Google search, which is typical for established legitimate websites.',
-            severity: 'low'
+            severity: 'low',
+            category: 'domain'
           });
         } else if (domainIndexValue === 0) {
           findings.push({
             text: 'Domain not indexed by Google',
             description: 'Legitimate websites are typically indexed by search engines. New or malicious sites often aren\'t indexed.',
-            severity: 'medium'
+            severity: 'medium',
+            category: 'domain'
           });
         }
       }
@@ -139,243 +151,461 @@ class EducationService {
           findings.push({
             text: 'Page properly indexed by Google',
             description: 'This specific URL is indexed by search engines, suggesting it\'s an established legitimate page.',
-            severity: 'low'
+            severity: 'low',
+            category: 'domain'
           });
         } else if (urlIndexValue === 0) {
           findings.push({
             text: 'Page not indexed by Google',
             description: 'This specific page isn\'t in Google\'s index, which could indicate it\'s new or intentionally hidden.',
-            severity: 'medium'
+            severity: 'medium',
+            category: 'domain'
           });
         }
       }
       
-      // SPF Email Security
-      if ('domain_spf' in features) {
-        const hasSPF = Number(features.domain_spf) === 1;
-        
-        if (!hasSPF) {
-          findings.push({
-            text: 'Missing SPF email security records',
-            description: 'This domain lacks SPF records that help prevent email spoofing, suggesting less security consciousness.',
-            severity: 'medium'
-          });
-        } else {
-          findings.push({
-            text: 'Proper SPF email security configured',
-            description: 'This domain has SPF records for email authentication, which helps prevent spoofing.',
-            severity: 'low'
-          });
-        }
-      }
-      
-      // Domain age analysis
-      if ('time_domain_activation' in features && features.time_domain_activation > 0) {
+      // Domain age check
+      if ('time_domain_activation' in features) {
         const domainAge = Number(features.time_domain_activation);
         
-        if (domainAge < 30) {
-          findings.push({
-            text: 'Very new domain',
-            description: `This domain was registered only ${domainAge} days ago. Phishing sites often use newly created domains.`,
-            severity: 'medium'
-          });
-        } else if (domainAge < 90) {
-          findings.push({
-            text: 'Recently created domain',
-            description: `This domain was registered ${domainAge} days ago. While not necessarily suspicious, newer domains deserve more scrutiny.`,
-            severity: 'low'
-          });
-        } else if (domainAge > 365) {
-          findings.push({
-            text: 'Well-established domain',
-            description: `This domain has been registered for over a year (${Math.floor(domainAge/365)} year(s)), which is typical for legitimate websites.`,
-            severity: 'low'
-          });
+        // Avoid displaying for invalid values
+        if (!isNaN(domainAge) && domainAge > 0) {
+          if (domainAge < 7) {
+            findings.push({
+              text: 'Extremely new domain',
+              description: `This domain was registered just ${domainAge} day${domainAge !== 1 ? 's' : ''} ago. Brand new domains are very frequently used for phishing attacks.`,
+              severity: 'high',
+              category: 'domain'
+            });
+          } else if (domainAge < 30) {
+            findings.push({
+              text: 'Very new domain',
+              description: `This domain was registered only ${domainAge} days ago. Phishing sites often use newly registered domains.`,
+              severity: 'medium',
+              category: 'domain'
+            });
+          }
         }
       }
       
-      // URL shortening check
-      if ('url_shortened' in features && features.url_shortened === 1) {
+      // Check for excessive hyphens in domain
+      if ('qty_hyphen_domain' in features && features.qty_hyphen_domain > 1) {
         findings.push({
-          text: 'URL shortening detected',
-          description: 'This URL has been shortened, making it impossible to see the actual destination before clicking.',
-          severity: 'high'
+          text: 'Excessive hyphens in domain',
+          description: `This domain contains ${features.qty_hyphen_domain} hyphens, which is unusual for legitimate websites and often used in phishing domains.`,
+          severity: 'medium',
+          category: 'domain'
         });
       }
       
-      // Excessive redirects
+      // Check for server/client in domain name (common phishing indicator)
+      if (features.server_client_domain === 1) {
+        findings.push({
+          text: 'Suspicious keywords in domain',
+          description: 'This domain contains words like "server" or "client" which are frequently used in phishing domains to mimic technical messages.',
+          severity: 'medium',
+          category: 'domain'
+        });
+      }
+      
+      // Domain expiration check
+      if ('time_domain_expiration' in features) {
+        const domainExpiration = Number(features.time_domain_expiration);
+        
+        // Avoid displaying for invalid values
+        if (!isNaN(domainExpiration) && domainExpiration > 0) {
+          if (domainExpiration < 30) {
+            findings.push({
+              text: 'Domain expiring very soon',
+              description: `This domain will expire in ${domainExpiration} day${domainExpiration !== 1 ? 's' : ''}. Phishing sites often use domains with short registration periods.`,
+              severity: 'high',
+              category: 'domain'
+            });
+          } else if (domainExpiration < 90) {
+            findings.push({
+              text: 'Domain expiring soon',
+              description: `This domain will expire in ${domainExpiration} days. Legitimate businesses typically register domains for longer periods.`,
+              severity: 'medium',
+              category: 'domain'
+            });
+          }
+        }
+      }
+      
+      // Check for Internationalized Domain Name (Punycode)
+      try {
+        const parsedUrl = new URL(url);
+        const hostname = parsedUrl.hostname;
+        
+        if (hostname.startsWith('xn--') || hostname.includes('.xn--')) {
+          findings.push({
+            text: 'Internationalized domain name detected',
+            description: 'This URL uses Punycode (xn--) encoding, which can be used to create domain names that visually mimic legitimate sites using different character sets.',
+            severity: 'high',
+            category: 'domain'
+          });
+        }
+      } catch (e) {
+        // URL parsing error, skip this check
+      }
+      
+      // Check for domain in IP (already handled in basic URL check)
+      // But add enhanced check for IP in path or query
+      try {
+        if (!/\d+\.\d+\.\d+\.\d+/.test(url)) {  // If not already caught by basic check
+          const parsedUrl = new URL(url);
+          const ipInPathOrQuery = /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(parsedUrl.pathname + parsedUrl.search);
+          
+          if (ipInPathOrQuery) {
+            findings.push({
+              text: 'IP address in URL path or parameters',
+              description: 'This URL contains an IP address in its path or parameters, which is unusual and suspicious.',
+              severity: 'medium',
+              category: 'url'
+            });
+          }
+        }
+      } catch (e) {
+        // URL parsing error, skip this check
+      }
+    } catch (error) {
+      console.error('Error in domain checks:', error);
+    }
+  }
+  
+  _addCertificateChecks(findings, features) {
+    try {
+      // Check for TLS/SSL certificate feature
+      if ('tls_ssl_certificate' in features) {
+        if (features.tls_ssl_certificate === 0) {
+          findings.push({
+            text: 'SSL/TLS certificate validation failed',
+            description: 'This site either has no SSL/TLS certificate or has an invalid certificate. Secure sites use valid certificates to encrypt your data and verify their identity.',
+            severity: 'high',
+            category: 'certificate'
+          });
+        } else if (features.tls_ssl_certificate === 1) {
+          findings.push({
+            text: 'Valid SSL/TLS certificate',
+            description: 'This site uses a valid SSL/TLS certificate to encrypt data transmission, which is standard security practice.',
+            severity: 'low',
+            category: 'certificate'
+          });
+        }
+      }
+      
+      // Check for certificate age if available
+      if ('cert_age' in features && features.cert_age !== undefined) {
+        const certAge = Number(features.cert_age);
+        
+        if (!isNaN(certAge) && certAge >= 0) {
+          if (certAge < 7) {
+            findings.push({
+              text: 'Very recently issued SSL certificate',
+              description: `This site's SSL certificate was issued just ${certAge} day${certAge !== 1 ? 's' : ''} ago, which is common for new phishing sites.`,
+              severity: 'medium',
+              category: 'certificate'
+            });
+          }
+        }
+      }
+      
+      // Check for certificate mismatch
+      if ('cert_mismatch' in features && features.cert_mismatch) {
+        findings.push({
+          text: 'SSL certificate domain mismatch',
+          description: 'The SSL certificate does not match the domain name, which is a strong indicator of a suspicious site.',
+          severity: 'high',
+          category: 'certificate'
+        });
+      }
+      
+      // Check for self-signed certificates
+      if ('cert_self_signed' in features && features.cert_self_signed) {
+        findings.push({
+          text: 'Self-signed SSL certificate',
+          description: 'This site uses a self-signed SSL certificate rather than one from a trusted certificate authority, which is often a sign of a suspicious website.',
+          severity: 'high',
+          category: 'certificate'
+        });
+      }
+    } catch (error) {
+      console.error('Error in certificate checks:', error);
+    }
+  }
+  
+  _addUrlStructureChecks(url, findings, features) {
+    try {
+      // Check for URL shortening services
+      if ('url_shortened' in features && features.url_shortened === 1) {
+        findings.push({
+          text: 'URL shortening service detected',
+          description: 'This URL uses a shortening service, which can hide the actual destination. Exercise caution as the real website address is not immediately visible.',
+          severity: 'medium',
+          category: 'url'
+        });
+      }
+      
+      // Check for excessive subdomains
+      if ('qty_dot_domain' in features && features.qty_dot_domain > 3) {
+        findings.push({
+          text: 'Excessive subdomains',
+          description: `This URL contains multiple subdomains (${features.qty_dot_domain - 1} levels). Attackers often use multiple subdomains to make phishing URLs appear legitimate or hide the actual domain.`,
+          severity: 'medium',
+          category: 'url'
+        });
+      }
+      
+      // Check for presence of @ symbol in URL
+      if ('qty_at_url' in features && features.qty_at_url > 0) {
+        findings.push({
+          text: 'At symbol (@) in URL',
+          description: 'This URL contains the @ symbol, which can be used to create misleading URLs. Everything before @ is ignored in URL navigation.',
+          severity: 'high',
+          category: 'url'
+        });
+      }
+      
+      // Check for excessive query parameters
+      if ('qty_params' in features && features.qty_params > 5) {
+        findings.push({
+          text: 'Excessive query parameters',
+          description: `This URL contains ${features.qty_params} query parameters, which is unusually high and may indicate obfuscation attempts.`,
+          severity: 'low',
+          category: 'url'
+        });
+      }
+      
+      // Check for TLD in URL parameters (domain spoofing technique)
+      if ('tld_present_params' in features && features.tld_present_params === 1) {
+        findings.push({
+          text: 'TLD in query parameters',
+          description: 'The URL contains a domain extension in its query parameters, which is a common technique to make phishing URLs look legitimate.',
+          severity: 'medium',
+          category: 'url'
+        });
+      }
+      
+      // Check for redirects
       if ('qty_redirects' in features && features.qty_redirects > 1) {
         findings.push({
           text: 'Multiple redirects detected',
-          description: `This URL involves ${features.qty_redirects} redirects. Multiple redirects can mask the true destination.`,
-          severity: 'medium'
+          description: `This URL performs ${features.qty_redirects} redirects before reaching its final destination, which can be used to hide the actual destination.`,
+          severity: 'medium',
+          category: 'url'
         });
       }
       
-      // DNS configuration
-      if ('qty_nameservers' in features) {
-        const nameserverCount = Number(features.qty_nameservers);
-        
-        if (nameserverCount === 0) {
-          findings.push({
-            text: 'Missing DNS nameservers',
-            description: 'This domain doesn\'t have properly configured nameservers, which is unusual for legitimate websites.',
-            severity: 'medium'
-          });
-        } else if (nameserverCount > 0 && nameserverCount < 2) {
-          findings.push({
-            text: 'Minimal DNS configuration',
-            description: 'This domain has only one nameserver. Legitimate domains typically use multiple nameservers for reliability.',
-            severity: 'low'
-          });
-        }
+      // Check for suspicious URL length (if not already caught)
+      if ('length_url' in features && features.length_url > 150) {
+        findings.push({
+          text: 'Extremely long URL',
+          description: `This URL is ${features.length_url} characters long, which is excessively long and often used to hide the true destination or confuse users.`,
+          severity: 'high',
+          category: 'url'
+        });
       }
       
-      // MX record check for email capability
-      if ('qty_mx_servers' in features) {
-        const mxCount = Number(features.qty_mx_servers);
-        
-        if (mxCount === 0) {
-          findings.push({
-            text: 'No email capability',
-            description: 'This domain lacks MX records needed for email. Legitimate businesses typically have email infrastructure.',
-            severity: 'low'
-          });
-        }
-      }
+      // Check for excessive special characters
+      const specialCharFeatures = [
+        'qty_dot_url', 'qty_hyphen_url', 'qty_underline_url', 'qty_equal_url',
+        'qty_and_url', 'qty_exclamation_url', 'qty_percent_url', 'qty_plus_url'
+      ];
       
-      // IP resolution check
-      if ('qty_ip_resolved' in features) {
-        const ipCount = Number(features.qty_ip_resolved);
-        
-        if (ipCount === 0) {
-          findings.push({
-            text: 'DNS resolution failure',
-            description: 'This domain doesn\'t properly resolve to IP addresses, which is unusual for legitimate websites.',
-            severity: 'medium'
-          });
+      let specialCharCount = 0;
+      specialCharFeatures.forEach(feature => {
+        if (feature in features) {
+          specialCharCount += Number(features[feature]);
         }
-      }
-    }
-    
-    // Fallback for URL patterns if no specific findings
-    if (findings.length === 0 && (url.includes('startup') || url.includes('new') || url.includes('2023'))) {
-      findings.push({
-        text: 'Potentially new domain',
-        description: 'This appears to be a new domain. New domains have a higher risk of being used for phishing.',
-        severity: 'medium'
       });
-    }
-    
-    return findings;
-  }
-
-  /**
-   * Format key findings for extension display
-   * @param {Array} findings - Array of finding objects
-   * @returns {string} HTML string for the extension popup
-   */
-  formatFindingsForExtension(findings) {
-    if (!findings || findings.length === 0) {
-      return `
-        <div class="ext-finding low-risk">
-          <div class="ext-finding-header">
-            <i class="fa fa-check-circle"></i>
-            <span>No significant risks detected</span>
-          </div>
-          <p>Good news! We didn't find any major security concerns with this URL.</p>
-        </div>
-      `;
-    }
-    
-    // Sort by severity: high, medium, low
-    const severityOrder = { high: 1, medium: 2, low: 3 };
-    const sortedFindings = [...findings].sort(
-      (a, b) => severityOrder[a.severity] - severityOrder[b.severity]
-    );
-    
-    // Only take the top 3 findings for the extension (to save space)
-    const topFindings = sortedFindings.slice(0, 3);
-    
-    return topFindings.map(finding => {
-      const iconClass = 
-        finding.severity === 'high' ? 'fa fa-exclamation-triangle' : 
-        finding.severity === 'medium' ? 'fa fa-exclamation-circle' : 
-        'fa fa-info-circle';
       
-      return `
-        <div class="ext-finding ${finding.severity}-risk">
-          <div class="ext-finding-header">
-            <i class="${iconClass}"></i>
-            <span>${finding.text}</span>
-          </div>
-          <p>${finding.description}</p>
-        </div>
-      `;
-    }).join('');
+      if (specialCharCount > 20) {
+        findings.push({
+          text: 'Excessive special characters in URL',
+          description: `This URL contains an unusually high number of special characters (${specialCharCount}), which can be a sign of obfuscation techniques.`,
+          severity: 'medium',
+          category: 'url'
+        });
+      }
+    } catch (error) {
+      console.error('Error in URL structure checks:', error);
+    }
   }
   
-  /**
-   * Generate educational content with key findings for database storage
-   * @param {Object} analysisResult - The analysis result
-   * @param {string} url - The URL analyzed
-   * @returns {Object} Educational content with title, content and key findings
-   */
-  generateEducationalContent(analysisResult, url) {
+  _addContentChecks(findings, features) {
     try {
-      // Generate HTML title for the content
-      const domain = new URL(url).hostname;
-      const title = `Phishing Analysis: ${domain}`;
-      
-      // Generate key findings
-      const findings = this.generateKeyFindings(analysisResult, url);
-      
-      // Format current date
-      const currentDate = new Date().toISOString().split('T')[0];
-      
-      // Build HTML content with findings
-      let content = `<h2>Phishing Analysis for ${domain}</h2>`;
-      content += `<p><strong>Detection Date:</strong> ${currentDate}</p>`;
-      content += `<p><strong>Risk Score:</strong> ${Math.round(analysisResult.risk_score)}%</p>`;
-      
-      content += `<h3>Detected Security Concerns</h3>`;
-      
-      if (findings && findings.length > 0) {
-        // Create HTML list of findings
-        content += '<ul class="findings-list">';
-        findings.forEach(finding => {
-          const severityClass = finding.severity === 'high' ? 'high-risk' : 
-                               finding.severity === 'medium' ? 'medium-risk' : 'low-risk';
-          content += `<li class="${severityClass}"><strong>${finding.text}</strong>: ${finding.description}</li>`;
+      // Check for email in URL (rare in legitimate URLs)
+      if ('email_in_url' in features && features.email_in_url === 1) {
+        findings.push({
+          text: 'Email address in URL',
+          description: 'This URL contains an email address, which is rare in legitimate URLs and often used in phishing attacks.',
+          severity: 'medium',
+          category: 'content'
         });
-        content += '</ul>';
-      } else {
-        content += `<p>No specific suspicious features were identified, but the overall pattern matched known phishing techniques.</p>`;
       }
       
-      // Add educational information
-      content += `<h3>How to Protect Yourself</h3>`;
-      content += `<ul>
-        <li>Always verify the domain name before entering sensitive information</li>
-        <li>Look for HTTPS and a padlock icon in your browser's address bar</li>
-        <li>Be cautious of unexpected requests for personal information</li>
-        <li>Use unique passwords for different websites and consider a password manager</li>
-        <li>Enable two-factor authentication when available</li>
-      </ul>`;
+      // Check for brand impersonation if data exists
+      if ('brand_impersonation' in features && features.brand_impersonation) {
+        findings.push({
+          text: 'Brand impersonation detected',
+          description: `This site appears to impersonate ${features.impersonated_brand || 'a known brand'}, but is not actually affiliated with it.`,
+          severity: 'high',
+          category: 'content'
+        });
+      }
       
-      return {
-        title: title,
-        content: content,
-        findings: findings // Include raw findings for JSON storage
-      };
+      // Check for known phishing patterns
+      if ('known_phishing_patterns' in features && features.known_phishing_patterns) {
+        findings.push({
+          text: 'Known phishing page patterns',
+          description: 'This page contains elements that match known phishing techniques, such as fake login forms or deceptive content.',
+          severity: 'high',
+          category: 'content'
+        });
+      }
+      
+      // Check for cloaking techniques
+      if ('content_cloaking' in features && features.content_cloaking) {
+        findings.push({
+          text: 'Content cloaking detected',
+          description: 'This site appears to show different content to different visitors, a technique called "cloaking" that is often used to hide malicious content from security scanners.',
+          severity: 'high',
+          category: 'content'
+        });
+      }
+      
+      // Check for high risk score if available
+      if ('risk_score' in features) {
+        const riskScore = Number(features.risk_score);
+        if (riskScore >= 80) {
+          findings.push({
+            text: 'Very high risk score',
+            description: `Our AI model has assigned this URL a risk score of ${riskScore}%, indicating a high probability of being a phishing site.`,
+            severity: 'high',
+            category: 'content'
+          });
+        } else if (riskScore >= 60) {
+          findings.push({
+            text: 'Elevated risk score',
+            description: `Our AI model has assigned this URL a risk score of ${riskScore}%, indicating a moderate to high probability of being a phishing site.`,
+            severity: 'medium',
+            category: 'content'
+          });
+        }
+      }
     } catch (error) {
-      console.error('Error generating educational content:', error);
-      return {
-        title: `Phishing Analysis for ${url}`,
-        content: `<p>This URL was identified as potentially malicious.</p>`,
-        findings: [] 
-      };
+      console.error('Error in content checks:', error);
     }
+  }
+  
+  _addInfrastructureChecks(findings, features) {
+    try {
+      // Check DNS servers
+      if ('qty_nameservers' in features) {
+        if (features.qty_nameservers === 0) {
+          findings.push({
+            text: 'No DNS nameservers found',
+            description: 'This domain does not have proper DNS configuration. Legitimate websites always have DNS nameservers.',
+            severity: 'high',
+            category: 'infrastructure'
+          });
+        } else if (features.qty_nameservers < 2) {
+          findings.push({
+            text: 'Insufficient nameservers',
+            description: 'This domain has only one nameserver. Legitimate businesses typically use multiple nameservers for reliability.',
+            severity: 'low',
+            category: 'infrastructure'
+          });
+        }
+      }
+      
+      // Check for SPF record
+      if ('domain_spf' in features) {
+        const hasSPF = Number(features.domain_spf) === 1;
+        if (!hasSPF) {
+          findings.push({
+            text: 'Missing SPF record',
+            description: 'This domain lacks an SPF (Sender Policy Framework) record, which legitimate organizations typically implement to prevent email spoofing.',
+            severity: 'low',
+            category: 'infrastructure'
+          });
+        }
+      }
+      
+      // Check for IP resolution
+      if ('qty_ip_resolved' in features && features.qty_ip_resolved === 0) {
+        findings.push({
+          text: 'Domain does not resolve to IP',
+          description: 'This domain does not resolve to any IP address, which indicates it may be misconfigured or fraudulent.',
+          severity: 'high',
+          category: 'infrastructure'
+        });
+      }
+      
+      // Check for TTL (Time to Live) value
+      if ('ttl_hostname' in features && features.ttl_hostname < 300) {
+        findings.push({
+          text: 'Abnormally low DNS TTL',
+          description: 'This domain has an unusually short Time-To-Live value, which can indicate a temporary setup often used in phishing campaigns.',
+          severity: 'medium',
+          category: 'infrastructure'
+        });
+      }
+      
+      // Check for free hosting services
+      if ('free_hosting' in features && features.free_hosting) {
+        findings.push({
+          text: 'Free hosting service detected',
+          description: 'This site is hosted on a free hosting service often used by scammers due to minimal verification requirements.',
+          severity: 'medium', 
+          category: 'infrastructure'
+        });
+      }
+      
+      // Check for ASN data if available
+      if ('asn_ip' in features && features.asn_ip) {
+        // Check if ASN is in list of suspicious ASNs
+        const suspiciousASNs = ['16276', '14618', '4134']; // Example list: OVH, Amazon, Chinanet
+        if (suspiciousASNs.includes(String(features.asn_ip))) {
+          findings.push({
+            text: 'Suspicious hosting provider',
+            description: 'This site is hosted on a provider commonly associated with phishing campaigns.',
+            severity: 'medium',
+            category: 'infrastructure'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error in infrastructure checks:', error);
+    }
+  }
+  
+  // Helper function to deduplicate findings based on text content
+  _deduplicateFindings(findings) {
+    const uniqueFindings = [];
+    const seenTexts = new Set();
+    
+    for (const finding of findings) {
+      if (!seenTexts.has(finding.text)) {
+        seenTexts.add(finding.text);
+        uniqueFindings.push(finding);
+      }
+    }
+    
+    return uniqueFindings;
+  }
+  
+  // This method can be used later for creating detailed educational content
+  generateEducationalContent(analysisResult, url) {
+    // Get key findings 
+    const findings = this.generateKeyFindings(analysisResult, url);
+    
+    // Create educational content with findings
+    // Implementation can be expanded later
+    
+    return {
+      findings: findings
+    };
   }
 }
 

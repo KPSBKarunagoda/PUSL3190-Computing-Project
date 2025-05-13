@@ -28,6 +28,7 @@ class ListService {
                     RiskLevel INT DEFAULT 100 NOT NULL, 
                     AddedDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     AddedBy INT,
+                    is_system BOOLEAN DEFAULT FALSE,
                     FOREIGN KEY (AddedBy) REFERENCES User(UserID)
                 )
             `);
@@ -114,9 +115,9 @@ class ListService {
      */
     async getBlacklist() {
         try {
-            // Return full blacklist entries with user information and risk level
+            // Return full blacklist entries with user information, risk level and is_system flag
             const [rows] = await this.dbConnection.execute(`
-                SELECT b.BlacklistID, b.URL, b.RiskLevel, b.AddedDate, b.AddedBy,
+                SELECT b.BlacklistID, b.URL, b.RiskLevel, b.AddedDate, b.AddedBy, b.is_system,
                        u.Username as addedByUser
                 FROM Blacklist b
                 LEFT JOIN User u ON b.AddedBy = u.UserID
@@ -134,34 +135,28 @@ class ListService {
     /**
      * Add URL to blacklist
      */
-    async addToBlacklist(url, userId, riskLevel = 100) {
+    async addToBlacklist(url, userId, riskLevel = 100, isSystem = false) {
         try {
-            console.log(`Adding to blacklist: ${url} with risk level ${riskLevel}`);
+            // Validate inputs
+            if (!url) throw new Error('URL is required');
+            if (!userId) throw new Error('User ID is required');
             
-            // Normalize URL before storing
-            const normalizedUrl = this.normalizeUrl(url);
-            console.log(`Normalized URL: ${normalizedUrl}`);
+            // Set is_system flag - default to false for admin panel additions
+            const systemFlag = isSystem ? 1 : 0;
             
-            // Check if URL exists
-            const [existing] = await this.dbConnection.execute(
-                'SELECT * FROM Blacklist WHERE URL = ? OR URL = ?', 
-                [url, normalizedUrl]
-            );
-            
-            if (existing && existing.length > 0) {
-                throw new Error(`URL already exists in blacklist as: ${existing[0].URL}`);
-            }
-            
-            // Add to blacklist
+            // Add to blacklist with proper system flag
             const [result] = await this.dbConnection.execute(
-                'INSERT INTO Blacklist (URL, RiskLevel, AddedDate, AddedBy) VALUES (?, ?, NOW(), ?)',
-                [url, riskLevel, userId]
+                'INSERT INTO Blacklist (URL, RiskLevel, AddedDate, AddedBy, is_system) VALUES (?, ?, NOW(), ?, ?)',
+                [url, riskLevel, userId, systemFlag]
             );
             
+            console.log(`Added to blacklist: ${url} by ${isSystem ? 'System' : `User ${userId}`}`);
             return {
-                url: url,
-                riskLevel: riskLevel,
-                id: result.insertId
+                id: result.insertId,
+                url,
+                riskLevel,
+                addedBy: userId,
+                is_system: systemFlag
             };
         } catch (error) {
             console.error('Error adding to blacklist:', error);

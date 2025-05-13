@@ -24,106 +24,25 @@ module.exports = function(db) {
   };
 
   // Helper function for handling educational content with key features
-  async function handleEducationalContent(blacklistId, url, riskLevel, response) {
+  async function handleEducationalContent(blacklistId, url, riskLevel, response, userId, isSystem = true) {
     try {
-      console.log(`Looking for educational content for blacklist ID: ${blacklistId}`);
+      // Generate key findings
+      const eduService = new EducationService();
+      const findings = eduService.generateKeyFindings(response, url);
       
-      // Query for existing educational content
-      const [eduContent] = await db.execute(
-        'SELECT * FROM EducationalContent WHERE BlacklistID = ? ORDER BY CreatedDate DESC LIMIT 1',
-        [blacklistId]
-      );
-      
-      if (eduContent && eduContent.length > 0) {
-        console.log(`Found educational content: "${eduContent[0].Title}" (ID: ${eduContent[0].ContentID})`);
+      if (findings && findings.length > 0) {
+        const keyFeaturesJson = JSON.stringify(findings);
         
-        // Add educational content to response
-        response.educational_content = {
-          id: eduContent[0].ContentID,
-          title: eduContent[0].Title,
-          content: eduContent[0].Content,
-          created_date: eduContent[0].CreatedDate
-        };
+        // Store findings with system flag
+        await db.execute(
+          'INSERT INTO EducationalContent (BlacklistID, KeyFeatures, CreatedDate, CreatedBy, is_system) VALUES (?, ?, NOW(), ?, ?)',
+          [blacklistId, keyFeaturesJson, userId, isSystem ? 1 : 0]
+        );
         
-        // If KeyFeatures exist, add them to the response
-        if (eduContent[0].KeyFeatures) {
-          try {
-            const keyFeatures = JSON.parse(eduContent[0].KeyFeatures);
-            response.key_features = keyFeatures;
-            console.log(`Found ${keyFeatures.length} stored key features for this URL`);
-          } catch (err) {
-            console.error('Error parsing stored key features:', err);
-          }
-        }
-        
-        return true;
-      } 
-      
-      console.log('No educational content found, generating new content...');
-      
-      // Get admin user for content creation
-      const [adminUsers] = await db.execute(
-        'SELECT UserID FROM User WHERE Role = "Admin" LIMIT 1'
-      );
-      
-      const adminId = adminUsers && adminUsers.length > 0 ? adminUsers[0].UserID : 1;
-      
-      // Generate educational content with key findings
-      const eduContentData = educationService.generateEducationalContent({
-        url: url,
-        risk_score: riskLevel,
-        is_phishing: true,
-        features: response.features // Pass the features for key findings generation
-      }, url);
-      
-      if (!eduContentData) {
-        console.log('Failed to generate educational content');
-        return false;
+        console.log(`Stored educational content for BlacklistID: ${blacklistId}, Source: ${isSystem ? 'System' : 'Admin'}`);
       }
-      
-      // Ensure table has KeyFeatures column
-      try {
-        await db.execute(`
-          SHOW COLUMNS FROM EducationalContent LIKE 'KeyFeatures'
-        `);
-      } catch (error) {
-        console.log('KeyFeatures column not found, adding it...');
-        await db.execute(`
-          ALTER TABLE EducationalContent 
-          ADD COLUMN KeyFeatures JSON NULL AFTER BlacklistID
-        `);
-      }
-      
-      // Store the educational content with key findings as JSON
-      const [contentResult] = await db.execute(
-        'INSERT INTO EducationalContent (Title, Content, CreatedBy, BlacklistID, KeyFeatures) VALUES (?, ?, ?, ?, ?)',
-        [
-          eduContentData.title,
-          eduContentData.content,
-          adminId,
-          blacklistId,
-          JSON.stringify(eduContentData.findings || [])
-        ]
-      );
-      
-      console.log(`✅ Added educational content: ${eduContentData.title} (ID: ${contentResult.insertId})`);
-      console.log(`Stored ${eduContentData.findings ? eduContentData.findings.length : 0} key features`);
-      
-      // Add to response
-      response.educational_content = {
-        id: contentResult.insertId,
-        title: eduContentData.title,
-        content: eduContentData.content,
-        created_date: new Date().toISOString()
-      };
-      
-      // Also add key features to response
-      response.key_features = eduContentData.findings || [];
-      
-      return true;
-    } catch (error) {
-      console.error('Error handling educational content:', error);
-      return false;
+    } catch (err) {
+      console.error('Error creating educational content:', err);
     }
   }
 
@@ -355,6 +274,7 @@ module.exports = function(db) {
                         RiskLevel INT DEFAULT 100 NOT NULL, 
                         AddedDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         AddedBy INT,
+                        is_system TINYINT(1) DEFAULT 0,
                         FOREIGN KEY (AddedBy) REFERENCES User(UserID),
                         UNIQUE INDEX url_idx (URL)
                       )
@@ -387,12 +307,12 @@ module.exports = function(db) {
                     // Add to blacklist - using the full URL as detected, not just domain
                     try {
                       const [result] = await db.execute(
-                        'INSERT INTO Blacklist (URL, RiskLevel, AddedDate, AddedBy) VALUES (?, ?, NOW(), ?)',
+                        'INSERT INTO Blacklist (URL, RiskLevel, AddedDate, AddedBy, is_system) VALUES (?, ?, NOW(), ?, 1)',
                         [url, riskLevel, adminId]
                       );
                       
                       const insertId = result.insertId;
-                      console.log(`✅ Added to blacklist: ${url} (ID: ${insertId}, Risk: ${riskLevel}%)`);
+                      console.log(`✅ Added to blacklist: ${url} (ID: ${insertId}, Risk: ${riskLevel}%, Source: System)`);
                       
                       // Verify the insert was successful by querying the DB again
                       const [verifyInsert] = await db.execute(
@@ -408,7 +328,7 @@ module.exports = function(db) {
                         console.log(`Verified: URL was successfully blacklisted with ID ${insertId}`);
                         
                         // After successfully adding to blacklist, store educational content with key features
-                        await handleEducationalContent(insertId, url, riskLevel, response);
+                        await handleEducationalContent(insertId, url, riskLevel, response, adminId, true);
                       } else {
                         console.error(`Failed to verify blacklist entry for URL: ${url}`);
                       }

@@ -66,44 +66,78 @@ module.exports = function(dbConnection) {
     });
     
     // Get blacklist
-    router.get('/blacklist', async (req, res) => {
+    router.get('/blacklist', authMiddleware, async (req, res) => {
         try {
-            const blacklist = await listService.getBlacklist();
-            console.log('Sending blacklist data:', blacklist);
-            res.json(blacklist);
+            // Query with is_system field
+            const [rows] = await dbConnection.execute(`
+                SELECT b.*, u.Username 
+                FROM Blacklist b
+                LEFT JOIN User u ON b.AddedBy = u.UserID
+                ORDER BY b.AddedDate DESC
+            `);
+            
+            // Get usage statistics
+            const [stats] = await dbConnection.execute(`
+                SELECT COUNT(*) AS total,
+                    SUM(CASE WHEN AddedDate >= DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 ELSE 0 END) AS recent,
+                    SUM(CASE WHEN is_system = 1 THEN 1 ELSE 0 END) AS system_added,
+                    SUM(CASE WHEN is_system = 0 THEN 1 ELSE 0 END) AS manually_added
+                FROM Blacklist
+            `);
+            
+            return res.json({
+                success: true,
+                entries: rows,
+                stats: stats[0] || { total: 0, recent: 0, system_added: 0, manually_added: 0 }
+            });
         } catch (error) {
-            console.error('Get blacklist error:', error);
-            res.status(500).json({ message: 'Server error' });
+            console.error('Error fetching blacklist:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to fetch blacklist'
+            });
         }
     });
     
     // Add to blacklist
-    router.post('/blacklist', async (req, res) => {
+    router.post('/blacklist', authMiddleware, async (req, res) => {
         try {
-            // Extract both domain and url params for backward compatibility
-            const { domain, url, riskLevel } = req.body;
-            const valueToAdd = url || domain || '';
+            const { url, riskLevel, is_system } = req.body;
             
-            if (!valueToAdd) {
-                return res.status(400).json({ message: 'URL or domain is required' });
+            if (!url) {
+                return res.status(400).json({ success: false, message: 'URL is required' });
             }
             
-            // Parse risk level or use default (100)
-            const risk = parseInt(riskLevel) || 100;
+            // Get the user ID from the authenticated request
+            const userId = req.user.id;
             
-            // Validate risk level is between 1-100
-            if (risk < 1 || risk > 100) {
-                return res.status(400).json({ message: 'Risk level must be between 1 and 100' });
+            // Set default risk level if not provided
+            const risk = riskLevel || 100;
+            
+            // Set is_system flag with default of false (manually added)
+            const systemFlag = is_system ? 1 : 0;
+            
+            // Check if URL already exists in blacklist
+            const [existingUrl] = await dbConnection.execute(
+                'SELECT * FROM Blacklist WHERE URL = ?',
+                [url]
+            );
+            
+            if (existingUrl.length > 0) {
+                return res.status(400).json({ success: false, message: 'URL is already blacklisted' });
             }
             
-            console.log(`Adding to blacklist: ${valueToAdd} with risk level ${risk}`);
-            
-            const result = await listService.addToBlacklist(valueToAdd, req.user.id, risk);
+            // Add to blacklist with is_system flag
+            const [result] = await dbConnection.execute(
+                'INSERT INTO Blacklist (URL, RiskLevel, AddedDate, AddedBy, is_system) VALUES (?, ?, NOW(), ?, ?)',
+                [url, risk, userId, systemFlag]
+            );
             
             res.json({ 
                 message: 'Added to blacklist successfully', 
-                url: result.url,
-                riskLevel: result.riskLevel
+                url,
+                riskLevel: risk,
+                is_system: systemFlag
             });
         } catch (error) {
             console.error('Add to blacklist error:', error);

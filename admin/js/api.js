@@ -230,13 +230,13 @@ const listsAPI = {
   },
   
   // Add domain to blacklist
-  addToBlacklist: async (domain, token = null, riskLevel = 100) => {
+  addToBlacklist: async (domain, token = null, riskLevel = 100, isSystem = false) => {
     try {
       console.log('API: Adding to blacklist:', domain, 'with risk level:', riskLevel);
       
       // If token is provided, use direct fetch method for external components
       if (token) {
-        return await listsAPI.addUrlToBlacklist(domain, token, riskLevel);
+        return await listsAPI.addUrlToBlacklist(domain, token, riskLevel, isSystem);
       }
       
       // Otherwise use standard apiRequest
@@ -244,7 +244,8 @@ const listsAPI = {
         method: 'POST',
         body: JSON.stringify({ 
           url: domain, // Send as URL
-          riskLevel: riskLevel // Include risk level
+          riskLevel: riskLevel, // Include risk level
+          is_system: isSystem // Add is_system flag
         })
       });
     } catch (error) {
@@ -314,7 +315,7 @@ const listsAPI = {
   },
   
   // Add URL to blacklist with specific token (for external components)
-  addUrlToBlacklist: async (url, token, riskLevel = 100) => {
+  addUrlToBlacklist: async (url, token, riskLevel = 100, isSystem = false) => {
     if (!token) {
       // Try to get token from Auth if available
       token = Auth?.getToken() || localStorage.getItem('phishguard_admin_token');
@@ -333,7 +334,8 @@ const listsAPI = {
         },
         body: JSON.stringify({ 
           url: url,  // Send the full URL as the primary field
-          riskLevel: riskLevel // Include risk level
+          riskLevel: riskLevel, // Include risk level
+          is_system: isSystem // Add is_system flag
         })
       });
       

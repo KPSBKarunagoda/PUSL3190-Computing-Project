@@ -43,8 +43,11 @@ async function loadBlacklist() {
   try {
     showLoader(true);
     
-    const blacklist = await listsAPI.getBlacklist();
-    console.log('Loaded blacklist data:', blacklist);
+    const response = await listsAPI.getBlacklist();
+    console.log('Loaded blacklist data:', response);
+    
+    // Extract the blacklist entries from the response
+    const blacklist = response.entries || [];
     
     const tableBody = document.getElementById('blacklist-table-body');
     if (!tableBody) {
@@ -108,9 +111,21 @@ async function loadBlacklist() {
       riskTd.appendChild(riskBadge);
       tr.appendChild(riskTd);
       
-      // Added by column
+      // Added by column - show "System" if is_system flag is true
       const addedByTd = document.createElement('td');
-      addedByTd.textContent = entry.addedByUser || 'System';
+      if (entry.is_system) {
+        // Create a styled badge for system entries
+        const systemBadge = document.createElement('span');
+        systemBadge.className = 'badge badge-system';
+        systemBadge.innerHTML = '<i class="fas fa-robot"></i> System';
+        addedByTd.appendChild(systemBadge);
+      } else {
+        // Show admin username with avatar
+        const adminSpan = document.createElement('span');
+        adminSpan.className = 'admin-name';
+        adminSpan.innerHTML = `<i class="fas fa-user-shield"></i> ${entry.addedByUser || 'Admin'}`;
+        addedByTd.appendChild(adminSpan);
+      }
       tr.appendChild(addedByTd);
       
       // Date column
@@ -159,6 +174,15 @@ async function loadBlacklist() {
       
       tableBody.appendChild(tr);
     });
+    
+    // Update stats if available
+    if (response.stats) {
+      const totalBlacklisted = document.getElementById('total-blacklisted');
+      const recentBlacklisted = document.getElementById('recent-blacklisted');
+      
+      if (totalBlacklisted) totalBlacklisted.textContent = response.stats.total || '0';
+      if (recentBlacklisted) recentBlacklisted.textContent = response.stats.recent || '0';
+    }
   } catch (error) {
     console.error('Error loading blacklist:', error);
     showAlert('Failed to load blacklist: ' + error.message, 'error');
@@ -393,6 +417,7 @@ async function handleDeleteDomain(e) {
   }
 }
 
+// Update function to add domain to blacklist
 function setupAddForm() {
   const addForm = document.getElementById('add-blacklist-form');
   
@@ -428,7 +453,12 @@ function setupAddForm() {
       
       try {
         console.log(`Adding domain to blacklist: ${domain} with risk level: ${riskLevel}`);
-        const response = await listsAPI.addToBlacklist(domain, null, riskLevel);
+        
+        // Get the current admin's information
+        const adminUser = Auth.getUser();
+        
+        // Set is_system=false flag to indicate manual addition by admin
+        const response = await listsAPI.addToBlacklist(domain, null, riskLevel, false);
         
         // Clear input and reload list
         domainInput.value = '';

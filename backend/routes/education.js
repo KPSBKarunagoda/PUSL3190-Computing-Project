@@ -17,6 +17,19 @@ module.exports = function(db) {
     try {
       const { url, analysisResult } = req.body;
       
+      // Validate required parameters
+      if (!analysisResult) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing analysis result' 
+        });
+      }
+      
+      // For debugging
+      console.log('Analysis result features count:', 
+                 analysisResult.features ? Object.keys(analysisResult.features).length : 
+                 (analysisResult.ml_result?.features ? Object.keys(analysisResult.ml_result.features).length : 0));
+      
       console.log('Received request with blacklist_id:', analysisResult.blacklist_id || 'None');
       
       // Check if we have a blacklist ID and can retrieve stored findings
@@ -32,11 +45,29 @@ module.exports = function(db) {
             try {
               // Use stored findings if available
               const storedFindings = JSON.parse(eduContent[0].KeyFeatures);
-              if (storedFindings && storedFindings.length > 0) {
+              if (Array.isArray(storedFindings) && storedFindings.length > 0) {
                 console.log(`Using ${storedFindings.length} stored findings for BlacklistID ${analysisResult.blacklist_id}`);
+                
+                // Make sure all findings have category property for proper UI display
+                const enhancedFindings = storedFindings.map(finding => {
+                  if (!finding.category) {
+                    // Add default category based on content if missing
+                    if (finding.text.match(/domain|dns|typo|homograph|idn|parking/i)) {
+                      finding.category = 'domain';
+                    } else if (finding.text.match(/certificate|ssl|tls|https/i)) {
+                      finding.category = 'certificate';
+                    } else if (finding.text.match(/url|link|redirect|path|parameter|subdomain/i)) {
+                      finding.category = 'url';
+                    } else {
+                      finding.category = 'other';
+                    }
+                  }
+                  return finding;
+                });
+                
                 return res.json({
                   success: true,
-                  findings: storedFindings,
+                  findings: enhancedFindings,
                   source: "database"
                 });
               }
@@ -52,18 +83,41 @@ module.exports = function(db) {
       }
       
       // If no stored findings or error occurred, generate new findings
-      if (!url || !analysisResult) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Missing required data' 
-        });
-      }
+      const generatedUrl = url || analysisResult.url || "unknown_url";
       
-      console.log(`Generating new key findings for URL: ${url}`);
+      console.log(`Generating new key findings for URL: ${generatedUrl}`);
       
       // Generate findings
-      const findings = educationService.generateKeyFindings(analysisResult, url);
+      const findings = educationService.generateKeyFindings(analysisResult, generatedUrl);
       console.log(`Generated ${findings.length} key findings`);
+      
+      // Store findings in database if we have a blacklist ID
+      if (analysisResult.blacklist_id && findings.length > 0 && db) {
+        try {
+          const keyFeaturesJson = JSON.stringify(findings);
+          
+          // Query the blacklist to see if it was a system-added entry
+          const [blacklistEntry] = await db.execute(
+            'SELECT AddedBy, is_system FROM Blacklist WHERE BlacklistID = ?',
+            [analysisResult.blacklist_id]
+          );
+          
+          const userId = (blacklistEntry && blacklistEntry.length > 0) ? 
+                        blacklistEntry[0].AddedBy : 1;
+          const isSystem = (blacklistEntry && blacklistEntry.length > 0) ?
+                          (blacklistEntry[0].is_system === 1) : true;
+          
+          // Add system user ID as CreatedBy and set is_system flag
+          await db.execute(
+            'INSERT INTO EducationalContent (BlacklistID, KeyFeatures, CreatedDate, CreatedBy, is_system) VALUES (?, ?, NOW(), ?, ?)',
+            [analysisResult.blacklist_id, keyFeaturesJson, userId, isSystem ? 1 : 0]
+          );
+          console.log(`Stored key findings for BlacklistID ${analysisResult.blacklist_id}, Source: ${isSystem ? 'System' : 'Admin'}`);
+        } catch (storeErr) {
+          console.error("Error storing key findings:", storeErr);
+          // Continue anyway - storage failure shouldn't prevent returning findings
+        }
+      }
       
       return res.json({
         success: true,
