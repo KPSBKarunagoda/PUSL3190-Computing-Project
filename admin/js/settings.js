@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     settingsForm: DOM.get('settings-form'),
     saveSettingsBtn: DOM.get('save-settings-btn'),
     resetSettingsBtn: DOM.get('reset-settings-btn'),
-    maintenanceBtn: DOM.get('run-maintenance-btn'),
     scanThreshold: DOM.get('scan-threshold'),
     thresholdValue: DOM.get('threshold-value'),
     safeBrowsingToggle: DOM.get('safe-browsing-toggle'),
@@ -27,7 +26,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Set up event listeners
   elements.settingsForm?.addEventListener('submit', saveSettings);
   elements.resetSettingsBtn?.addEventListener('click', resetSettings);
-  elements.maintenanceBtn?.addEventListener('click', runMaintenance);
   
   // Update threshold display when slider changes
   if (elements.scanThreshold && elements.thresholdValue) {
@@ -146,38 +144,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Save to server
     saveSettings();
-  }
-  
-  // Run system maintenance
-  async function runMaintenance() {
-    if (!confirm('Are you sure you want to run system maintenance? This may take a few moments.')) {
-      return;
-    }
-    
-    try {
-      // Show loading state
-      DOM.buttonState(elements.maintenanceBtn, true, null, 'Running...');
-      DOM.showAlert('Maintenance task started. Please wait...', 'info');
-      
-      // Call maintenance API
-      const response = await fetch('api/admin/maintenance', {
-        method: 'POST',
-        headers: { 'x-auth-token': Auth.getToken() }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Maintenance task failed');
-      }
-      
-      const result = await response.json();
-      
-      // Show success message
-      DOM.showAlert('Maintenance completed successfully: ' + (result.message || 'System optimized'), 'success');
-    } catch (error) {
-      console.error('Maintenance error:', error);
-      DOM.showAlert('Maintenance error: ' + error.message, 'danger');
-    } finally {
-      DOM.buttonState(elements.maintenanceBtn, false);
-    }
   }
 });
