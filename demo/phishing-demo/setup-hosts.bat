@@ -15,7 +15,7 @@ echo.
 echo Hosts file updated successfully.
 echo.
 echo You can now access your phishing demo at:
-echo   http://paypal-secure-verification.com:3000
+echo   http://paypal-secure-verification.com:3030
 echo.
 echo When done with your demonstration, run cleanup-hosts.bat to restore your hosts file.
 echo.

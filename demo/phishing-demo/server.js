@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const app = express();
-const PORT = 3000;
+const PORT = 3030;
 
 // Serve static files
 app.use(express.static(path.join(__dirname)));
@@ -53,7 +53,7 @@ app.listen(PORT, () => {
 ║   To access the demo and trigger your extension:     ║
 ║                                                      ║
 ║   1. Access via fake domain (best method):           ║
-║      http://paypal-secure-verification.com:3000      ║
+║      http://paypal-secure-verification.com:3030      ║
 ║                                                      ║
 ║   2. Or try these suspicious paths:                  ║
 ║      /login/verify.php                               ║
