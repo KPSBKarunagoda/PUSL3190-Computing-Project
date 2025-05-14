@@ -76,19 +76,45 @@ class SafeBrowsingService:
 
                     is_safe = "matches" not in data
                     threat_details = None
+                    risk_contribution = 0
 
                     if not is_safe and "matches" in data:
                         matches = data["matches"]
-                        threat_details = [{
-                            "threat_type": match.get("threatType"),
-                            "platform_type": match.get("platformType"),
-                            "threat_entry_type": match.get("threatEntryType")
-                        } for match in matches]
+                        threat_details = []
+                        
+                        # Calculate risk contribution based on threat types
+                        threat_type_scores = {
+                            "MALWARE": 30,
+                            "SOCIAL_ENGINEERING": 35,
+                            "UNWANTED_SOFTWARE": 20,
+                            "POTENTIALLY_HARMFUL_APPLICATION": 25,
+                            "THREAT_TYPE_UNSPECIFIED": 20
+                        }
+                        
+                        # Process each threat with its severity
+                        for match in matches:
+                            threat_type = match.get("threatType")
+                            platform_type = match.get("platformType")
+                            threat_entry_type = match.get("threatEntryType")
+                            
+                            # Calculate score for this threat
+                            threat_score = threat_type_scores.get(threat_type, 20)
+                            
+                            threat_details.append({
+                                "threat_type": threat_type,
+                                "platform_type": platform_type,
+                                "threat_entry_type": threat_entry_type,
+                                "severity_score": threat_score
+                            })
+                            
+                            # Accumulate risk contribution (but cap at 40%)
+                            risk_contribution = min(40, risk_contribution + threat_score)
 
                     result = {
                         "is_safe": is_safe,
                         "message": "URL checked successfully",
                         "threats": threat_details if threat_details else None,
+                        "risk_contribution": risk_contribution if not is_safe else 0,
                         "raw_response": data if not is_safe else None
                     }
 

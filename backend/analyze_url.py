@@ -417,7 +417,7 @@ class URLAnalyzer:
                     "safe_browsing_result": None
                 }
                 
-            # Step 3: Check Safe Browsing API if enabled
+            # Step 3: Check Safe Browsing API if enabled (but don't immediately block)
             sb_result = {"threats": [], "is_safe": True}
             if use_safe_browsing:
                 print("\nStep 3: Checking Google Safe Browsing...", file=sys.stderr)
@@ -425,13 +425,8 @@ class URLAnalyzer:
                 has_threats = bool(sb_result.get("threats"))
                 
                 if has_threats:
-                    return {
-                        "risk_score": 100,
-                        "is_phishing": True,
-                        "source": "Safe Browsing API",
-                        "threats": sb_result.get("threats"),
-                        "message": f"Warning - {sb_result.get('threats')[0].get('threat_type')} detected by Google Safe Browsing"
-                    }
+                    print(f"Safe Browsing API detected threats: {sb_result.get('threats')}", file=sys.stderr)
+                    # We'll incorporate this into the risk score below, not immediately return
             else:
                 print("\nStep 3: Safe Browsing check skipped", file=sys.stderr)
 
@@ -451,7 +446,30 @@ class URLAnalyzer:
             is_phishing = bool(ml_result["is_phishing"])
             risk_score = float(ml_result["risk_score"])
 
+            # NEW: Incorporate Safe Browsing results into risk assessment
+            if sb_result and sb_result.get("threats"):
+                threat_count = len(sb_result.get("threats", []))
+                safe_browsing_risk_bonus = min(40, threat_count * 20)  # Up to 40% risk bonus based on threats
+                
+                old_score = risk_score
+                risk_score = min(100, risk_score + safe_browsing_risk_bonus)
+                
+                print(f"Adding Safe Browsing risk bonus: +{safe_browsing_risk_bonus}% (was {old_score:.1f}, now {risk_score:.1f})", file=sys.stderr)
+                
+                # Also update phishing status based on combined assessment
+                # If Safe Browsing detects threats, consider it phishing if risk score is high enough
+                if risk_score >= 60:
+                    is_phishing = True
+                    print("URL marked as phishing due to Safe Browsing threats and high risk score", file=sys.stderr)
+
             message = "Phishing site detected" if is_phishing else "Site appears legitimate"
+            
+            # If Safe Browsing found threats, mention it in the message
+            if sb_result and sb_result.get("threats"):
+                threat_types = [threat.get("threat_type", "Unknown") for threat in sb_result.get("threats", [])]
+                threat_message = ", ".join(threat_types)
+                message = f"Google Safe Browsing detected: {threat_message}. {message}"
+                
             return {
                 "risk_score": round(risk_score, 1),  # Round to 1 decimal place
                 "is_phishing": is_phishing,
@@ -522,3 +540,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

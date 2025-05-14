@@ -37,6 +37,9 @@ def print_result_details(result, url):
             print("\nSAFE BROWSING API RESULTS: ⚠️  THREATS DETECTED")
             for threat in threats:
                 print(f"  - {threat.get('threat_type')}: {threat.get('platform_type')}")
+            # NEW: Show contribution to risk score
+            if 'risk_contribution' in sb_result:
+                print(f"  Risk Contribution: +{sb_result.get('risk_contribution')}%")
         else:
             print("\nSAFE BROWSING API RESULTS: ✅  No threats detected")
     
