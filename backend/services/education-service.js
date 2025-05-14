@@ -98,6 +98,10 @@ class EducationService {
       });
     }
   
+    // *** NEW: Add Safe Browsing checks BEFORE other feature checks ***
+    // This ensures these critical findings are always included
+    this._addSafeBrowsingChecks(findings, analysisResult);
+    
     // Process features if available
     if (features && Object.keys(features).length > 0) {
       // ===== DOMAIN CHECKS =====
@@ -118,6 +122,84 @@ class EducationService {
     
     // Deduplicate findings to avoid repetition
     return this._deduplicateFindings(findings);
+  }
+  
+  // Add a new method to handle Safe Browsing checks
+  _addSafeBrowsingChecks(findings, analysisResult) {
+    try {
+      // Look for Safe Browsing results in various possible locations
+      const safeBrowsing = analysisResult.safe_browsing_result || 
+                           analysisResult.ml_result?.safe_browsing_result;
+      
+      // First check: If we have a properly structured safe_browsing_result with threats
+      if (safeBrowsing && 
+          (safeBrowsing.is_safe === false || safeBrowsing.threats?.length > 0)) {
+        
+        // Create a general finding about Google Safe Browsing detection
+        findings.push({
+          text: 'Google Safe Browsing detected threats',
+          description: 'This site has been flagged as dangerous by Google Safe Browsing, a security system used by Chrome, Firefox, and Safari. The site likely contains malware, phishing attempts, or other threats to your security.',
+          severity: 'high',
+          category: 'safe_browsing'
+        });
+        
+        // If threats array exists, add specific findings for each threat type
+        if (safeBrowsing.threats && Array.isArray(safeBrowsing.threats) && safeBrowsing.threats.length > 0) {
+          // Create a set of unique threat types
+          const threatTypes = new Set(safeBrowsing.threats.map(threat => threat.threat_type));
+          
+          // Add findings for each threat type
+          if (threatTypes.has('MALWARE')) {
+            findings.push({
+              text: 'Malware detected by Google',
+              description: 'Google Safe Browsing has identified this site as hosting malware. Visiting this site may result in your device being infected with harmful software that can steal personal information, damage your files, or take control of your device without your knowledge.',
+              severity: 'high',
+              category: 'safe_browsing'
+            });
+          }
+          
+          if (threatTypes.has('SOCIAL_ENGINEERING')) {
+            findings.push({
+              text: 'Phishing detected by Google',
+              description: 'Google Safe Browsing has flagged this as a phishing site that attempts to trick you into revealing sensitive information such as passwords, credit card details, or personal data. These sites often impersonate trusted entities like banks, payment services, or well-known companies.',
+              severity: 'high',
+              category: 'safe_browsing'
+            });
+          }
+          
+          if (threatTypes.has('UNWANTED_SOFTWARE')) {
+            findings.push({
+              text: 'Unwanted software detected by Google',
+              description: 'Google Safe Browsing has identified this site as distributing unwanted software that may change your browser settings, add unwanted extensions, display intrusive ads, collect data without consent, or be difficult to remove once installed.',
+              severity: 'high',
+              category: 'safe_browsing'
+            });
+          }
+          
+          if (threatTypes.has('POTENTIALLY_HARMFUL_APPLICATION')) {
+            findings.push({
+              text: 'Harmful application detected by Google',
+              description: 'Google Safe Browsing has identified this site as distributing potentially harmful applications that may compromise your device security, collect sensitive data without disclosure, or perform actions without your consent.',
+              severity: 'high',
+              category: 'safe_browsing'
+            });
+          }
+        }
+      } 
+      // Second check: Look for Safe Browsing information in message/risk_explanation fields
+      else if ((analysisResult.message && analysisResult.message.toLowerCase().includes('safe browsing')) || 
+               (analysisResult.risk_explanation && analysisResult.risk_explanation.toLowerCase().includes('safe browsing'))) {
+        
+        findings.push({
+          text: 'Google Safe Browsing detected threats',
+          description: 'This site has been flagged as dangerous by Google Safe Browsing, a security system used by Chrome, Firefox, and Safari. The site likely contains malware, phishing attempts, or other threats to your security.',
+          severity: 'high',
+          category: 'safe_browsing'
+        });
+      }
+    } catch (error) {
+      console.error('Error in Safe Browsing checks:', error);
+    }
   }
   
   _addDomainChecks(url, findings, features) {

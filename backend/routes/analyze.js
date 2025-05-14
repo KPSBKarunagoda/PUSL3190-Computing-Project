@@ -26,20 +26,39 @@ module.exports = function(db) {
   // Helper function for handling educational content with key features
   async function handleEducationalContent(blacklistId, url, riskLevel, response, userId, isSystem = true) {
     try {
+      // Create a complete analysis data object with all necessary information
+      const analysisData = {
+        url: url,
+        risk_score: riskLevel,
+        blacklist_id: blacklistId,
+        
+        // Ensure Safe Browsing data is included
+        safe_browsing_result: response.safe_browsing_result,
+        message: response.message,
+        risk_explanation: response.risk_explanation,
+        
+        // Include any other analysis data that might be useful
+        features: response.features || {},
+        ml_result: response.ml_result || {}
+      };
+      
       // Generate key findings
       const eduService = new EducationService();
-      const findings = eduService.generateKeyFindings(response, url);
+      const findings = eduService.generateKeyFindings(analysisData, url);
       
       if (findings && findings.length > 0) {
         const keyFeaturesJson = JSON.stringify(findings);
         
-        // Store findings with system flag
+        // Store findings in database
         await db.execute(
           'INSERT INTO EducationalContent (BlacklistID, KeyFeatures, CreatedDate, CreatedBy, is_system) VALUES (?, ?, NOW(), ?, ?)',
           [blacklistId, keyFeaturesJson, userId, isSystem ? 1 : 0]
         );
         
-        console.log(`Stored educational content for BlacklistID: ${blacklistId}, Source: ${isSystem ? 'System' : 'Admin'}`);
+        console.log(`Stored educational content for BlacklistID: ${blacklistId}`);
+        
+        // Add findings to response for immediate display
+        response.key_findings = findings;
       }
     } catch (err) {
       console.error('Error creating educational content:', err);
