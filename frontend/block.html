@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard - Site Blocked</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      background-color: #121212;
+      color: #eaeaea;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .block-container {
+      max-width: 800px;
+      width: 90%;
+      margin: 2rem auto;
+      padding: 2rem;
+      background-color: #1e1e1e;
+      border-radius: 10px;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .block-header {
+      text-align: center;
+      position: relative;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .warning-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1rem;
+      color: #f44336;
+      animation: pulse 2s infinite;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 2rem;
+      color: #f44336;
+      font-weight: 700;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    .subtitle {
+      margin: 0.5rem 0;
+      font-size: 1.2rem;
+      color: #b0b0b0;
+      font-weight: 400;
+    }
+
+    .block-content {
+      margin-bottom: 2rem;
+    }
+
+    .url-container {
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 5px;
+      border-left: 4px solid #f44336;
+      word-break: break-all;
+      font-family: monospace;
+    }
+
+    .risk-indicator {
+      display: flex;
+      align-items: center;
+      margin: 1.5rem 0;
+    }
+
+    .risk-bar-container {
+      flex-grow: 1;
+      height: 20px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 0 1rem;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    .risk-bar {
+      height: 100%;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #f44336, #ff7043);
+      transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .risk-score {
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: #f44336;
+      width: 60px;
+      text-align: center;
+    }
+
+    .reasons-list {
+      margin: 1.5rem 0;
+      padding: 0;
+      list-style-type: none;
+    }
+
+    .reason-item {
+      background-color: rgba(0, 0, 0, 0.15);
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 5px;
+      border-left: 3px solid #ff9800;
+    }
+
+    .reason-title {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #ff9800;
+      display: flex;
+      align-items: center;
+    }
+
+    .reason-title i {
+      margin-right: 0.5rem;
+    }
+
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .btn {
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s ease;
+      font-size: 1rem;
+    }
+
+    .btn i {
+      margin-right: 0.5rem;
+    }
+
+    .btn-primary {
+      background-color: #2196f3;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #0d8aee;
+      box-shadow: 0 3px 10px rgba(33, 150, 243, 0.3);
+    }
+
+    .btn-danger {
+      background-color: transparent;
+      border: 1px solid #f44336;
+      color: #f44336;
+    }
+
+    .btn-danger:hover {
+      background-color: rgba(244, 67, 54, 0.1);
+      box-shadow: 0 3px 10px rgba(244, 67, 54, 0.2);
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      color: #757575;
+      font-size: 0.9rem;
+    }
+
+    .footer a {
+      color: #2196f3;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .findings-container {
+      margin-top: 1.5rem;
+    }
+
+    .finding-item {
+      background-color: rgba(0, 0, 0, 0.1);
+      border-left: 4px solid;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+
+    .finding-item.high {
+      border-left-color: #dc3545;
+    }
+
+    .finding-item.medium {
+      border-left-color: #ffc107;
+    }
+
+    .finding-item.low {
+      border-left-color: #28a745;
+    }
+
+    .finding-title {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .finding-title i {
+      margin-right: 10px;
+    }
+
+    .finding-title.high i {
+      color: #dc3545;
+    }
+
+    .finding-title.medium i {
+      color: #ffc107;
+    }
+
+    .finding-title.low i {
+      color: #28a745;
+    }
+
+    .finding-description {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: #b0b0b0;
+    }
+  </style>
+</head>
+<body>
+  <div class="block-container">
+    <div class="block-header">
+      <div class="warning-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <h1 class="title">Warning: Potentially Dangerous Website</h1>
+      <p class="subtitle">PhishGuard has detected that this site may be trying to steal your personal information</p>
+    </div>
+
+    <div class="block-content">
+      <p>You were attempting to visit:</p>
+      <div class="url-container" id="blocked-url">
+        <!-- URL will be inserted here -->
+      </div>
+
+      <div class="risk-indicator">
+        <span>Risk Level:</span>
+        <div class="risk-bar-container">
+          <div class="risk-bar" id="risk-bar"></div>
+        </div>
+        <div class="risk-score" id="risk-score">--</div>
+      </div>
+
+      <h3>Why was this site blocked?</h3>
+      <div id="key-findings" class="findings-container">
+        <!-- Key findings will be inserted here -->
+        <div class="loading-findings">
+          <i class="fas fa-circle-notch fa-spin"></i> Loading security details...
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button id="back-button" class="btn btn-primary">
+          <i class="fas fa-arrow-left"></i> Go Back to Safety
+        </button>
+        <button id="proceed-button" class="btn btn-danger">
+          <i class="fas fa-exclamation-triangle"></i> Proceed Anyway (Unsafe)
+        </button>
+      </div>
+    </div>
+
+    <div class="footer">
+      Protected by <a href="#">PhishGuard</a> | <a href="#" id="report-error">Report a problem</a>
+    </div>
+  </div>
+
+  <script src="js/block.js"></script>
+</body>
+</html>

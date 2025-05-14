@@ -5,7 +5,9 @@
   "permissions": [
     "activeTab",
     "storage",
-    "tabs"
+    "tabs",
+    "webRequest",
+    "webRequestBlocking"
   ],
   "host_permissions": [
     "http://localhost:3000/*",
@@ -25,6 +27,12 @@
       "matches": ["http://localhost:3000/*"],
       "js": ["auth-content.js"],
       "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["block.html", "js/block.js"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

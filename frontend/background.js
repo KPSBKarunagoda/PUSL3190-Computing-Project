@@ -13,6 +13,9 @@ let authState = {
   lastVerified: 0
 };
 
+// Track URLs that have been temporarily allowed by the user
+const temporarilyAllowedUrls = new Set();
+
 // Initialize auth state from storage
 chrome.runtime.onStartup.addListener(() => {
   loadAuthState();
@@ -478,6 +481,136 @@ setInterval(cleanupCache, 60 * 60 * 1000);
 // Also clean on startup
 cleanupCache();
 
+// Function to perform real-time security check without using cache
+async function performSecurityCheck(url) {
+  try {
+    console.log('Performing real-time security check for:', url);
+    
+    const headers = { 'Content-Type': 'application/json' };
+    
+    // Use centralized auth state if available
+    if (authState.isLoggedIn && authState.token) {
+      headers['x-auth-token'] = authState.token;
+    } else {
+      // Fallback to directly checking storage
+      const authData = await chrome.storage.local.get(['authToken']);
+      if (authData.authToken) {
+        headers['x-auth-token'] = authData.authToken;
+      }
+    }
+    
+    // Perform a fresh analysis using the API
+    const response = await fetch('http://localhost:3000/analyze-url', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ 
+        url: url,
+        useSafeBrowsing: true,
+        checkBlacklist: true // Ensure blacklist is checked
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    // Store in cache for non-blocking features
+    analyzedURLs[url] = {
+      result: { ...result, timestamp: Date.now() },
+      timestamp: Date.now()
+    };
+    
+    return result;
+  } catch (error) {
+    console.error('Real-time security check failed:', error);
+    
+    // In case of failure, check if we have a cached result as fallback
+    if (analyzedURLs[url] && (Date.now() - analyzedURLs[url].timestamp < CACHE_EXPIRY)) {
+      console.log('Using cached result as fallback due to API error');
+      return analyzedURLs[url].result;
+    }
+    
+    // Return a safe default if both real-time and cache fail
+    return { 
+      is_phishing: false, 
+      risk_score: 0,
+      error: error.message
+    };
+  }
+}
+
+// Replace the existing web request listener with one that does real-time checks
+chrome.webRequest.onBeforeRequest.addListener(
+  async function(details) {
+    // Skip extension pages, allowed URLs, and non-HTTP/HTTPS URLs
+    if (details.url.startsWith('chrome-extension://') || 
+        temporarilyAllowedUrls.has(details.url) ||
+        details.url.startsWith('chrome://') ||
+        details.url.includes('block.html')) {
+      return { cancel: false };
+    }
+    
+    try {
+      // Perform real-time security check for every request
+      const securityResult = await performSecurityCheck(details.url);
+      
+      if (securityResult.is_phishing || securityResult.risk_score > 40) {
+        // If URL is risky, block and redirect to our warning page
+        console.log(`Real-time check: Blocking high-risk URL: ${details.url} (Score: ${securityResult.risk_score})`);
+        
+        // Remove from temporarily allowed list if it exists there
+        temporarilyAllowedUrls.delete(details.url);
+        
+        // Create block page URL with parameters
+        const blockUrl = chrome.runtime.getURL('block.html') + 
+                        `?url=${encodeURIComponent(details.url)}` + 
+                        `&score=${encodeURIComponent(securityResult.risk_score || 0)}` +
+                        (securityResult.blacklist_id ? `&blacklist_id=${encodeURIComponent(securityResult.blacklist_id)}` : '');
+        
+        return { redirectUrl: blockUrl };
+      }
+      
+      return { cancel: false };
+    } catch (error) {
+      console.error('Error in web request listener:', error);
+      return { cancel: false }; // Don't block on errors
+    }
+  },
+  { urls: ["<all_urls>"] },
+  ["blocking"]
+);
+
+// Update tab listener to also use real-time checks
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'loading' && tab.url && 
+      !tab.url.startsWith('chrome') && 
+      !tab.url.startsWith('chrome-extension') &&
+      !tab.url.includes('block.html')) {
+    
+    // Don't check if URL is already allowed
+    if (temporarilyAllowedUrls.has(tab.url)) {
+      return;
+    }
+    
+    // Perform a real-time check
+    performSecurityCheck(tab.url).then(securityResult => {
+      if (securityResult.is_phishing || securityResult.risk_score > 40) {
+        // Create block page URL with parameters
+        const blockUrl = chrome.runtime.getURL('block.html') + 
+                        `?url=${encodeURIComponent(tab.url)}` + 
+                        `&score=${encodeURIComponent(securityResult.risk_score || 0)}` +
+                        (securityResult.blacklist_id ? `&blacklist_id=${encodeURIComponent(securityResult.blacklist_id)}` : '');
+        
+        chrome.tabs.update(tabId, { url: blockUrl });
+      }
+    }).catch(error => {
+      console.error('Error in tab update security check:', error);
+    });
+  }
+});
+
 // Add message listeners for auth-related operations
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Handle URL analysis requests (keep existing functionality)
@@ -588,6 +721,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: true });
     });
     return true;
+  }
+  
+  // Allow URL temporarily
+  if (message.action === 'allowUrl') {
+    console.log(`Temporarily allowing URL: ${message.url}`);
+    temporarilyAllowedUrls.add(message.url);
+    sendResponse({ success: true });
+    return true;
+  }
+  
+  // Report block error
+  if (message.action === 'reportBlockError') {
+    console.log(`Block error reported for URL: ${message.url}`);
+    // Could implement actual reporting to server here
+    sendResponse({ success: true });
+    return true;
+  }
+  
+  // Get key findings for blocked URL
+  if (message.action === 'getKeyFindings') {
+    console.log(`Getting key findings for URL: ${message.url}`);
+    fetchKeyFindings(message.url, message.blacklistId, message.score)
+      .then(findings => {
+        sendResponse({ findings });
+      })
+      .catch(error => {
+        console.error('Error fetching key findings:', error);
+        sendResponse({ findings: [] });
+      });
+    
+    return true; // Indicates asynchronous response
   }
   
   // Handle voting action - remove feedbackType from request body
@@ -930,3 +1094,86 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
 });
+
+// Function to fetch key findings
+async function fetchKeyFindings(url, blacklistId, score) {
+  try {
+    // First try to get findings from education service if we have a blacklist ID
+    if (blacklistId) {
+      const response = await fetch('http://localhost:3000/api/education/key-findings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          analysisResult: { blacklist_id: blacklistId }
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.findings && data.findings.length > 0) {
+          return data.findings;
+        }
+      }
+    }
+    
+    // If no blacklist findings, try to get current analysis data
+    // Use real-time analysis instead of cache for key findings
+    const securityResult = await performSecurityCheck(url);
+    
+    if (securityResult && securityResult.features) {
+      // Create findings from features
+      const generatedFindings = [];
+      
+      // Check URL features
+      if (securityResult.features.url_shortened === 1) {
+        generatedFindings.push({
+          text: 'URL shortening service detected',
+          description: 'This site uses a URL shortening service which can hide the actual destination and is commonly used in phishing attacks.',
+          severity: 'medium'
+        });
+      }
+      
+      if (securityResult.features.qty_dot_domain > 3) {
+        generatedFindings.push({
+          text: 'Excessive subdomains detected',
+          description: `This URL contains an unusually high number of subdomains (${securityResult.features.qty_dot_domain}), which is often used in phishing to confuse users.`,
+          severity: 'medium'
+        });
+      }
+      
+      // Add risk score finding
+      if (score > 70) {
+        generatedFindings.push({
+          text: 'Very high risk score',
+          description: `Our AI model has assigned this URL a risk score of ${score}%, indicating a high probability of being a phishing site.`,
+          severity: 'high'
+        });
+      } else if (score > 40) {
+        generatedFindings.push({
+          text: 'Elevated risk score',
+          description: `Our AI model has assigned this URL a risk score of ${score}%, indicating a moderate to high probability of being a phishing site.`,
+          severity: 'medium'
+        });
+      }
+      
+      return generatedFindings;
+    }
+    
+    // Default finding if nothing else is available
+    return [{
+      text: 'Suspicious website',
+      description: `This website has been flagged as suspicious with a risk score of ${score}%.`,
+      severity: 'medium'
+    }];
+    
+  } catch (error) {
+    console.error('Error fetching key findings:', error);
+    return [{
+      text: 'Site blocked for your protection',
+      description: 'PhishGuard detected potential security threats on this website.',
+      severity: 'medium'
+    }];
+  }
+}
