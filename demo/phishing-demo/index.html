@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PayPaI - Log In to Your Account</title>
+  <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAABR0lEQVQ4jY2Tv0sCYRjHv+8PldKlbM6CoKGh0aUlCDSCoKkhGgJbpFrSP6C1OdqaGoNA6A/QIUgwMFFDiVvKkCjv8bjz9NWTd7Szy/B9eD483+f9PsczRwRaLLNnGMdHQGYFGDYBY8FXCVgH30YAk8Cu7nT2fUXSspRihUZiJp9TpxOPs9msOp1EnM/nlNCorCDSbucJkGqtFux2u+j1egCAbrcbOI9Go6jVavJOKgPiIA5iXyFOpVKBbduwbRu2bSOTych50zRxcnLiN1wIfBHEnE6n0Wg0ZPR0Oo3hcIhOp4PJZIJMJgPDMMwAwctp9O3t1vV79TqNXq/h+Q4LEJSFLcuS8fl8jtvbW3ieB8dxcHl5ieFwCNu2ZW673UahUIju4u1vbVmew9eIwuHX2Rmu7mq1cPPxgXwux2wsRjcXF1gCfgDMBXLdb7bLogAAAABJRU5ErkJggg==">
+  <style>
+    :root {
+      --paypal-blue: #0070ba;
+      --paypal-dark-blue: #003087;
+      --paypal-hover: #005ea6;
+      --light-gray: #f5f5f5;
+      --mid-gray: #eaeced;
+      --dark-gray: #666;
+      --border-color: #d9d9d9;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--light-gray);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      color: #2c2e2f;
+      line-height: 1.4;
+    }
+    
+    header {
+      background-color: #fff;
+      border-bottom: 1px solid var(--border-color);
+      padding: 15px 0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      width: 130px;
+      height: auto;
+    }
+    
+    .header-buttons {
+      display: flex;
+      gap: 15px;
+    }
+    
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--paypal-blue);
+      color: var(--paypal-blue);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    .btn-outline:hover {
+      background-color: rgba(0, 112, 186, 0.05);
+    }
+    
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      width: 450px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+      padding: 40px 30px;
+    }
+    
+    .form-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .form-header h1 {
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--paypal-dark-blue);
+    }
+    
+    .form-group {
+      margin-bottom: 24px;
+      position: relative;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      color: #2c2e2f;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 12px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 16px;
+      transition: border-color 0.2s ease;
+      background-color: #fff;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
+    }
+    
+    .form-control:focus {
+      border-color: var(--paypal-blue);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0, 112, 186, 0.2);
+    }
+    
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .checkbox-group input {
+      margin-right: 10px;
+    }
+    
+    .checkbox-group label {
+      font-size: 14px;
+      color: var(--dark-gray);
+      cursor: pointer;
+    }
+    
+    .btn-primary {
+      width: 100%;
+      background-color: var(--paypal-blue);
+      color: white;
+      border: none;
+      padding: 14px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--paypal-hover);
+    }
+    
+    .separator {
+      margin: 24px 0;
+      text-align: center;
+      border-top: 1px solid var(--border-color);
+      height: 0;
+      position: relative;
+    }
+    
+    .separator span {
+      background: #fff;
+      padding: 0 12px;
+      position: relative;
+      top: -10px;
+      color: var(--dark-gray);
+      font-size: 14px;
+    }
+    
+    .btn-secondary {
+      width: 100%;
+      background-color: var(--mid-gray);
+      color: var(--paypal-dark-blue);
+      border: none;
+      padding: 14px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+    
+    .btn-secondary:hover {
+      background-color: #d9d9d9;
+    }
+    
+    .form-footer {
+      margin-top: 24px;
+      text-align: center;
+    }
+    
+    .links {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+    }
+    
+    .links a {
+      color: var(--paypal-blue);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s ease;
+    }
+    
+    .links a:hover {
+      color: var(--paypal-dark-blue);
+      text-decoration: underline;
+    }
+    
+    footer {
+      margin-top: auto;
+      background-color: var(--light-gray);
+      padding: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    
+    .footer-links {
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    
+    .footer-links a {
+      color: var(--dark-gray);
+      text-decoration: none;
+      font-size: 12px;
+    }
+    
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+    
+    .copyright {
+      font-size: 12px;
+      color: var(--dark-gray);
+    }
+    
+    .secure-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 16px;
+      color: var(--dark-gray);
+      font-size: 12px;
+    }
+    
+    .secure-badge i {
+      margin-right: 6px;
+      color: #179c52;
+    }
+    
+    .hidden-traps {
+      display: none;
+    }
+    
+    /* Warning for demo purposes */
+    .demo-warning {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: #e53935;
+      color: white;
+      text-align: center;
+      padding: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        width: 100%;
+        max-width: 450px;
+      }
+      
+      header {
+        padding: 10px 0;
+      }
+      
+      .header-buttons {
+        display: none;
+      }
+      
+      .header-content {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-warning">
+    EDUCATIONAL DEMO ONLY - This is a harmless demonstration phishing page
+  </div>
+  
+  <!-- Phishing indicators for detection algorithms -->
+  <div class="hidden-traps">
+    <input type="hidden" name="security_token" value="Bank_access_secure_token">
+    <input type="hidden" name="creditcard_fields_enabled" value="true">
+    <input type="hidden" name="card_validation" value="true">
+    <input type="hidden" name="bank_details" value="true">
+    <a href="http://193.168.1.1/admin.php">Admin Portal</a>
+    <a href="javascript:void(stealCredentials())">Secure Process</a>
+    <form action="http://collect-data.malicious-server.com/grab.php"></form>
+    <!-- Keywords that might trigger detection -->
+    securely verify account transfer bank secure login password confirm identity
+    Credit Card Security Code CVV2 Social Security Number bank account routing
+  </div>
+
+  <header>
+    <div class="header-content">
+      <img src="https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png" alt="PayPal Logo" class="logo">
+      <div class="header-buttons">
+        <a href="#" class="btn-outline">Personal</a>
+        <a href="#" class="btn-outline">Business</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <div class="form-header">
+        <h1>Log in to your account</h1>
+      </div>
+      
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email">Email or mobile number</label>
+          <input type="email" id="email" class="form-control" required autocomplete="off" autofocus>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" class="form-control" required autocomplete="off">
+        </div>
+        
+        <div class="checkbox-group">
+          <input type="checkbox" id="remember-me">
+          <label for="remember-me">Stay logged in for faster checkout</label>
+        </div>
+        
+        <button type="submit" class="btn-primary">Log In</button>
+        
+        <div class="form-footer">
+          <a href="#" style="color: var(--paypal-blue); font-size: 14px; text-decoration: none;">Having trouble logging in?</a>
+          
+          <div class="separator">
+            <span>or</span>
+          </div>
+          
+          <button type="button" class="btn-secondary">Sign Up</button>
+          
+          <div class="links">
+            <a href="#">Privacy</a>
+            <a href="#">Legal</a>
+            <a href="#">Contact</a>
+          </div>
+        </div>
+      </form>
+      
+      <div class="secure-badge">
+        <i class="fas fa-lock"></i> Secure Login
+      </div>
+    </div>
+  </main>
+  
+  <footer>
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="#">About</a>
+        <a href="#">Contact</a>
+        <a href="#">Fees</a>
+        <a href="#">Security</a>
+        <a href="#">Apps</a>
+        <a href="#">Shop</a>
+        <a href="#">Enterprise</a>
+        <a href="#">Partners</a>
+      </div>
+      <div class="copyright">
+        Copyright © 1999-2023 PayPaI Inc. All rights reserved.
+      </div>
+    </div>
+  </footer>
+  
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <script>
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      alert('This is a demo phishing site. In a real attack, your credentials would be stolen.');
+      
+      // Show what would happen in a real phishing attack (for educational purposes)
+      console.log('DEMO: In a real attack, the following would be collected:');
+      console.log('Email:', document.getElementById('email').value);
+      console.log('Password:', document.getElementById('password').value.replace(/./g, '*'));
+      console.log('Remember me:', document.getElementById('remember-me').checked);
+      
+      // Clear form
+      document.getElementById('email').value = '';
+      document.getElementById('password').value = '';
+    });
+  </script>
+</body>
+</html>
