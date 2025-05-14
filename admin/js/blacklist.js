@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupRefreshButton();
     setupSearchFunctionality();
     setupBlacklistAnalytics();
+    setupExportButton(); // Add this line to initialize export button
     
     // Load blacklist data
     await loadBlacklist();
@@ -26,6 +27,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     showAlert('Failed to initialize blacklist page: ' + error.message, 'error');
   }
 });
+
+// Create variable to store blacklist data for export
+if (!window.state) window.state = {};
+window.state.allBlacklist = [];
 
 /**
  * Show or hide the loader element
@@ -48,6 +53,9 @@ async function loadBlacklist() {
     
     // Extract the blacklist entries from the response
     const blacklist = response.entries || [];
+    
+    // Store blacklist in state for export functionality
+    window.state.allBlacklist = blacklist || [];
     
     const tableBody = document.getElementById('blacklist-table-body');
     if (!tableBody) {
@@ -919,6 +927,87 @@ function timeframeToTitle(timeframe) {
     case 'year': return 'Last 12 Months';
     case 'week': 
     default: return 'Last 7 Days';
+  }
+}
+
+// Add function for export button setup
+function setupExportButton() {
+  const exportBtn = document.getElementById('export-blacklist');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportBlacklist);
+  }
+}
+
+// Add function to export blacklist data
+function exportBlacklist() {
+  try {
+    // Show loading state on button
+    const exportBtn = document.getElementById('export-blacklist');
+    const originalText = exportBtn.innerHTML;
+    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+    
+    // Get current blacklist data
+    const blacklist = [...window.state.allBlacklist] || [];
+    
+    if (!blacklist.length) {
+      showAlert('No domains available to export', 'warning');
+      exportBtn.innerHTML = originalText;
+      return;
+    }
+    
+    // Create CSV content with header
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "URL,Risk Level,Added By,Date Added\n";
+    
+    // Add each domain as a row
+    blacklist.forEach(item => {
+      // Format each field with proper CSV escaping
+      const formatForCsv = (str) => {
+        if (str === null || str === undefined) return '';
+        return `"${String(str).replace(/"/g, '""')}"`;
+      };
+      
+      let addedBy = item.is_system ? 'System' : (item.addedByUser || 'Admin');
+      
+      // Build row with all fields
+      const row = [
+        formatForCsv(item.URL || ''),
+        formatForCsv(item.RiskLevel || '100'),
+        formatForCsv(addedBy),
+        formatForCsv(formatDate(item.AddedDate))
+      ];
+      
+      csvContent += row.join(',') + '\n';
+    });
+    
+    // Create download link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `phishguard_blacklist_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    
+    // Trigger download
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    
+    // Reset button state
+    exportBtn.innerHTML = originalText;
+    
+    // Show success notification
+    showToast('Blacklist exported successfully', 'success');
+    
+  } catch (error) {
+    console.error('Error exporting blacklist:', error);
+    showAlert('Failed to export blacklist: ' + error.message, 'error');
+    
+    // Reset button state
+    const exportBtn = document.getElementById('export-blacklist');
+    if (exportBtn) {
+      exportBtn.innerHTML = '<i class="fas fa-download"></i> Export Blacklist';
+    }
   }
 }
 

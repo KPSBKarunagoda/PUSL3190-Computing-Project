@@ -61,14 +61,6 @@ function setupVoteActions() {
     });
   }
   
-  // Set up trends button
-  const trendsBtn = document.getElementById('view-vote-trends');
-  if (trendsBtn) {
-    trendsBtn.addEventListener('click', () => {
-      showAlert('Voting trends feature will be available in a future update', 'info');
-    });
-  }
-  
   // Set up modal close buttons
   document.querySelectorAll('.modal-close').forEach(btn => {
     btn.addEventListener('click', () => {

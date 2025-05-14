@@ -157,6 +157,10 @@ const reportsAPI = {
   }
 };
 
+// Create variable to store report data for export
+if (!window.state) window.state = {};
+window.state.allReports = [];
+
 // Helper functions
 function extractDomain(url) {
   try {
@@ -378,6 +382,10 @@ async function loadReports(filter = 'all') {
     
     const reports = await reportsAPI.getReports();
     
+    // Store reports in state for export functionality
+    window.state.allReports = reports || [];
+    
+    // Hide loading indicator
     if (reportsLoader) reportsLoader.style.display = 'none';
     
     if (!reports || reports.length === 0) {
@@ -705,37 +713,96 @@ async function handleResolveReport(e) {
 
 function exportReports() {
   try {
-    const table = document.getElementById('reports-table');
-    if (!table || table.style.display === 'none') {
+    // Show loading state on button
+    const exportBtn = document.getElementById('export-reports');
+    const originalText = exportBtn.innerHTML;
+    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+    
+    // Get current reports data
+    const reports = [...window.state.allReports] || [];
+    
+    if (!reports || reports.length === 0) {
       showAlert('No reports available to export', 'warning');
+      if (exportBtn) exportBtn.innerHTML = originalText;
       return;
     }
     
-    let csv = 'URL,Reporter,Date,Status\n';
-    const rows = document.querySelectorAll('#reports-table-body tr');
+    // Apply current filter if any
+    const currentFilter = document.getElementById('status-filter')?.value || 'all';
+    let filteredReports = reports;
     
-    rows.forEach(row => {
-      const url = row.querySelector('.url-cell')?.title || '';
-      const reporter = row.cells[1]?.textContent || '';
-      const date = row.cells[2]?.textContent || '';
-      const status = row.querySelector('.status-badge')?.textContent || '';
+    if (currentFilter !== 'all') {
+      filteredReports = reports.filter(report => 
+        report.Status && report.Status.toLowerCase() === currentFilter.toLowerCase()
+      );
       
-      csv += `"${url.replace(/"/g, '""')}","${reporter.replace(/"/g, '""')}","${date.replace(/"/g, '""')}","${status.replace(/"/g, '""')}"\n`;
+      if (filteredReports.length === 0) {
+        showAlert(`No reports with status "${currentFilter}" to export`, 'warning');
+        if (exportBtn) exportBtn.innerHTML = originalText;
+        return;
+      }
+    }
+    
+    // Create CSV content with header and UTF-8 BOM for Excel compatibility
+    let csvContent = "\uFEFF"; // UTF-8 BOM
+    csvContent += "Report ID,URL,Reporter,Date Submitted,Status,Reason,Description\n";
+    
+    // Format each field with proper CSV escaping
+    const formatForCsv = (str) => {
+      if (str === null || str === undefined) return '';
+      return `"${String(str).replace(/"/g, '""')}"`;
+    };
+    
+    // Add each report as a row
+    filteredReports.forEach(report => {
+      // Format date
+      let formattedDate = 'Unknown';
+      try {
+        if (report.ReportDate) {
+          const date = new Date(report.ReportDate);
+          formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+      } catch (e) { }
+      
+      // Build row with all fields
+      const row = [
+        formatForCsv(report.ReportID || ''),
+        formatForCsv(report.URL || ''),
+        formatForCsv(report.ReporterName || ''),
+        formatForCsv(formattedDate),
+        formatForCsv(report.Status || 'Pending'),
+        formatForCsv(report.Reason || ''),
+        formatForCsv(report.Description || '')
+      ];
+      
+      csvContent += row.join(',') + '\n';
     });
     
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'phishguard_reports.csv');
-    link.style.visibility = 'hidden';
+    link.setAttribute('download', `phishguard_reports_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
+    
+    // Trigger download
     link.click();
+    
+    // Clean up
     document.body.removeChild(link);
     
-    showAlert('Reports exported successfully', 'success');
+    // Reset button state
+    if (exportBtn) exportBtn.innerHTML = originalText;
+    
+    // Show success notification
+    showAlert(`${filteredReports.length} reports exported successfully`, 'success');
   } catch (error) {
     console.error('Error exporting reports:', error);
     showAlert('Failed to export reports: ' + error.message, 'error');
+    
+    // Reset button state
+    const exportBtn = document.getElementById('export-reports');
+    if (exportBtn) exportBtn.innerHTML = '<i class="fas fa-download"></i> Export Reports';
   }
 }

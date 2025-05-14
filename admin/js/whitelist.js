@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Set up event handlers
     setupAddForm();
     setupRefreshButton();
-    setupSearchFunctionality(); // Add this line
+    setupSearchFunctionality();
+    setupExportButton(); // Add this line to initialize the export button
     
     // Load whitelist data
     await loadWhitelist();
@@ -24,6 +25,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     showAlert('Failed to initialize whitelist page: ' + error.message, 'error');
   }
 });
+
+// Create variable to store whitelist data for export
+if (!window.state) window.state = {};
+window.state.allWhitelist = [];
 
 async function loadWhitelist() {
   try {
@@ -47,6 +52,9 @@ async function loadWhitelist() {
     // Fetch whitelist
     const whitelist = await listsAPI.getWhitelist();
     console.log('Loaded whitelist data:', whitelist);
+    
+    // Store whitelist in state for export functionality
+    window.state.allWhitelist = whitelist || [];
     
     // Hide loading indicator
     if (whitelistLoader) {
@@ -325,6 +333,97 @@ function filterDomains(searchTerm) {
   // Show explanatory message if no results
   if (visibleCount === 0 && searchTerm && rows.length > 0) {
     showToast(`No domains match "${searchTerm}"`, 'info');
+  }
+}
+
+// Add this new function for export functionality
+function exportWhitelist() {
+  try {
+    // Show loading state on button
+    const exportBtn = document.getElementById('export-whitelist');
+    const originalText = exportBtn.innerHTML;
+    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+    
+    // Get current whitelist data
+    const whitelist = [...window.state.allWhitelist] || [];
+    
+    if (!whitelist.length) {
+      showAlert('No domains available to export', 'warning');
+      exportBtn.innerHTML = originalText;
+      return;
+    }
+    
+    // Create CSV content with header
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Domain,Added By,Date Added\n";
+    
+    // Add each domain as a row
+    whitelist.forEach(item => {
+      // Handle if item is a string or object
+      let domain, addedBy, dateAdded;
+      
+      if (typeof item === 'string') {
+        domain = item;
+        addedBy = 'Unknown';
+        dateAdded = 'Unknown';
+      } else {
+        domain = item.Domain || item.domain || '';
+        addedBy = item.addedByUser || 'Unknown';
+        dateAdded = item.AddedDate ? new Date(item.AddedDate).toLocaleDateString() : 'Unknown';
+      }
+      
+      // Format each field with proper CSV escaping
+      const formatForCsv = (str) => {
+        if (str === null || str === undefined) return '';
+        return `"${String(str).replace(/"/g, '""')}"`;
+      };
+      
+      // Build row with all fields
+      const row = [
+        formatForCsv(domain),
+        formatForCsv(addedBy),
+        formatForCsv(dateAdded)
+      ];
+      
+      csvContent += row.join(',') + '\n';
+    });
+    
+    // Create download link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `phishguard_whitelist_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    
+    // Trigger download
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    
+    // Reset button state
+    exportBtn.innerHTML = originalText;
+    
+    // Show success notification
+    showToast('Whitelist exported successfully', 'success');
+    
+  } catch (error) {
+    console.error('Error exporting whitelist:', error);
+    showAlert('Failed to export whitelist: ' + error.message, 'error');
+    
+    // Reset button state
+    const exportBtn = document.getElementById('export-whitelist');
+    if (exportBtn) {
+      exportBtn.innerHTML = '<i class="fas fa-download"></i> Export Whitelist';
+    }
+  }
+}
+
+// Add setup function for the export button
+function setupExportButton() {
+  const exportBtn = document.getElementById('export-whitelist');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportWhitelist);
   }
 }
 

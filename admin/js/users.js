@@ -71,6 +71,9 @@ async function loadUsers() {
     
     console.log(`Loaded ${users.length} users`);
     
+    // Store users in state for export functionality
+    window.state.allUsers = users;
+    
     // Hide loading state
     if (userLoader) userLoader.style.display = 'none';
     
@@ -250,6 +253,12 @@ function setupUserActions() {
     });
   }
   
+  // Set up Export User List button
+  const exportUsersBtn = document.getElementById('export-users');
+  if (exportUsersBtn) {
+    exportUsersBtn.addEventListener('click', exportUsersList);
+  }
+  
   // Set up modal close buttons
   document.querySelectorAll('.modal-close, #cancel-user-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -319,6 +328,88 @@ function setupUserActions() {
     }
   }
 }
+
+/**
+ * Export users list as CSV file
+ */
+function exportUsersList() {
+  try {
+    // Show loading state on button
+    const exportBtn = document.getElementById('export-users');
+    const originalText = exportBtn.innerHTML;
+    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+    
+    // Get current user data
+    const users = [...state.allUsers] || [];
+    
+    if (!users.length) {
+      showAlert('No users available to export', 'warning');
+      exportBtn.innerHTML = originalText;
+      return;
+    }
+    
+    // Create CSV content with header
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Username,Email,Role,Status,Created\n";
+    
+    // Add each user as a row
+    users.forEach(user => {
+      // Format dates
+      const createdDate = user.created ? new Date(user.created).toLocaleDateString() : 'N/A';
+      
+      // Format each field with proper CSV escaping
+      const formatForCsv = (str) => {
+        if (str === null || str === undefined) return '';
+        return `"${String(str).replace(/"/g, '""')}"`;
+      };
+      
+      // Build row with all fields
+      const row = [
+        formatForCsv(user.username),
+        formatForCsv(user.email),
+        formatForCsv(user.role),
+        formatForCsv(user.status),
+        formatForCsv(createdDate)
+      ];
+      
+      csvContent += row.join(',') + '\n';
+    });
+    
+    // Create download link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `phishguard_users_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    
+    // Trigger download
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    
+    // Reset button state
+    exportBtn.innerHTML = originalText;
+    
+    // Show success notification
+    showToast('User list exported successfully', 'success');
+    
+  } catch (error) {
+    console.error('Error exporting user list:', error);
+    showAlert('Failed to export user list: ' + error.message, 'error');
+    
+    // Reset button state
+    const exportBtn = document.getElementById('export-users');
+    if (exportBtn) {
+      exportBtn.innerHTML = '<i class="fas fa-download"></i> Export User List';
+    }
+  }
+}
+
+// Create variable to store user data for export
+// This will be populated during loadUsers() function
+if (!window.state) window.state = {};
+window.state.allUsers = [];
 
 function setupActionButtons() {
   // Edit buttons
