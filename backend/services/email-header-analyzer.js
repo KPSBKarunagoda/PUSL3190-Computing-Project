@@ -48,12 +48,14 @@ class EmailHeaderAnalyzer {
       await this._analyzeRouting(parsedHeaders, results);
       await this._analyzeDomains(parsedHeaders, results);
       await this._detectDeception(parsedHeaders, results);
+      // ADDED: New check for suspicious headers
+      await this._checkSuspiciousHeaders(parsedHeaders, results);
       
       console.log('All analysis steps completed');
       
       // Calculate overall risk score
       results.riskScore = this._calculateRiskScore(results);
-      results.isPhishing = results.riskScore > 70;
+      results.isPhishing = results.riskScore >= 50; // FIXED: Lower threshold to be more sensitive
       
       // Generate summary
       results.summary = this._generateSummary(results);
@@ -132,6 +134,13 @@ class EmailHeaderAnalyzer {
             description: `The message failed SPF authentication (${spfResult}). This suggests the sender's address may be forged.`,
             severity: spfResult === 'fail' ? 'high' : 'medium'
           });
+        } else if (spfResult === 'none') {
+          // FIXED: Add finding for SPF "none" case
+          results.findings.push({
+            text: 'No SPF Authentication',
+            description: 'The sending domain does not have SPF configured or the check was skipped. SPF helps verify email authenticity.',
+            severity: 'medium'
+          });
         } else if (spfResult === 'pass') {
           // Good sign, but we don't need a finding for this
           authResults.spfPassed = true;
@@ -139,7 +148,7 @@ class EmailHeaderAnalyzer {
       } else {
         authResults.spf = 'none';
         results.findings.push({
-          text: 'No SPF Authentication',
+          text: 'No SPF Verification Results',
           description: 'This email lacks SPF authentication results, which makes it harder to verify the sender.',
           severity: 'medium'
         });
@@ -156,6 +165,13 @@ class EmailHeaderAnalyzer {
             text: 'DKIM Signature Failure',
             description: 'The DKIM signature verification failed. This email\'s content may have been altered in transit.',
             severity: 'high'
+          });
+        } else if (dkimResult === 'none') {
+          // UPDATED: Changed severity from 'low' to 'medium'
+          results.findings.push({
+            text: 'No DKIM Signature',
+            description: 'This email is not signed with DKIM. While not all legitimate emails use DKIM, it\'s an important authentication method that helps verify email integrity.',
+            severity: 'medium'  // Changed from 'low'
           });
         } else if (dkimResult === 'pass') {
           authResults.dkimPassed = true;
@@ -178,6 +194,13 @@ class EmailHeaderAnalyzer {
             description: 'This message failed DMARC policy checks. The sender domain\'s email security policy indicates this is suspicious.',
             severity: 'high'
           });
+        } else if (dmarcResult === 'none') {
+          // UPDATED: Changed severity from 'low' to 'medium'
+          results.findings.push({
+            text: 'No DMARC Policy',
+            description: 'The sending domain does not have a DMARC policy. DMARC helps protect against email spoofing and phishing.',
+            severity: 'medium'  // Changed from 'low'
+          });
         } else if (dmarcResult === 'pass') {
           authResults.dmarcPassed = true;
         }
@@ -192,7 +215,7 @@ class EmailHeaderAnalyzer {
         results.findings.push({
           text: 'Strong Email Authentication',
           description: 'This email passed all available authentication checks (SPF, DKIM, DMARC), indicating the sender is legitimate.',
-          severity: 'low'
+          severity: 'info'  // Changed from 'low' to 'info' for positive findings
         });
       }
     } catch (error) {
@@ -355,8 +378,36 @@ class EmailHeaderAnalyzer {
           }
         }
         
-        // Check for impersonation of well-known services in display name
-        const wellKnownServices = ['paypal', 'apple', 'microsoft', 'google', 'amazon', 'bank', 'netflix', 'facebook'];
+        // MODIFIED: Remove specific political figure detection, instead use more general categories
+        const wellKnownServices = [
+          'paypal', 'apple', 'microsoft', 'google', 'amazon', 'bank', 'netflix', 'facebook',
+          'government', 'official', 'support', 'service', 'security', 'admin',
+          'billing', 'payment', 'account', 'secure', 'help', 'team'
+        ];
+        
+        // ADDED: Check for government/official entity generically instead of specific figures
+        if (displayName.toLowerCase().includes('president') || 
+            displayName.toLowerCase().includes('minister') ||
+            displayName.toLowerCase().includes('official') ||
+            displayName.toLowerCase().includes('administration')) {
+            
+          const domainLooksGovernmental = fromDomain && 
+            (fromDomain.includes('gov') || 
+             fromDomain.includes('government') || 
+             fromDomain.endsWith('.gov') || 
+             fromDomain.includes('official'));
+             
+          if (!domainLooksGovernmental) {
+            results.findings.push({
+              text: 'Potential Official Entity Impersonation',
+              description: `The sender appears to represent an official or governmental entity but is using a non-governmental email domain (${fromDomain}).`,
+              severity: 'high'
+            });
+            domainAnalysis.officialImpersonation = true;
+          }
+        }
+        
+        // Keep general service impersonation check
         for (const service of wellKnownServices) {
           if (displayName.toLowerCase().includes(service) && 
               fromDomain && !fromDomain.includes(service)) {
@@ -369,6 +420,24 @@ class EmailHeaderAnalyzer {
             break;
           }
         }
+      }
+      
+      // ADDED: Extract email addresses for additional checks
+      const extractEmail = (header) => {
+        const emailMatch = header.match(/<([^@]+@[^>]+)>/i) || header.match(/([^@\s]+@[^\s]+)/i);
+        return emailMatch ? emailMatch[1].toLowerCase() : null;
+      };
+      
+      const fromEmail = extractEmail(fromHeader);
+      const replyToEmail = extractEmail(replyToHeader);
+      
+      // ADDED: Check for reply-to mismatch with the same domain
+      if (fromEmail && replyToEmail && fromEmail !== replyToEmail && fromDomain === replyToDomain) {
+        results.findings.push({
+          text: 'Suspicious Reply-To Address',
+          description: `Replies will go to ${replyToEmail}, which is different from the sender (${fromEmail}) even though they share the same domain. This could be an attempt to redirect responses.`,
+          severity: 'medium'
+        });
       }
     } catch (error) {
       console.error('Error analyzing domains:', error);
@@ -435,6 +504,57 @@ class EmailHeaderAnalyzer {
     }
   }
   
+  async _checkSuspiciousHeaders(parsedHeaders, results) {
+    const { headerFields } = parsedHeaders;
+    
+    try {
+      // Look for suspicious script indicators in headers
+      const suspiciousScriptKeywords = ['php', 'script', 'spoof', 'originating-script'];
+      
+      for (const key in headerFields) {
+        const headerValue = headerFields[key].toLowerCase();
+        
+        // Special check for X-PHP-Originating-Script header
+        if (key.toLowerCase().includes('php-originating-script')) {
+          results.findings.push({
+            text: 'Suspicious PHP Script Origin',
+            description: `This email was generated by a PHP script (${headerFields[key]}). This is unusual for legitimate emails and often indicates an automated phishing campaign.`,
+            severity: 'high'
+          });
+          break;
+        }
+        
+        // Check header name and value for suspicious terms
+        for (const keyword of suspiciousScriptKeywords) {
+          if ((key.toLowerCase().includes(keyword) || headerValue.includes(keyword)) && 
+              headerValue.includes('spoof')) {
+            results.findings.push({
+              text: 'Suspicious Script Indicators',
+              description: `Header "${key}" contains suspicious script references that may indicate this email was generated by an automated phishing tool.`,
+              severity: 'high'
+            });
+            break;
+          }
+        }
+      }
+      
+      // Check for unusual or custom X- headers that could indicate manipulation
+      const suspiciousXHeaders = Object.keys(headerFields)
+        .filter(key => key.toLowerCase().startsWith('x-') && 
+               !['x-mailer', 'x-originating-ip', 'x-spam-status'].includes(key.toLowerCase()));
+      
+      if (suspiciousXHeaders.length > 5) {
+        results.findings.push({
+          text: 'Unusual Custom Headers',
+          description: `This email contains an unusual number of custom X- headers (${suspiciousXHeaders.length}), which may indicate email manipulation or automated generation.`,
+          severity: 'medium'  // Changed from 'low'
+        });
+      }
+    } catch (error) {
+      console.error('Error checking suspicious headers:', error);
+    }
+  }
+  
   _calculateRiskScore(results) {
     // Base score
     let score = 0;
@@ -445,8 +565,10 @@ class EmailHeaderAnalyzer {
         score += 25;
       } else if (finding.severity === 'medium') {
         score += 15;
-      } else {
-        // Low severity findings can reduce the score
+      } else if (finding.severity === 'low') {
+        score += 5;  // Changed from -5 to +5 for 'low' severity
+      } else if (finding.severity === 'info') {
+        // Only reduce score for truly positive findings
         score -= 5;
       }
     }
