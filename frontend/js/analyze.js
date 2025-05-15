@@ -90,4 +90,37 @@ document.addEventListener('DOMContentLoaded', function() {
       if (loadingIndicator) loadingIndicator.style.display = 'none';
     }
   }
+
+  async function displayKeyFindings(container, result, url) {
+    try {
+      container.innerHTML = ''; // Clear container
+      
+      // Get findings from result or fetch them if needed
+      let findings = result.findings || [];
+      
+      if (findings.length === 0) {
+        // Handle no findings case
+        // ...existing code...
+        return;
+      }
+      
+      // Sort findings by severity (high -> medium -> low)
+      const sortedFindings = [...findings].sort((a, b) => {
+        const severityOrder = { high: 0, medium: 1, low: 2 };
+        const aSeverity = a.severity || 'medium';
+        const bSeverity = b.severity || 'medium';
+        
+        return severityOrder[aSeverity] - severityOrder[bSeverity];
+      });
+      
+      // Display sorted findings
+      sortedFindings.forEach(finding => {
+        // ...existing code for displaying findings...
+      });
+      
+    } catch (error) {
+      console.error('Error displaying key findings:', error);
+      container.innerHTML = '<div class="error-message">Failed to display findings</div>';
+    }
+  }
 });

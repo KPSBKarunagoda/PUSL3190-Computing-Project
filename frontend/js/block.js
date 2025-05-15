@@ -112,8 +112,17 @@ async function loadKeyFindings(url, blacklistId, riskScore) {
       return;
     }
     
-    // Display the findings
-    findings.forEach(finding => {
+    // Sort findings by severity (high -> medium -> low)
+    const sortedFindings = [...findings].sort((a, b) => {
+      const severityOrder = { high: 0, medium: 1, low: 2 };
+      const aSeverity = a.severity || 'medium';
+      const bSeverity = b.severity || 'medium';
+      
+      return severityOrder[aSeverity] - severityOrder[bSeverity];
+    });
+    
+    // Display the sorted findings
+    sortedFindings.forEach(finding => {
       const severityClass = finding.severity || 'medium';
       
       const iconClass = severityClass === 'high' ? 'exclamation-triangle' :

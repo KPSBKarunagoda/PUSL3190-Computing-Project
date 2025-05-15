@@ -298,8 +298,17 @@ function displayKeyFindings(findings) {
   // Clear previous findings
   findingsList.innerHTML = '';
   
+  // Sort findings by severity (high -> medium -> low)
+  const sortedFindings = [...findings].sort((a, b) => {
+    const severityOrder = { high: 0, medium: 1, low: 2 };
+    const aSeverity = a.severity || 'medium';
+    const bSeverity = b.severity || 'medium';
+    
+    return severityOrder[aSeverity] - severityOrder[bSeverity];
+  });
+  
   // Add each finding to the list
-  findings.forEach(finding => {
+  sortedFindings.forEach(finding => {
     const item = document.createElement('div');
     item.className = `finding-item ${finding.severity || 'medium'}`;
     

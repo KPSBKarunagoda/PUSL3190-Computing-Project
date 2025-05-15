@@ -121,7 +121,18 @@ class EducationService {
     }
     
     // Deduplicate findings to avoid repetition
-    return this._deduplicateFindings(findings);
+    const sortedFindings = this._deduplicateFindings(findings);
+    
+    // Sort findings by severity (high -> medium -> low)
+    sortedFindings.sort((a, b) => {
+      const severityOrder = { high: 0, medium: 1, low: 2 };
+      const aSeverity = a.severity || 'medium';
+      const bSeverity = b.severity || 'medium';
+      
+      return severityOrder[aSeverity] - severityOrder[bSeverity];
+    });
+    
+    return sortedFindings;
   }
   
   // Add a new method to handle Safe Browsing checks
