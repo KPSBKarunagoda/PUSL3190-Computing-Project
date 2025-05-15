@@ -206,12 +206,6 @@
     }
     
     /* AI Content Styling */
-    .ai-content {
-      color: var(--text-primary);
-      font-size: 1rem;
-      line-height: 1.8;
-    }
-    
     .ai-content h3 {
       color: var(--primary-color);
       margin-top: 25px;
@@ -228,14 +222,23 @@
       margin-bottom: 20px;
     }
     
+    /* Enhanced AI Content Styling */
+    .ai-content {
+      color: var(--text-primary);
+      font-size: 1rem;
+      line-height: 1.8;
+    }
+    
     .ai-content p {
       margin-bottom: 15px;
       color: var(--text-secondary);
     }
     
-    .ai-content ul {
+    /* Improved list styling */
+    .ai-content ul, .ai-content ol {
       padding-left: 20px;
       margin-bottom: 20px;
+      margin-top: 15px;
     }
     
     .ai-content li {
@@ -243,6 +246,165 @@
       color: var(--text-secondary);
       position: relative;
       padding-left: 5px;
+    }
+    
+    /* Enhanced bullet points */
+    .ai-content ul li::before {
+      content: '';
+      position: absolute;
+      left: -18px;
+      top: 0.6em;
+      width: 6px;
+      height: 6px;
+      background-color: var(--primary-color);
+      border-radius: 50%;
+    }
+    
+    /* Numbered list styling */
+    .ai-content ol {
+      counter-reset: item;
+      padding-left: 0;
+    }
+    
+    .ai-content ol li {
+      counter-increment: item;
+      padding-left: 24px;
+      position: relative;
+    }
+    
+    .ai-content ol li::before {
+      content: counter(item) ".";
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+    
+    /* Enhanced highlight box */
+    .ai-content .highlight {
+      padding: 18px 20px;
+      background-color: rgba(61, 133, 198, 0.1);
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color);
+      margin: 20px 0;
+      position: relative;
+    }
+    
+    .ai-content .highlight::before {
+      content: "\f05a"; /* Font Awesome info icon */
+      font-family: 'Font Awesome 5 Free';
+      font-weight: 900;
+      position: absolute;
+      left: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--card-bg);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-color);
+      font-size: 0.9rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Warning highlight */
+    .ai-content .highlight.warning {
+      border-left-color: #ff9800;
+      background-color: rgba(255, 152, 0, 0.1);
+    }
+    
+    .ai-content .highlight.warning::before {
+      content: "\f071"; /* Font Awesome warning icon */
+      color: #ff9800;
+    }
+    
+    /* Risk level styling */
+    .ai-content .risk-high {
+      color: #f44336;
+      font-weight: bold;
+      background-color: rgba(244, 67, 54, 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    
+    .ai-content .risk-medium {
+      color: #ff9800;
+      font-weight: bold;
+      background-color: rgba(255, 152, 0, 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    
+    .ai-content .risk-low {
+      color: #4caf50;
+      font-weight: bold;
+      background-color: rgba(76, 175, 80, 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    
+    /* Code or URL display */
+    .ai-content code {
+      font-family: monospace;
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    
+    /* Improved blockquote styling */
+    .ai-content blockquote {
+      border-left: 4px solid var(--accent-color);
+      padding: 10px 20px;
+      margin: 15px 0;
+      background-color: rgba(0, 0, 0, 0.1);
+      font-style: italic;
+      color: var(--text-secondary);
+    }
+    
+    /* Table styling */
+    .ai-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .ai-content th {
+      background-color: rgba(61, 133, 198, 0.1);
+      color: var(--primary-color);
+      font-weight: 600;
+      text-align: left;
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .ai-content td {
+      padding: 10px 15px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+    
+    .ai-content tr:nth-child(even) {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    .ai-content tr:hover {
+      background-color: rgba(61, 133, 198, 0.05);
+    }
+    
+    /* Section divider */
+    .ai-content hr {
+      border: none;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+      margin: 25px 0;
     }
     
     .ai-content .highlight {
@@ -1967,4 +2129,5 @@
   </script>
 </body>
 </html>
+`
 

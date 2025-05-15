@@ -670,26 +670,58 @@ Focus on patterns or anomalies that are strong indicators of either legitimacy o
   }
 
   _formatExplanation(explanation) {
+    // Enhanced formatting for better readability
     let formatted = explanation
+      // Handle headings
       .replace(/^# (.*$)/gm, '<h2>$1</h2>')
       .replace(/^## (.*$)/gm, '<h3>$1</h3>')
       .replace(/^### (.*$)/gm, '<h4>$1</h4>')
+      
+      // Handle text formatting
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      
+      // Handle special highlights for risk levels
+      .replace(/high risk/gi, '<span class="risk-high">High Risk</span>')
+      .replace(/medium risk/gi, '<span class="risk-medium">Medium Risk</span>')
+      .replace(/low risk/gi, '<span class="risk-low">Low Risk</span>')
+      
+      // Handle lists - unordered
       .replace(/^\- (.*)$/gm, '<li>$1</li>')
       .replace(/(<li>.*<\/li>)\n(?!<li>)/g, '$1</ul>\n')
       .replace(/(?<!<\/ul>\n)(<li>)/g, '<ul>$1')
+      
+      // Handle lists - ordered
+      .replace(/^\d+\. (.*)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)\n(?!<li>)/g, '$1</ol>\n')
+      .replace(/(?<!<\/ol>\n)(<li>)/g, '<ol>$1')
+      
+      // Handle paragraphs
       .replace(/^\s*$/gm, '</p><p>')
       .replace(/<\/p><p>/g, '</p>\n<p>');
     
-    if (!formatted.startsWith('<h2>') && !formatted.startsWith('<p>')) {
+    // Ensure content starts with a paragraph if not a heading
+    if (!formatted.startsWith('<h2>') && !formatted.startsWith('<h3>') && !formatted.startsWith('<p>')) {
       formatted = `<p>${formatted}</p>`;
     }
     
+    // Create enhanced highlight boxes
     formatted = formatted.replace(
-      /(?:IMPORTANT|NOTE|WARNING):([^<]+)/gi, 
-      '<div class="highlight"><strong>$&</strong></div>'
+      /NOTE:([^<]+)/gi, 
+      '<div class="highlight"><strong>Note:</strong>$1</div>'
     );
+    formatted = formatted.replace(
+      /IMPORTANT:([^<]+)/gi, 
+      '<div class="highlight"><strong>Important:</strong>$1</div>'
+    );
+    formatted = formatted.replace(
+      /WARNING:([^<]+)/gi, 
+      '<div class="highlight warning"><strong>Warning:</strong>$1</div>'
+    );
+    
+    // Handle blockquotes
+    formatted = formatted.replace(/^> (.*)$/gm, '<blockquote>$1</blockquote>');
     
     return formatted;
   }
