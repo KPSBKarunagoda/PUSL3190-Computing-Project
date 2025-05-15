@@ -1,6 +1,7 @@
 from urllib.parse import urlparse, parse_qs
 import re
 import dns.resolver
+import dns.exception
 import requests
 import socket
 import whois
@@ -12,11 +13,41 @@ import ipaddress
 import os
 from dotenv import load_dotenv
 import sys
+import time
 
 class URLFeatureExtractor:
     def __init__(self):
         load_dotenv()  # Load environment variables
         self.features = {}
+        
+        # Initialize multiple DNS resolvers for redundancy
+        self.dns_resolvers = self._initialize_dns_resolvers()
+        
+    def _initialize_dns_resolvers(self):
+        """Initialize multiple DNS resolvers for redundancy"""
+        resolvers = []
+        
+        # Default system resolver
+        default_resolver = dns.resolver.Resolver()
+        default_resolver.timeout = 3.0  # 3-second timeout
+        default_resolver.lifetime = 3.0  # 3-second lifetime
+        resolvers.append(default_resolver)
+        
+        # Google Public DNS
+        google_resolver = dns.resolver.Resolver()
+        google_resolver.nameservers = ['8.8.8.8', '8.8.4.4']
+        google_resolver.timeout = 3.0
+        google_resolver.lifetime = 3.0
+        resolvers.append(google_resolver)
+        
+        # Cloudflare DNS
+        cloudflare_resolver = dns.resolver.Resolver()
+        cloudflare_resolver.nameservers = ['1.1.1.1', '1.0.0.1']
+        cloudflare_resolver.timeout = 3.0
+        cloudflare_resolver.lifetime = 3.0
+        resolvers.append(cloudflare_resolver)
+        
+        return resolvers
         
     def count_chars(self, text, char):
         if not text:
@@ -259,39 +290,113 @@ class URLFeatureExtractor:
             if feature not in self.features:
                 self.features[feature] = 0
             
+    def resolve_with_retry(self, domain, record_type, max_retries=2):
+        """Attempt DNS resolution with multiple resolvers and retries"""
+        dns_errors = []
+        
+        # Try each resolver
+        for i, resolver in enumerate(self.dns_resolvers):
+            resolver_name = ['Default', 'Google', 'Cloudflare'][i] if i < 3 else f'Resolver{i}'
+            
+            # Attempt multiple retries with this resolver
+            for attempt in range(max_retries + 1):
+                try:
+                    result = resolver.resolve(domain, record_type)
+                    if attempt > 0 or i > 0:
+                        print(f"DNS resolution succeeded with {resolver_name} resolver (attempt {attempt+1})", file=sys.stderr)
+                    return result
+                except dns.resolver.NXDOMAIN:
+                    # Domain doesn't exist
+                    dns_errors.append(f"{resolver_name}: NXDOMAIN")
+                    break  # No point retrying this resolver
+                except dns.resolver.NoAnswer:
+                    # Domain exists but no records of this type
+                    dns_errors.append(f"{resolver_name}: NoAnswer")
+                    break  # No point retrying this resolver
+                except dns.resolver.Timeout:
+                    dns_errors.append(f"{resolver_name}: Timeout (attempt {attempt+1})")
+                    if attempt < max_retries:
+                        # Exponential backoff
+                        time.sleep(0.5 * (2 ** attempt))
+                except Exception as e:
+                    dns_errors.append(f"{resolver_name}: {str(e)} (attempt {attempt+1})")
+                    if attempt < max_retries:
+                        time.sleep(0.5 * (2 ** attempt))
+        
+        # All resolvers and retries failed
+        error_message = "; ".join(dns_errors)
+        if record_type != 'A':  # Don't log failures for non-critical record types
+            print(f"DNS resolution failed for {domain} ({record_type}): {error_message}", file=sys.stderr)
+        raise dns.resolver.NoAnswer(f"All resolvers failed: {error_message}")
+            
     def get_dns_features(self, domain):
-        features = {}
+        features = {
+            'qty_ip_resolved': 0,
+            'qty_mx_servers': 0,
+            'qty_nameservers': 0,
+            'ttl_hostname': 0,
+            'dns_resolution_failed': False  # New feature to track DNS resolution issues
+        }
+        
+        # Track the actual errors for better diagnostics
+        dns_error_types = []
+        
+        # Try primary A record resolution first
         try:
-            # DNS resolution
-            answers = dns.resolver.resolve(domain, 'A')
+            answers = self.resolve_with_retry(domain, 'A')
             features['qty_ip_resolved'] = len(answers)
+            features['ttl_hostname'] = answers.rrset.ttl
+        except dns.resolver.NXDOMAIN:
+            dns_error_types.append('NXDOMAIN')
+            features['dns_resolution_failed'] = True
+        except dns.resolver.NoAnswer:
+            dns_error_types.append('NoAnswer_A')
+        except dns.resolver.Timeout:
+            dns_error_types.append('Timeout_A')
+            features['dns_resolution_failed'] = True
+        except Exception as e:
+            dns_error_types.append(f'Error_A:{str(e)}')
+            features['dns_resolution_failed'] = True
             
-            # MX records
-            try:
-                mx_records = dns.resolver.resolve(domain, 'MX')
-                features['qty_mx_servers'] = len(mx_records)
-            except:
-                features['qty_mx_servers'] = 0
+        # Try MX records - separate try block to proceed even if A records fail
+        try:
+            mx_records = self.resolve_with_retry(domain, 'MX')
+            features['qty_mx_servers'] = len(mx_records)
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+            dns_error_types.append('NoMXRecords')
+        except dns.resolver.Timeout:
+            dns_error_types.append('Timeout_MX')
+        except Exception as e:
+            dns_error_types.append(f'Error_MX:{str(e)}')
             
-            # NS records
+        # Try NS records - separate try block
+        try:
+            ns_records = self.resolve_with_retry(domain, 'NS')
+            features['qty_nameservers'] = len(ns_records)
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+            dns_error_types.append('NoNSRecords')
+        except dns.resolver.Timeout:
+            dns_error_types.append('Timeout_NS')
+        except Exception as e:
+            dns_error_types.append(f'Error_NS:{str(e)}')
+            
+        # If we couldn't resolve NS records but should have them, try alternate methods
+        if features['qty_nameservers'] == 0 and features['qty_ip_resolved'] > 0:
+            # Try WHOIS data for nameservers as fallback
             try:
-                ns_records = dns.resolver.resolve(domain, 'NS')
-                features['qty_nameservers'] = len(ns_records)
-            except:
-                features['qty_nameservers'] = 0
+                w = whois.whois(domain)
+                if hasattr(w, 'name_servers') and w.name_servers:
+                    # Count unique nameservers
+                    unique_ns = set([ns.lower() for ns in w.name_servers if isinstance(ns, str)])
+                    features['qty_nameservers'] = len(unique_ns)
+                    print(f"Fallback: Found {features['qty_nameservers']} nameservers via WHOIS for {domain}", file=sys.stderr)
+            except Exception as e:
+                print(f"WHOIS fallback failed for {domain}: {str(e)}", file=sys.stderr)
                 
-            # TTL of hostname
-            try:
-                answer = dns.resolver.resolve(domain, 'A')
-                features['ttl_hostname'] = answer.rrset.ttl
-            except:
-                features['ttl_hostname'] = 0
-                
-        except:
-            features['qty_ip_resolved'] = 0
-            features['qty_mx_servers'] = 0
-            features['qty_nameservers'] = 0
-            features['ttl_hostname'] = 0
+        # If we got errors, store them for diagnostic purposes
+        if dns_error_types:
+            features['dns_error_types'] = ','.join(dns_error_types)
+            print(f"DNS resolution issues for {domain}: {features['dns_error_types']}", file=sys.stderr)
             
         return features
         

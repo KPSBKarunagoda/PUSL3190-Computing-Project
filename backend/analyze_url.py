@@ -8,6 +8,7 @@ from utils.feature_extractor import URLFeatureExtractor
 from services.safe_browsing import SafeBrowsingService
 from services.whitelist import WhitelistService
 from services.blacklist import BlacklistService
+from services.ip_reputation import IPReputationService  # Import the new service
 import numpy as np
 
 class ModelWrapper:
@@ -53,6 +54,7 @@ class URLAnalyzer:
         self.blacklist_service = BlacklistService()
         self.feature_extractor = URLFeatureExtractor()
         self.safe_browsing = SafeBrowsingService()
+        self.ip_reputation = IPReputationService()  # Initialize IP reputation service
         self.model = None
         self.scaler = None
         self.feature_names = None
@@ -126,20 +128,20 @@ class URLAnalyzer:
         """Initialize feature weights for risk scoring"""
         self.weights = {
             # ===== EXISTING FEATURES WITH ADJUSTED WEIGHTS =====
-            'domain_in_ip': 0.35,         # [INCREASED] 40% if IP address is used instead of domain
-            'tls_ssl_certificate': -0.15,  # -15% if SSL/TLS certificate is valid
+            'domain_in_ip': 0.40,         # [INCREASED] from 0.35 to 0.40 - IP address is a strong indicator
+            'tls_ssl_certificate': -0.10,  # [DECREASED] from -0.15 to -0.10 - many phishing sites now use SSL
             'domain_google_index': -0.15,  # -15% if domain is indexed by Google
             'url_google_index': -0.10,     # -10% if specific URL is indexed
-            'qty_redirects': 0.15,         # [INCREASED] 15% per redirect
+            'qty_redirects': 0.15,         # 15% per redirect
             'time_domain_activation': -0.10, # -10% based on domain age
             'qty_ip_resolved': -0.05,      # -5% per resolved IP (negative = good)
             'domain_spf': -0.05,           # -5% if domain has SPF record
             
             # ===== URL STRUCTURE FEATURES =====
-            'qty_dot_url': 0.04,           # [ADJUSTED] 4% per dot in URL
-            'qty_hyphen_url': 0.04,        # [ADJUSTED] 4% per hyphen in URL
-            'qty_at_url': 0.15,            # [INCREASED] 15% per @ symbol in URL
-            'length_url': 0.003,           # [ADJUSTED] More fine-grained weight per character
+            'qty_dot_url': 0.04,           # 4% per dot in URL
+            'qty_hyphen_url': 0.04,        # 4% per hyphen in URL
+            'qty_at_url': 0.15,            # 15% per @ symbol in URL
+            'length_url': 0.003,           # 0.003% per character
             
             # ===== NEW FEATURES ALREADY BEING EXTRACTED =====
             'qty_underline_url': 0.04,     # 4% per underline in URL
@@ -153,7 +155,7 @@ class URLAnalyzer:
             'email_in_url': 0.30,          # 30% if email is in URL (highly suspicious)
             'server_client_domain': 0.10,  # 10% if domain contains "server" or "client" (often phishing)
             'qty_mx_servers': -0.02,       # -2% per MX server (legitimate domains often have multiple)
-            'qty_nameservers': -0.03,      # -3% per nameserver (legitimate domains have multiple)
+            'qty_nameservers': -0.02,      # [REDUCED] from -0.03 to -0.02 per nameserver (will be adjusted in calculation)
         }
         
         # Parameters that need special normalization 
@@ -164,6 +166,105 @@ class URLAnalyzer:
             'time_domain_activation': {'max': 365},  # Cap at 1 year
             'time_domain_expiration': {'max': 730}   # Cap at 2 years
         }
+
+    def calculate_risk_score(self, features: Dict[str, Any]) -> float:
+        """Calculate risk score based on weighted features"""
+        risk_score = 50  # Base score
+        
+        # Add special pattern detection
+        # High entropy/random-looking domains are very suspicious
+        if features.get('domain_length', 0) > 15 and features.get('qty_vowels_domain', 0) / max(1, features.get('domain_length', 1)) < 0.2:
+            risk_score += 15  # Add 15% for suspicious character distribution
+        
+        # Multiple hyphens in domain is highly suspicious
+        if features.get('qty_hyphen_domain', 0) > 2:
+            risk_score += 10
+        
+        # Check if domain is indexed by Google (for context-aware analysis)
+        is_google_indexed = bool(features.get('domain_google_index', 0))
+        url_indexed = bool(features.get('url_google_index', 0))
+        
+        # NEW: Check for WHOIS failures (indicated by missing domain age and expiration)
+        whois_failed = (features.get('time_domain_activation', 0) == 0 and 
+                        features.get('time_domain_expiration', 0) == 0)
+        
+        # NEW: Handle WHOIS failures differently based on Google indexing
+        if whois_failed:
+            print("WHOIS lookup failed or data unavailable", file=sys.stderr)
+            
+            if is_google_indexed:
+                # For Google-indexed sites, WHOIS failure is less concerning
+                print("Domain is Google-indexed, reducing penalty for WHOIS failure", file=sys.stderr)
+                risk_score += 5  # Small penalty for WHOIS failure
+            else:
+                # For non-indexed sites, WHOIS failure is more suspicious
+                print("Domain is not Google-indexed and WHOIS failed - adding penalty", file=sys.stderr)
+                risk_score += 15  # Larger penalty for non-indexed domains with WHOIS failure
+        else:
+            # Standard checks for domain age and expiration when WHOIS works
+            # Newly registered domains (less than 7 days) are highly suspicious
+            if features.get('time_domain_activation', 0) > 0 and features.get('time_domain_activation', 0) < 7:
+                risk_score += 15
+                
+            # Short expiration is suspicious (less than 90 days)
+            if features.get('time_domain_expiration', 0) > 0 and features.get('time_domain_expiration', 0) < 90:
+                risk_score += 10
+        
+        # NEW: Adjust DNS infrastructure weight based on Google indexing
+        has_mx_servers = int(features.get('qty_mx_servers', 0)) > 0
+        has_nameservers = int(features.get('qty_nameservers', 0)) > 0
+        
+        # If domain is indexed by Google but missing DNS infrastructure,
+        # reduce the penalty since it's likely legitimate despite DNS issues
+        if is_google_indexed:
+            # For indexed sites, missing DNS infrastructure is less suspicious
+            if not has_nameservers:
+                risk_score += 10  # Add only 10% penalty (instead of larger penalty below)
+                print("Missing nameservers but Google-indexed site: reduced penalty", file=sys.stderr)
+            if not has_mx_servers:
+                risk_score += 5   # Add only 5% penalty
+                print("Missing MX servers but Google-indexed site: reduced penalty", file=sys.stderr)
+        else:
+            # For non-indexed sites, missing DNS infrastructure is very suspicious
+            if not has_nameservers:
+                risk_score += 25  # Significant penalty for no nameservers on non-indexed site
+                print("Missing nameservers on non-indexed site: major penalty", file=sys.stderr)
+            if not has_mx_servers:
+                risk_score += 10  # Higher penalty for non-indexed site
+                print("Missing MX servers on non-indexed site: increased penalty", file=sys.stderr)
+            
+            # NEW: Add penalty for non-indexed domain (but only if URL isn't indexed either)
+            if not url_indexed:
+                risk_score += 10  # Add 10% risk bonus for sites not in Google's index at all
+                print("Domain not indexed by Google: +10 points", file=sys.stderr)
+        
+        # Continue with standard feature weights, but skip nameservers and MX servers
+        # as we've already handled them above with context-aware logic
+        for feature, weight in self.weights.items():
+            if feature in features and feature not in ['qty_nameservers', 'qty_mx_servers']:
+                value = features[feature]
+                if isinstance(value, bool):
+                    value = 1 if value else 0
+                    
+                # Apply normalization for specific features
+                if feature in self.normalization_params:
+                    params = self.normalization_params[feature]
+                    
+                    # Cap maximum value for this feature
+                    if 'max' in params and value > params['max']:
+                        value = params['max']
+                        
+                    # Set minimum value
+                    if 'min' in params and value < params['min']:
+                        value = params['min']
+                
+                # Special handling for questionmark - only suspicious if more than one
+                if feature == 'qty_questionmark_url' and value <= 1:
+                    continue  # Skip if there's only one or zero question marks
+                
+                risk_score += value * weight
+        
+        return max(0, min(100, risk_score))
 
     def _ml_analysis(self, features: Dict[str, Any]) -> Dict[str, Any]:
         """Perform ML-based analysis"""
@@ -330,59 +431,8 @@ class URLAnalyzer:
             print(f"ML analysis error: {str(e)}", file=sys.stderr)
             raise Exception(f"ML analysis failed: {str(e)}")
 
-    def calculate_risk_score(self, features: Dict[str, Any]) -> float:
-        """Calculate risk score based on weighted features"""
-        risk_score = 50  # Base score
-        
-        # Add special pattern detection
-        # High entropy/random-looking domains are very suspicious (already extracted but not used)
-        if features.get('domain_length', 0) > 15 and features.get('qty_vowels_domain', 0) / max(1, features.get('domain_length', 1)) < 0.2:
-            risk_score += 15  # Add 15% for suspicious character distribution
-        
-        # Multiple hyphens in domain is highly suspicious
-        if features.get('qty_hyphen_domain', 0) > 2:
-            risk_score += 10
-        
-        # Newly registered domains (less than 7 days) are highly suspicious
-        if features.get('time_domain_activation', 0) >= 0 and features.get('time_domain_activation', 0) < 7:
-            risk_score += 15
-            
-        # Short expiration is suspicious (less than 90 days)
-        if features.get('time_domain_expiration', 0) >= 0 and features.get('time_domain_expiration', 0) < 90:
-            risk_score += 10
-            
-        # NEW: Domain not indexed by Google is suspicious
-        if features.get('domain_google_index', 1) == 0:
-            risk_score += 10  # Add 10% risk bonus for non-indexed domains
-        
-        for feature, weight in self.weights.items():
-            if feature in features:
-                value = features[feature]
-                if isinstance(value, bool):
-                    value = 1 if value else 0
-                    
-                # Apply normalization for specific features
-                if feature in self.normalization_params:
-                    params = self.normalization_params[feature]
-                    
-                    # Cap maximum value for this feature
-                    if 'max' in params and value > params['max']:
-                        value = params['max']
-                        
-                    # Set minimum value
-                    if 'min' in params and value < params['min']:
-                        value = params['min']
-                
-                # Special handling for questionmark - only suspicious if more than one
-                if feature == 'qty_questionmark_url' and value <= 1:
-                    continue  # Skip if there's only one or zero question marks
-                
-                risk_score += value * weight
-        
-        return max(0, min(100, risk_score))
-
     async def analyze_url(self, url: str, use_safe_browsing: bool = True) -> Dict[str, Any]:
-        """URL analysis including blacklist and whitelist checks"""
+        """URL analysis including blacklist, whitelist, and IP reputation checks"""
         try:
             print(f"\n=== Starting URL Analysis ===", file=sys.stderr)
             print(f"URL: {url}", file=sys.stderr)
@@ -417,7 +467,7 @@ class URLAnalyzer:
                     "safe_browsing_result": None
                 }
                 
-            # Step 3: Check Safe Browsing API if enabled (but don't immediately block)
+            # Step 3: Check Safe Browsing API
             sb_result = {"threats": [], "is_safe": True}
             if use_safe_browsing:
                 print("\nStep 3: Checking Google Safe Browsing...", file=sys.stderr)
@@ -430,9 +480,25 @@ class URLAnalyzer:
             else:
                 print("\nStep 3: Safe Browsing check skipped", file=sys.stderr)
 
-            # Step 4: ML Analysis
-            print("\nStep 4: Performing ML Analysis...", file=sys.stderr)
+            # NEW Step 4: Check IP reputation
+            print("\nStep 4: Checking IP reputation...", file=sys.stderr)
+            ip_rep_result = await self.ip_reputation.check_ip_reputation(url)
+            
+            if ip_rep_result["listed"]:
+                print(f"IP reputation check: {ip_rep_result['message']}", file=sys.stderr)
+                print(f"Found on blocklists: {', '.join(ip_rep_result['blocklists'])}", file=sys.stderr)
+                print(f"IP reputation risk contribution: +{ip_rep_result['risk_score']}%", file=sys.stderr)
+            else:
+                print(f"IP reputation check: {ip_rep_result['message']}", file=sys.stderr)
+
+            # Step 5: ML Analysis
+            print("\nStep 5: Performing ML Analysis...", file=sys.stderr)
             features = self.feature_extractor.extract_features(url)
+            
+            # Add IP reputation info to features so ML model can use it
+            features['ip_blacklisted'] = 1 if ip_rep_result["listed"] else 0
+            features['ip_blacklist_count'] = len(ip_rep_result.get("blocklists", []))
+            
             ml_result = self._ml_analysis(features)
             
             if ml_result is None:
@@ -446,7 +512,7 @@ class URLAnalyzer:
             is_phishing = bool(ml_result["is_phishing"])
             risk_score = float(ml_result["risk_score"])
 
-            # NEW: Incorporate Safe Browsing results into risk assessment
+            # Add Safe Browsing contributions to risk score
             if sb_result and sb_result.get("threats"):
                 threat_count = len(sb_result.get("threats", []))
                 safe_browsing_risk_bonus = min(40, threat_count * 20)  # Up to 40% risk bonus based on threats
@@ -457,18 +523,34 @@ class URLAnalyzer:
                 print(f"Adding Safe Browsing risk bonus: +{safe_browsing_risk_bonus}% (was {old_score:.1f}, now {risk_score:.1f})", file=sys.stderr)
                 
                 # Also update phishing status based on combined assessment
-                # If Safe Browsing detects threats, consider it phishing if risk score is high enough
                 if risk_score >= 60:
                     is_phishing = True
                     print("URL marked as phishing due to Safe Browsing threats and high risk score", file=sys.stderr)
 
+            # NEW: Add IP reputation to risk score
+            if ip_rep_result["listed"]:
+                ip_risk_contribution = ip_rep_result["risk_score"]
+                old_score = risk_score
+                risk_score = min(100, risk_score + ip_risk_contribution)
+                
+                print(f"Adding IP reputation risk: +{ip_risk_contribution}% (was {old_score:.1f}, now {risk_score:.1f})", file=sys.stderr)
+                
+                # Update phishing status based on IP reputation
+                if ip_risk_contribution >= 30 and risk_score >= 60:
+                    is_phishing = True
+                    print("URL marked as phishing due to poor IP reputation and high risk score", file=sys.stderr)
+
             message = "Phishing site detected" if is_phishing else "Site appears legitimate"
             
-            # If Safe Browsing found threats, mention it in the message
+            # Include Safe Browsing in message
             if sb_result and sb_result.get("threats"):
                 threat_types = [threat.get("threat_type", "Unknown") for threat in sb_result.get("threats", [])]
                 threat_message = ", ".join(threat_types)
                 message = f"Google Safe Browsing detected: {threat_message}. {message}"
+            
+            # Include IP reputation in message if it's listed
+            if ip_rep_result["listed"]:
+                message = f"IP appears on {len(ip_rep_result['blocklists'])} security blocklists. {message}"
                 
             return {
                 "risk_score": round(risk_score, 1),  # Round to 1 decimal place
@@ -480,6 +562,7 @@ class URLAnalyzer:
                                for k, v in ml_result["features"].items()}
                 },
                 "safe_browsing_result": sb_result,
+                "ip_reputation_result": ip_rep_result,  # Include IP reputation in results
                 "message": message,
                 "source": "Combined Analysis"
             }

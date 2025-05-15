@@ -1143,6 +1143,23 @@ async function fetchKeyFindings(url, blacklistId, score) {
         });
       }
       
+      // Add IP reputation findings if available
+      if (securityResult.features.ip_blacklisted === 1) {
+        generatedFindings.push({
+          text: 'Hosting server on security blocklists',
+          description: 'The IP address hosting this website appears on known security blocklists, indicating it may have been used previously for malicious activities.',
+          severity: 'high'
+        });
+      }
+      
+      if (securityResult.features.ip_blacklist_count > 2) {
+        generatedFindings.push({
+          text: `Server flagged by ${securityResult.features.ip_blacklist_count} blocklists`,
+          description: 'The hosting server has been flagged by multiple security services for suspicious behavior.',
+          severity: 'high'
+        });
+      }
+      
       // Add risk score finding
       if (score > 70) {
         generatedFindings.push({
