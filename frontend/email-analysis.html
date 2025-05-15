@@ -745,16 +745,6 @@
       border-left-color: #4caf50;
     }
 
-    .finding-card.info-level {
-      background-color: #e8f5e9;
-      border-left: 4px solid #4caf50;
-    }
-
-    .finding-card.low-risk {
-      background-color: #fff8e1;
-      border-left: 4px solid #ffb300;
-    }
-
     .finding-header {
       display: flex;
       align-items: center;
@@ -781,14 +771,6 @@
       color: #4caf50;
       font-size: 1.3rem;
       text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
-    }
-
-    .finding-card .finding-header i.fa-info-circle {
-      color: #4caf50;
-    }
-
-    .finding-card .finding-header i.fa-exclamation-circle {
-      color: #ff9800;
     }
 
     .finding-card p {
@@ -1256,17 +1238,6 @@
           </div>
           <div class="findings-cards" id="findings-cards">
             <!-- Finding cards will be populated by JavaScript -->
-          </div>
-          
-          <!-- Email Header Analysis Section -->
-          <div class="header-analysis-section">
-            <div class="findings-section-header">
-              <i class="fas fa-list-alt"></i>
-              <h3>Header Analysis</h3>
-            </div>
-            <div class="header-names" id="header-fields">
-              <!-- Header fields will be inserted here by JS -->
-            </div>
           </div>
           
           <!-- Enhanced Action Buttons -->
@@ -1744,12 +1715,12 @@
     // Display results
     function displayResults(result) {
       const {
-        is_phishing = false,
         risk_score = 0,
+        summary = '',
         findings = [],
         headers = {},
         email_subject = 'No Subject',
-        authResults = {}
+        is_phishing = false
       } = result;
       
       // Update email subject
@@ -1770,78 +1741,65 @@
       const resultDescription = document.getElementById('result-description');
       
       if (is_phishing || isHighRisk) {
-        animateScoreBar(risk_score, '#f44336');
         resultIcon.className = 'fas fa-exclamation-triangle';
         resultIconContainer.className = 'result-icon-container icon-danger';
         resultTitle.textContent = 'Likely Phishing';
         resultTitle.style.color = '#f44336';
         resultInterpretation.textContent = 'High Risk Detected';
         resultInterpretation.style.color = '#f44336';
-        resultDescription.textContent = 'This email shows multiple characteristics associated with phishing attempts.';
+        resultDescription.textContent = summary || 'This email shows multiple characteristics associated with phishing attempts.';
+        animateScoreBar(risk_score, '#f44336');
       } else if (isMediumRisk) {
-        animateScoreBar(risk_score, '#ff9800');
         resultIcon.className = 'fas fa-exclamation-circle';
         resultIconContainer.className = 'result-icon-container icon-warning';
-        resultTitle.textContent = 'Suspicious Email';
+        resultTitle.textContent = 'Caution Advised';
         resultTitle.style.color = '#ff9800';
-        resultInterpretation.textContent = 'Use Caution';
+        resultInterpretation.textContent = 'Suspicious Email';
         resultInterpretation.style.color = '#ff9800';
-        resultDescription.textContent = 'This email has some suspicious characteristics that warrant caution.';
+        resultDescription.textContent = summary || 'This email has some suspicious characteristics that warrant caution.';
+        animateScoreBar(risk_score, '#ff9800');
       } else {
-        animateScoreBar(risk_score, '#4caf50');
         resultIcon.className = 'fas fa-shield-check';
         resultIconContainer.className = 'result-icon-container icon-safe';
-        resultTitle.textContent = 'Likely Safe';
+        resultTitle.textContent = 'Likely Legitimate';
         resultTitle.style.color = '#4caf50';
         resultInterpretation.textContent = 'Low Risk';
         resultInterpretation.style.color = '#4caf50';
-        resultDescription.textContent = 'No major phishing indicators were detected for this email.';
+        resultDescription.textContent = summary || 'No major phishing indicators were detected in this email.';
+        animateScoreBar(risk_score, '#4caf50');
       }
       
-      // Display authentication summary
-      const authSummaryElement = document.getElementById('auth-summary');
-      if (authSummaryElement) {
-        let authSummary = '';
-        
-        // Create auth status with appropriate icons
-        const getStatusIcon = status => {
-          if (status === 'pass') return '<i class="fas fa-check-circle text-success"></i>';
-          if (status === 'fail' || status === 'softfail') return '<i class="fas fa-times-circle text-danger"></i>';
-          return '<i class="fas fa-question-circle text-warning"></i>';
-        };
-        
-        authSummary += `<div class="auth-item">SPF: ${getStatusIcon(authResults.spf || 'none')} ${authResults.spf || 'none'}</div>`;
-        authSummary += `<div class="auth-item">DKIM: ${getStatusIcon(authResults.dkim || 'none')} ${authResults.dkim || 'none'}</div>`;
-        authSummary += `<div class="auth-item">DMARC: ${getStatusIcon(authResults.dmarc || 'none')} ${authResults.dmarc || 'none'}</div>`;
-        
-        authSummaryElement.innerHTML = authSummary;
-      }
-      
-      // Display key findings with improved categorization
-      displayFindings(findings);
-      
-      // Display header fields with better formatting
-      const headerFieldsContainer = document.getElementById('header-fields');
-      headerFieldsContainer.innerHTML = '';
-      
-      // IMPROVED: Highlight suspicious headers
-      const suspiciousHeaderKeys = ['x-php-originating-script', 'authentication-results', 'return-path', 'reply-to'];
-      
-      Object.entries(headers).forEach(([name, value]) => {
-        // Check if this is a key header we should highlight
-        const isImportantHeader = suspiciousHeaderKeys.some(key => name.toLowerCase().includes(key));
-        const headerClass = isImportantHeader ? 'header-item important' : 'header-item';
-        
-        // Truncate very long values
-        const displayValue = value.length > 100 ? value.substring(0, 100) + '...' : value;
-        
-        headerFieldsContainer.innerHTML += `
-          <div class="${headerClass}">
-            <span class="header-name">${name}:</span>
-            <span class="header-value" title="${value}">${displayValue}</span>
+      // Display key findings
+      const findingsContainer = document.getElementById('findings-cards');
+      if (findings.length === 0) {
+        findingsContainer.innerHTML = `
+          <div class="finding-card low-risk">
+            <div class="finding-header">
+              <i class="fas fa-check-circle"></i>
+              <span>No significant risk factors</span>
+            </div>
+            <p>Good news! We didn't find any major security concerns with this email.</p>
           </div>
         `;
-      });
+      } else {
+        findingsContainer.innerHTML = '';
+        findings.forEach(finding => {
+          const iconClass = 
+            finding.severity === 'high' ? 'fas fa-exclamation-triangle' : 
+            finding.severity === 'medium' ? 'fas fa-exclamation-circle' : 
+            'fas fa-info-circle';
+          
+          findingsContainer.innerHTML += `
+            <div class="finding-card ${finding.severity}-risk">
+              <div class="finding-header">
+                <i class="${iconClass}"></i>
+                <span>${finding.text}</span>
+              </div>
+              <p>${finding.description || 'This factor contributes to the overall risk assessment.'}</p>
+            </div>
+          `;
+        });
+      }
       
       // Show results
       loadingContainer.style.display = 'none';
@@ -2063,55 +2021,7 @@ Generated by PhishGuard on ${new Date().toLocaleString()}
       `;
     }
   });
-
-  function displayFindings(findings) {
-    const findingsContainer = document.getElementById('findings-cards');
-    findingsContainer.innerHTML = '';
-    
-    if (findings.length === 0) {
-      findingsContainer.innerHTML = `
-        <div class="finding-card info-level">
-          <div class="finding-header">
-            <i class="fas fa-check-circle"></i>
-            <span>No suspicious indicators detected</span>
-          </div>
-          <p>No significant security issues were found in this email's headers.</p>
-        </div>
-      `;
-    } else {
-      // Sort findings by severity
-      const sortedFindings = [...findings].sort((a, b) => {
-        const severityOrder = { 'high': 0, 'medium': 1, 'low': 2, 'info': 3 };
-        return severityOrder[a.severity || 'medium'] - severityOrder[b.severity || 'medium'];
-      });
-      
-      sortedFindings.forEach(finding => {
-        // Updated severity classes to distinguish between info and low
-        const severityClass = 
-          finding.severity === 'high' ? 'high-risk' : 
-          finding.severity === 'medium' ? 'medium-risk' : 
-          finding.severity === 'low' ? 'low-risk' : 
-          'info-level';
-        
-        // Updated icon classes to match severity
-        const iconClass = 
-          finding.severity === 'high' ? 'fa-exclamation-triangle' :
-          finding.severity === 'medium' ? 'fa-exclamation-circle' :
-          finding.severity === 'low' ? 'fa-exclamation-circle' :
-          'fa-info-circle';
-        
-        findingsContainer.innerHTML += `
-          <div class="finding-card ${severityClass}">
-            <div class="finding-header">
-              <i class="fas ${iconClass}"></i>
-              <span>${finding.text}</span>
-            </div>
-            <p>${finding.description || 'This factor contributes to the overall risk assessment.'}</p>
-          </div>
-        `;
-      });
-    }
-  }
   </script>
 </body>
 </html>
+`

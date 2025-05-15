@@ -135,10 +135,16 @@ class EmailHeaderAnalyzer {
             severity: spfResult === 'fail' ? 'high' : 'medium'
           });
         } else if (spfResult === 'none') {
-          // FIXED: Add finding for SPF "none" case
           results.findings.push({
             text: 'No SPF Authentication',
             description: 'The sending domain does not have SPF configured or the check was skipped. SPF helps verify email authenticity.',
+            severity: 'medium'
+          });
+        } else if (spfResult === 'neutral') {
+          // ADDED: Proper handling of neutral SPF results
+          results.findings.push({
+            text: 'Neutral SPF Result',
+            description: 'The SPF check returned "neutral", meaning the domain owner has explicitly stated they cannot assert whether the IP is authorized to send mail. This provides no security guarantee.',
             severity: 'medium'
           });
         } else if (spfResult === 'pass') {
@@ -167,18 +173,16 @@ class EmailHeaderAnalyzer {
             severity: 'high'
           });
         } else if (dkimResult === 'none') {
-          // UPDATED: Changed severity from 'low' to 'medium'
           results.findings.push({
             text: 'No DKIM Signature',
             description: 'This email is not signed with DKIM. While not all legitimate emails use DKIM, it\'s an important authentication method that helps verify email integrity.',
-            severity: 'medium'  // Changed from 'low'
+            severity: 'medium'
           });
         } else if (dkimResult === 'pass') {
           authResults.dkimPassed = true;
         }
       } else {
         authResults.dkim = 'none';
-        // Not all emails have DKIM, so this is less severe than missing SPF
         authResults.dkimPassed = false;
       }
       
@@ -195,18 +199,16 @@ class EmailHeaderAnalyzer {
             severity: 'high'
           });
         } else if (dmarcResult === 'none') {
-          // UPDATED: Changed severity from 'low' to 'medium'
           results.findings.push({
             text: 'No DMARC Policy',
             description: 'The sending domain does not have a DMARC policy. DMARC helps protect against email spoofing and phishing.',
-            severity: 'medium'  // Changed from 'low'
+            severity: 'medium'
           });
         } else if (dmarcResult === 'pass') {
           authResults.dmarcPassed = true;
         }
       } else {
         authResults.dmarc = 'none';
-        // Not all domains have DMARC yet
         authResults.dmarcPassed = false;
       }
       
@@ -215,7 +217,7 @@ class EmailHeaderAnalyzer {
         results.findings.push({
           text: 'Strong Email Authentication',
           description: 'This email passed all available authentication checks (SPF, DKIM, DMARC), indicating the sender is legitimate.',
-          severity: 'info'  // Changed from 'low' to 'info' for positive findings
+          severity: 'info'
         });
       }
     } catch (error) {
@@ -508,6 +510,18 @@ class EmailHeaderAnalyzer {
     const { headerFields } = parsedHeaders;
     
     try {
+      // ADDED: Check for spam scores and explicit spam flags
+      this._checkSpamScoreIndicators(headerFields, results);
+      
+      // ADDED: Check for suspicious authentication warnings
+      this._checkAuthenticationWarnings(headerFields, results);
+      
+      // ADDED: Check for hidden recipients
+      this._checkHiddenRecipients(headerFields, results);
+      
+      // ADDED: Check for suspicious return path formats
+      this._checkSuspiciousReturnPath(headerFields, results);
+      
       // Look for suspicious script indicators in headers
       const suspiciousScriptKeywords = ['php', 'script', 'spoof', 'originating-script'];
       
@@ -547,11 +561,238 @@ class EmailHeaderAnalyzer {
         results.findings.push({
           text: 'Unusual Custom Headers',
           description: `This email contains an unusual number of custom X- headers (${suspiciousXHeaders.length}), which may indicate email manipulation or automated generation.`,
-          severity: 'medium'  // Changed from 'low'
+          severity: 'medium'
+        });
+      }
+      
+      // ADDED: Check for geographic routing inconsistencies
+      this._checkGeographicInconsistencies(headerFields, results);
+      
+    } catch (error) {
+      console.error('Error checking suspicious headers:', error);
+    }
+  }
+  
+  _checkSpamScoreIndicators(headerFields, results) {
+    try {
+      // Check for explicit spam score
+      if ('x-spamscore' in headerFields) {
+        const spamScore = parseInt(headerFields['x-spamscore']);
+        if (!isNaN(spamScore)) {
+          if (spamScore > 50) {
+            results.findings.push({
+              text: 'Critical Spam Score',
+              description: `This email has an extremely high spam score (${spamScore}). Legitimate emails rarely trigger such high scores.`,
+              severity: 'high'
+            });
+          } else if (spamScore > 20) {
+            results.findings.push({
+              text: 'Elevated Spam Score',
+              description: `This email has a high spam score (${spamScore}), which indicates it contains characteristics commonly found in spam or phishing emails.`,
+              severity: 'medium'
+            });
+          }
+        }
+      }
+      
+      // Check for explicit spam flags in headers
+      const spamFlagHeaders = ['x-spam', 'x-fose-spam', 'x-spam-flag'];
+      for (const flagHeader of spamFlagHeaders) {
+        if (flagHeader in headerFields && 
+            headerFields[flagHeader].toLowerCase().includes('spam') || 
+            headerFields[flagHeader].toLowerCase().includes('yes')) {
+          results.findings.push({
+            text: 'Email Flagged as Spam',
+            description: `This email was explicitly flagged as spam by email filtering systems. Header: ${flagHeader}: ${headerFields[flagHeader]}`,
+            severity: 'high'
+          });
+          break;
+        }
+      }
+      
+      // Check for spam indicators in subject
+      if (parsedHeaders.subject && 
+          parsedHeaders.subject.toLowerCase().includes('[spam')) {
+        results.findings.push({
+          text: 'Spam Flag in Subject',
+          description: `This email was marked as spam in the subject line: "${parsedHeaders.subject}"`,
+          severity: 'high'
+        });
+      }
+      
+      // Check SpamAssassin-style headers
+      if ('x-spam-status' in headerFields) {
+        const status = headerFields['x-spam-status'].toLowerCase();
+        if (status.includes('yes')) {
+          results.findings.push({
+            text: 'SpamAssassin Flagged Email',
+            description: `SpamAssassin has identified this as spam: ${headerFields['x-spam-status']}`,
+            severity: 'high'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking spam indicators:', error);
+    }
+  }
+  
+  _checkAuthenticationWarnings(headerFields, results) {
+    try {
+      // Check for X-Authentication-Warning headers
+      const authWarnings = Object.keys(headerFields)
+        .filter(key => key.toLowerCase().includes('authentication-warning'));
+      
+      if (authWarnings.length > 0) {
+        const warningText = authWarnings.map(key => headerFields[key]).join('; ');
+        results.findings.push({
+          text: 'Authentication Warnings Present',
+          description: `The email contains ${authWarnings.length} authentication warnings, which indicates potential spoofing. Details: ${warningText.substring(0, 200)}${warningText.length > 200 ? '...' : ''}`,
+          severity: 'high'
+        });
+      }
+      
+      // Check for suspicious authentication
+      if ('authenticated-by' in headerFields) {
+        const authBy = headerFields['authenticated-by'].toLowerCase();
+        if (authBy === 'nobody' || authBy.includes('unauthenticated') || authBy.includes('failed')) {
+          results.findings.push({
+            text: 'Suspicious Authentication Status',
+            description: `The email has a suspicious "Authenticated-By: ${headerFields['authenticated-by']}" header, which is highly unusual for legitimate emails.`,
+            severity: 'high'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking authentication warnings:', error);
+    }
+  }
+  
+  _checkHiddenRecipients(headerFields, results) {
+    try {
+      // Check To: field for "Undisclosed recipients"
+      if ('to' in headerFields && headerFields['to'].toLowerCase().includes('undisclosed recipients')) {
+        results.findings.push({
+          text: 'Hidden Recipients',
+          description: 'The email was sent to "Undisclosed recipients", a technique commonly used in phishing campaigns to hide the target list.',
+          severity: 'medium'
+        });
+      }
+      
+      // Check for BCC-only emails (no To: or CC:)
+      if (!('to' in headerFields) && !('cc' in headerFields) && 'from' in headerFields) {
+        results.findings.push({
+          text: 'Missing Recipients',
+          description: 'This email has no visible recipients in the To: or CC: fields, which is common in mass phishing campaigns.',
+          severity: 'medium'
         });
       }
     } catch (error) {
-      console.error('Error checking suspicious headers:', error);
+      console.error('Error checking hidden recipients:', error);
+    }
+  }
+  
+  _checkSuspiciousReturnPath(headerFields, results) {
+    try {
+      if ('return-path' in headerFields) {
+        const returnPath = headerFields['return-path'].toLowerCase();
+        
+        // Check for random strings in return path
+        const randomStringPattern = /[<\[]?[a-z0-9]{8,}@/i;
+        if (randomStringPattern.test(returnPath)) {
+          results.findings.push({
+            text: 'Suspicious Return-Path Format',
+            description: 'The Return-Path contains what appears to be a random string typical of spam/phishing campaigns.',
+            severity: 'high'
+          });
+        }
+        
+        // Check for mismatched domains with From header
+        if ('from' in headerFields) {
+          const fromMatch = headerFields['from'].match(/@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+          const returnPathMatch = returnPath.match(/@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+          
+          if (fromMatch && returnPathMatch && fromMatch[1] !== returnPathMatch[1]) {
+            results.findings.push({
+              text: 'Return-Path Domain Mismatch',
+              description: `The Return-Path domain (${returnPathMatch[1]}) doesn't match the From domain (${fromMatch[1]}), suggesting possible email spoofing.`,
+              severity: 'high'
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking return path:', error);
+    }
+  }
+  
+  _checkGeographicInconsistencies(headerFields, results) {
+    try {
+      // Extract all received headers
+      const receivedHeaders = [];
+      for (const key in headerFields) {
+        if (key.startsWith('received')) {
+          receivedHeaders.push(headerFields[key]);
+        }
+      }
+      
+      if (receivedHeaders.length <= 1) return;
+      
+      // Look for country/region indicators in headers
+      const countryMatches = [];
+      const countryIndicators = [
+        { pattern: /\.(jp|co\.jp|ne\.jp)/i, country: 'Japan' },
+        { pattern: /\.(cn|com\.cn)/i, country: 'China' },
+        { pattern: /\.(ru|su|рф)/i, country: 'Russia' },
+        { pattern: /\.(kr|co\.kr)/i, country: 'South Korea' },
+        { pattern: /\.(in|co\.in)/i, country: 'India' },
+        { pattern: /\.(br|com\.br)/i, country: 'Brazil' },
+        { pattern: /\.(uk|co\.uk|org\.uk)/i, country: 'United Kingdom' },
+        { pattern: /\.(au|com\.au)/i, country: 'Australia' },
+        { pattern: /\.(ca)/i, country: 'Canada' },
+        { pattern: /\.(de)/i, country: 'Germany' },
+        { pattern: /\.(fr)/i, country: 'France' },
+        { pattern: /\.(es)/i, country: 'Spain' },
+        { pattern: /\.(it)/i, country: 'Italy' },
+        { pattern: /\.(nl)/i, country: 'Netherlands' },
+        { pattern: /\.(se)/i, country: 'Sweden' },
+        { pattern: /\.(no)/i, country: 'Norway' },
+        { pattern: /\.(fi)/i, country: 'Finland' },
+        { pattern: /\.(dk)/i, country: 'Denmark' },
+        { pattern: /\.(za)/i, country: 'South Africa' },
+        { pattern: /\.(mx)/i, country: 'Mexico' },
+        { pattern: /\.(ar)/i, country: 'Argentina' },
+        { pattern: /\.(sg)/i, country: 'Singapore' },
+        { pattern: /\.(hk)/i, country: 'Hong Kong' },
+        { pattern: /\.(tw)/i, country: 'Taiwan' },
+        { pattern: /\.(nz)/i, country: 'New Zealand' },
+        { pattern: /\.(il)/i, country: 'Israel' },
+        { pattern: /\.(tr)/i, country: 'Turkey' },
+        { pattern: /\.(ch)/i, country: 'Switzerland' },
+        { pattern: /\.(at)/i, country: 'Austria' },
+        { pattern: /\.(be)/i, country: 'Belgium' },
+        { pattern: /\.(ph)/i, country: 'Philippines' },
+      ];
+      
+      for (const header of receivedHeaders) {
+        for (const { pattern, country } of countryIndicators) {
+          if (pattern.test(header)) {
+            countryMatches.push(country);
+            break;
+          }
+        }
+      }
+      
+      // Look for unusual routing paths (3+ different countries)
+      const uniqueCountries = [...new Set(countryMatches)];
+      if (uniqueCountries.length >= 3) {
+        results.findings.push({
+          text: 'Unusual Geographic Routing',
+          description: `This email passed through servers in ${uniqueCountries.length} different countries (${uniqueCountries.join(', ')}), which is unusual for legitimate email and could indicate a suspicious relay path.`,
+          severity: 'medium'
+        });
+      }
+    } catch (error) {
+      console.error('Error checking geographic routing:', error);
     }
   }
   
@@ -566,9 +807,8 @@ class EmailHeaderAnalyzer {
       } else if (finding.severity === 'medium') {
         score += 15;
       } else if (finding.severity === 'low') {
-        score += 5;  // Changed from -5 to +5 for 'low' severity
+        score += 5;
       } else if (finding.severity === 'info') {
-        // Only reduce score for truly positive findings
         score -= 5;
       }
     }
