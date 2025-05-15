@@ -8,14 +8,55 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     /* Override some styles locally */
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    
     body.dark-theme {
-      padding-top: 80px; /* Add padding to the top */
-      padding-bottom: 80px; /* Add padding to the bottom for balance */
-      display: block; /* Change from flex to block */
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+    
+    .page-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 40px 20px;
     }
     
     .login-container {
-      margin: 80px auto; /* Add vertical margin */
+      width: 100%;
+      max-width: 450px;
+      margin: 0;
+    }
+    
+    .footer {
+      margin-top: auto;
+      width: 100%;
+      background-color: var(--card-bg);
+      border-top: 1px solid var(--border-color);
+      padding: 20px 0;
+      text-align: center;
+    }
+    
+    .footer-copyright {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    
+    .footer-copyright a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    
+    .footer-copyright a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -28,19 +69,6 @@
       </div>
       
       <div id="login-error" class="login-error"></div>
-      
-      <div class="oauth-buttons">
-        <button class="oauth-button">
-          <i class="fab fa-google"></i> Google
-        </button>
-        <button class="oauth-button">
-          <i class="fab fa-github"></i> GitHub
-        </button>
-      </div>
-      
-      <div class="divider">
-        <span>OR CONTINUE WITH</span>
-      </div>
       
       <form id="login-form">
         <div class="form-group">
@@ -75,7 +103,7 @@
   <!-- Footer Section -->
   <footer class="footer">
     <div class="footer-copyright">
-      <p>&copy; 2023 PhishGuard | All Rights Reserved | <a href="#">NSBM Green University</a> | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+      <p>&copy; 2025 PhishGuard | All Rights Reserved | <a href="#">PhishGuard</a> | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
     </div>
   </footer>
 
@@ -208,13 +236,6 @@
           loginError.textContent = error.message || 'Login failed. Please check your credentials.';
           loginError.style.display = 'block';
         }
-      });
-      
-      // OAuth button functionality (placeholder)
-      document.querySelectorAll('.oauth-button').forEach(button => {
-        button.addEventListener('click', () => {
-          alert('OAuth login will be implemented in the next phase.');
-        });
       });
       
       // Add utility functions for token management
