@@ -510,12 +510,13 @@ Focus on patterns or anomalies that are strong indicators of either legitimacy o
           
           const context = {
             subject: analysisResult.email_subject || 'Unknown',
-            risk_score: analysisResult.risk_score,
+            risk_score: analysisResult.riskScore,
             findings: analysisResult.findings,
+            raw_headers: emailHeaders, // Pass the raw headers to the AI
             authentication: {
-              spf: analysisResult.spf_result || 'unknown',
-              dkim: analysisResult.dkim_result || 'unknown',
-              dmarc: analysisResult.dmarc_result || 'unknown'
+              spf: analysisResult.authResults?.spf || 'unknown',
+              dkim: analysisResult.authResults?.dkim || 'unknown',
+              dmarc: analysisResult.authResults?.dmarc || 'unknown'
             }
           };
 
@@ -529,7 +530,11 @@ Focus on patterns or anomalies that are strong indicators of either legitimacy o
             }
           );
 
-          // Save to cache
+          // Don't apply additional formatting to the email analysis
+          // as we're already asking the AI to return HTML formatted content
+          // Avoid using the _formatExplanation method here
+          
+          // Save raw analysis to cache
           await this._saveEmailToCache(cacheKey, analysis);
           
           return analysis;
