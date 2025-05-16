@@ -112,92 +112,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     if (elements.updateStatusBtn) {
-      elements.updateStatusBtn.addEventListener('click', async () => {
-        try {
-          // Show loading state
-          if (window.DOM && DOM.buttonState) {
-            DOM.buttonState(elements.updateStatusBtn, true, null, 'Updating...');
-          } else {
-            elements.updateStatusBtn.disabled = true;
-            elements.updateStatusBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
-          }
-          
-          const status = elements.statusUpdate.value;
-          
-          // Send API request to update status
-          const response = await fetch(`http://localhost:3000/api/contact-us/${state.selectedSubmissionId}/status`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-auth-token': token
-            },
-            body: JSON.stringify({ status })
-          });
-          
-          if (!response.ok) {
-            throw new Error('Failed to update status');
-          }
-          
-          // Show success state
-          if (window.DOM && DOM.buttonState) {
-            DOM.buttonState(elements.updateStatusBtn, false, 'fas fa-check', 'Updated!');
-          } else {
-            elements.updateStatusBtn.disabled = false;
-            elements.updateStatusBtn.innerHTML = '<i class="fas fa-check"></i> Updated!';
-          }
-          
-          // Restore original state after 2 seconds
-          setTimeout(() => {
-            if (window.DOM && DOM.buttonState) {
-              DOM.buttonState(elements.updateStatusBtn, false, 'fas fa-sync', 'Update Status');
-            } else {
-              elements.updateStatusBtn.disabled = false;
-              elements.updateStatusBtn.innerHTML = '<i class="fas fa-sync"></i> Update Status';
-            }
-          }, 2000);
-          
-          // Show notification
-          showNotification('Status updated successfully', 'success');
-          
-          // Update submission in state
-          const submission = state.allSubmissions.find(s => s.id == state.selectedSubmissionId);
-          if (submission) {
-            submission.status = status;
-            filterSubmissions();
-            updateStatistics();
-          }
-          
-          // Update status label in the UI
-          const statusLabel = document.querySelector('#message-detail .status-badge');
-          if (statusLabel) {
-            statusLabel.className = 'status-badge ' + status;
-            statusLabel.textContent = status.replace('_', ' ');
-          }
-          
-        } catch (error) {
-          console.error('Error updating status:', error);
-          
-          // Show error state
-          if (window.DOM && DOM.buttonState) {
-            DOM.buttonState(elements.updateStatusBtn, false, 'fas fa-times', 'Failed!');
-          } else {
-            elements.updateStatusBtn.disabled = false;
-            elements.updateStatusBtn.innerHTML = '<i class="fas fa-times"></i> Failed!';
-          }
-          
-          // Show error notification
-          showNotification('Failed to update status: ' + error.message, 'error');
-          
-          // Restore original state after 2 seconds
-          setTimeout(() => {
-            if (window.DOM && DOM.buttonState) {
-              DOM.buttonState(elements.updateStatusBtn, false, 'fas fa-sync', 'Update Status');
-            } else {
-              elements.updateStatusBtn.disabled = false;
-              elements.updateStatusBtn.innerHTML = '<i class="fas fa-sync"></i> Update Status';
-            }
-          }, 2000);
-        }
+      elements.updateStatusBtn.addEventListener('click', () => {
+        updateSubmissionStatus();
+      });
+    }
+    
+    if (elements.statusUpdate) {
+      elements.statusUpdate.addEventListener('change', () => {
+        updateSubmissionStatus();
       });
     }
     
@@ -334,6 +256,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = document.getElementById('content');
         if (sidebar) sidebar.classList.toggle('collapsed');
         if (content) content.classList.toggle('expanded');
+      });
+    }
+
+    // Reply button handler
+    if (document.getElementById('reply-message-btn')) {
+      document.getElementById('reply-message-btn').addEventListener('click', () => {
+        replyToMessage();
       });
     }
   }
@@ -603,13 +532,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       // Show user info if available
+      const userInfoLabel = document.getElementById('message-user-info-label');
       const userInfoElement = document.getElementById('message-user-info');
-      if (userInfoElement) {
+      if (userInfoLabel && userInfoElement) {
         if (submission.user_id && submission.username) {
+          userInfoLabel.style.display = 'block';
           userInfoElement.style.display = 'block';
           document.getElementById('message-username').textContent = submission.username;
           document.getElementById('message-user-id').textContent = submission.user_id;
         } else {
+          userInfoLabel.style.display = 'none';
           userInfoElement.style.display = 'none';
         }
       }
@@ -862,6 +794,109 @@ document.addEventListener('DOMContentLoaded', () => {
         notification.remove();
       }, 300);
     }, 3000);
+  }
+
+  // Add this new function to handle replying to messages
+  function replyToMessage() {
+    // Get the recipient email
+    const recipientEmail = document.getElementById('message-email').textContent;
+    const subject = document.getElementById('message-subject').textContent;
+    
+    if (!recipientEmail) {
+      showNotification('No email address available for reply', 'error');
+      return;
+    }
+    
+    // Create subject with Re: prefix if it doesn't already have it
+    const emailSubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
+    
+    // Generate mailto URL with recipient email and subject
+    const mailtoUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(emailSubject)}`;
+    
+    // Open Gmail in a new tab
+    window.open(mailtoUrl, '_blank');
+    
+    // Log and show notification
+    console.log(`Opening Gmail to reply to: ${recipientEmail}`);
+    showNotification(`Opening Gmail to reply to ${recipientEmail}`, 'success');
+  }
+
+  // Add a reusable function to update submission status
+  async function updateSubmissionStatus() {
+    try {
+      const statusUpdateIndicator = document.getElementById('status-update-indicator');
+      
+      // Show loading indicator
+      if (statusUpdateIndicator) {
+        statusUpdateIndicator.classList.add('show', 'loading');
+        statusUpdateIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+      }
+      
+      const status = elements.statusUpdate.value;
+      
+      // Send API request to update status
+      const response = await fetch(`http://localhost:3000/api/contact-us/${state.selectedSubmissionId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ status })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update status');
+      }
+      
+      // Show success state
+      if (statusUpdateIndicator) {
+        statusUpdateIndicator.classList.remove('loading');
+        statusUpdateIndicator.classList.add('success');
+        statusUpdateIndicator.innerHTML = '<i class="fas fa-check"></i> Updated!';
+        
+        // Hide after 2 seconds
+        setTimeout(() => {
+          statusUpdateIndicator.classList.remove('show', 'success');
+        }, 2000);
+      }
+      
+      // Show notification
+      showNotification('Status updated successfully', 'success');
+      
+      // Update submission in state
+      const submission = state.allSubmissions.find(s => s.id == state.selectedSubmissionId);
+      if (submission) {
+        submission.status = status;
+        filterSubmissions();
+        updateStatistics();
+      }
+      
+      // Update status label in the UI if it exists
+      const statusLabel = document.querySelector('#message-detail .status-badge');
+      if (statusLabel) {
+        statusLabel.className = 'status-badge ' + status;
+        statusLabel.textContent = status.replace('_', ' ');
+      }
+      
+    } catch (error) {
+      console.error('Error updating status:', error);
+      
+      // Show error state in indicator
+      const statusUpdateIndicator = document.getElementById('status-update-indicator');
+      if (statusUpdateIndicator) {
+        statusUpdateIndicator.classList.remove('loading');
+        statusUpdateIndicator.classList.add('error');
+        statusUpdateIndicator.innerHTML = '<i class="fas fa-times"></i> Failed!';
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+          statusUpdateIndicator.classList.remove('show', 'error');
+        }, 3000);
+      }
+      
+      // Show error notification
+      showNotification('Failed to update status: ' + error.message, 'error');
+    }
   }
 
   // Initialize the page

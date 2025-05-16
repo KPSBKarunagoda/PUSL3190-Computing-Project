@@ -1771,6 +1771,40 @@ select option {
   font-weight: 600;
 }
 
+/* Add styling for the status update dropdown - make it more prominent since it's now the only control */
+#status-update {
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  transition: all 0.2s;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+#status-update:hover {
+  border-color: var(--primary);
+  background-color: rgba(61, 133, 198, 0.05);
+}
+
+#status-update:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(61, 133, 198, 0.2);
+}
+
+/* Status option styling */
+#status-update option {
+  padding: 8px;
+}
+
+/* Status loading indicator */
+.status-loading-indicator {
+  margin-left: 8px;
+  color: var(--text-secondary);
+}
+
 /* Utilities */
 .hidden {
   display: none !important;
