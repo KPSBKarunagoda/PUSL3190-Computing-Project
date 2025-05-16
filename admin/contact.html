@@ -102,9 +102,12 @@
       font-size: 0.9rem;
     }
     
+    /* Fixed search box alignment styles */
     .search-box {
       flex-grow: 1;
       position: relative;
+      display: flex;
+      align-items: center;
     }
     
     .search-input {
@@ -123,6 +126,8 @@
       top: 50%;
       transform: translateY(-50%);
       color: var(--text-secondary);
+      pointer-events: none; /* Ensures clicks pass through to the input field */
+      z-index: 2; /* Make sure icon appears above the input */
     }
     
     .pagination {
@@ -224,7 +229,7 @@
         overflow: hidden;
     }
     
-    /* Improved header design */
+    /* Improved header design with better text alignment */
     .message-header {
         display: flex;
         align-items: center;
@@ -237,8 +242,20 @@
     
     .message-subject-container {
         flex: 1;
-        overflow: hidden;
         padding-right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-align: left; /* Force left alignment */
+    }
+    
+    .message-subject-icon {
+        color: var(--primary-color);
+        font-size: 1.2rem;
+        min-width: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .message-header h3 {
@@ -249,6 +266,8 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         padding-right: 30px;
+        text-align: left; /* Force left alignment */
+        width: 100%; /* Ensure the text takes available width */
     }
     
     .message-date {
@@ -366,31 +385,7 @@
         box-shadow: 0 0 0 2px rgba(61, 133, 198, 0.2);
     }
     
-    /* NEW: Reply button styling */
-    .btn-reply {
-        background-color: #4285f4; /* Gmail blue */
-        color: white;
-        border: none;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 15px;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
-    
-    .btn-reply:hover {
-        background-color: #3367d6; /* Darker Gmail blue */
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        transform: translateY(-2px);
-    }
-    
-    .btn-reply i {
-        font-size: 16px;
-    }
-    
-    /* Updated action buttons layout */
+    /* Updated action buttons layout with three distinct sections */
     .message-actions {
         display: flex;
         justify-content: space-between;
@@ -399,38 +394,114 @@
         border: 1px solid var(--border);
         border-radius: var(--radius);
         background-color: rgba(0, 0, 0, 0.05);
+        gap: 15px;
+    }
+    
+    .actions-left {
+        display: flex;
+        align-items: center;
+        min-width: 120px; 
+    }
+    
+    .actions-center {
+        display: flex;
+        justify-content: center;
+        flex-grow: 1; 
+        text-align: center;
+    }
+    
+    .actions-right {
+        display: flex;
+        align-items: center;
+        min-width: 200px; 
+        gap: 20px; 
+        justify-content: flex-end; 
+    }
+    
+    /* Status area styling */
+    .filter-group {
+        display: flex;
+        align-items: center;
         gap: 10px;
     }
     
-    /* Enhanced status indicator */
+    /* Reply button enhancement */
+    .btn-reply {
+        background-color: #4285f4; /* Gmail blue */
+        color: white;
+        border: none;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center; 
+        gap: 10px;
+        padding: 12px 25px;
+        font-weight: 600;
+        transition: all 0.2s;
+        min-width: 180px; 
+    }
+    
+    .btn-reply:hover {
+        background-color: #3367d6; /* Darker blue on hover */
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .btn-danger:hover {
+        background-color: #c82333;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    
     .status-indicator {
         display: inline-flex;
         align-items: center;
         margin-left: 10px;
         opacity: 0;
-        transition: opacity 0.3s ease;
+        visibility: hidden; 
+        height: 0; 
+        overflow: hidden; 
+        transition: opacity 0.3s ease, visibility 0.3s ease, height 0.3s ease; 
         font-size: 0.9rem;
         color: var(--text-secondary);
     }
     
     .status-indicator.show {
         opacity: 1;
+        visibility: visible;
+        height: auto; 
+        overflow: visible; 
     }
     
-    .status-indicator i {
-        margin-right: 5px;
-    }
-    
-    .status-indicator.loading i {
-        animation: spin 1s linear infinite;
-    }
-    
-    .status-indicator.success {
-        color: var(--success);
-    }
-    
-    .status-indicator.error {
-        color: var(--danger);
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .message-actions {
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .actions-left, .actions-center, .actions-right {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .actions-left {
+            order: 2; 
+        }
+        
+        .actions-center {
+            order: 1; 
+        }
+        
+        .actions-right {
+            order: 3;
+        }
+        
+        .filter-group {
+            width: 100%;
+            justify-content: center;
+        }
     }
     
     @keyframes spin {
@@ -615,6 +686,9 @@
     <div class="message-modal-content">
         <div class="message-header">
             <div class="message-subject-container">
+                <div class="message-subject-icon">
+                    <i class="fas fa-envelope"></i>
+                </div>
                 <h3 id="message-subject">Message Subject</h3>
             </div>
             <span class="message-date">
@@ -660,9 +734,10 @@
                 </div>
             </div>
             
-            <!-- Updated message actions with Reply button -->
+            <!-- Updated message actions with buttons moved to right -->
             <div class="message-actions">
                 <div class="actions-left">
+                    <!-- Status dropdown on left -->
                     <div class="filter-group">
                         <label class="filter-label">Status:</label>
                         <select id="status-update" class="filter-select">
@@ -676,8 +751,14 @@
                         </span>
                     </div>
                 </div>
+                
+                <!-- Center area now empty -->
+                <div class="actions-center">
+                    <!-- Empty center section -->
+                </div>
+                
                 <div class="actions-right">
-                    <!-- Reply button -->
+                    <!-- Both buttons moved to right -->
                     <button id="reply-message-btn" class="btn-reply">
                         <i class="fas fa-reply"></i> Reply via Gmail
                     </button>
