@@ -996,6 +996,32 @@
     .modal-body {
       padding: 25px;
       overflow-y: auto;
+      scrollbar-width: thin; /* Firefox */
+      scrollbar-color: rgba(61, 133, 198, 0.5) rgba(0, 0, 0, 0.2); /* Firefox */
+    }
+    
+    .modal-body::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    .modal-body::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
+    
+    .modal-body::-webkit-scrollbar-thumb {
+      background: rgba(61, 133, 198, 0.5);
+      border-radius: 4px;
+      transition: background 0.3s ease;
+    }
+    
+    .modal-body::-webkit-scrollbar-thumb:hover {
+      background: rgba(61, 133, 198, 0.7);
+    }
+    
+    .modal-body::-webkit-scrollbar-corner {
+      background: transparent;
     }
     
     /* AI Loading Animation */
@@ -1031,6 +1057,35 @@
       font-size: 1rem;
       line-height: 1.6;
       white-space: pre-wrap;
+      max-height: 60vh;
+      overflow-y: auto;
+      scrollbar-width: thin; /* Firefox */
+      scrollbar-color: rgba(61, 133, 198, 0.5) rgba(0, 0, 0, 0.2); /* Firefox */
+    }
+    
+    /* Custom scrollbar for Webkit browsers (Chrome, Safari, Edge) */
+    .ai-result::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    .ai-result::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
+    
+    .ai-result::-webkit-scrollbar-thumb {
+      background: rgba(61, 133, 198, 0.5);
+      border-radius: 4px;
+      transition: background 0.3s ease;
+    }
+    
+    .ai-result::-webkit-scrollbar-thumb:hover {
+      background: rgba(61, 133, 198, 0.7);
+    }
+    
+    .ai-result::-webkit-scrollbar-corner {
+      background: transparent;
     }
     
     .ai-result h3 {

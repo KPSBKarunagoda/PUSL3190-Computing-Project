@@ -59,11 +59,18 @@ function formatAIResponse(analysisText) {
   // 5. Ensure proper spacing in nested HTML elements
   formatted = formatted.replace(/>(\s*\n+\s*)</g, '>\n<');
   
-  // Add styling to important keywords
+  // UPDATED: Only highlight specific risk assessment terms in a classification context
+  // instead of applying colors to common words throughout the document
   formatted = formatted
-    .replace(/\b(phishing|scam|attack|fraud|malicious)\b/gi, '<span class="risk-high">$1</span>')
-    .replace(/\b(suspicious|unusual|potentially|questionable)\b/gi, '<span class="risk-medium">$1</span>')
-    .replace(/\b(legitimate|safe|genuine|authentic)\b/gi, '<span class="risk-low">$1</span>');
+    // Look for assessment context like "This email is [classification]"
+    .replace(/This email is\s+(\bphishing\b)/gi, 'This email is <span class="risk-high">phishing</span>')
+    .replace(/This email is\s+(\bsuspicious\b)/gi, 'This email is <span class="risk-medium">suspicious</span>')
+    .replace(/This email is\s+(\blegitimate\b)/gi, 'This email is <span class="risk-low">legitimate</span>')
+    
+    // Also highlight when part of a risk level statement
+    .replace(/\b(high risk|high-risk)\b/gi, '<span class="risk-high">$1</span>')
+    .replace(/\b(medium risk|medium-risk)\b/gi, '<span class="risk-medium">$1</span>')
+    .replace(/\b(low risk|low-risk)\b/gi, '<span class="risk-low">$1</span>');
     
   // Handle brackets used for placeholders that might have been left in
   formatted = formatted
