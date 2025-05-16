@@ -674,7 +674,7 @@ class EducationService {
           findings.push({
             text: 'Missing SPF record',
             description: 'This domain lacks an SPF (Sender Policy Framework) record, which legitimate organizations typically implement to prevent email spoofing.',
-            severity: 'low',
+            severity: 'medium',
             category: 'infrastructure'
           });
         }
