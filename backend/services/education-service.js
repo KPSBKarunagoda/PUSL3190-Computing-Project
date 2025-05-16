@@ -361,27 +361,6 @@ class EducationService {
       } catch (e) {
         // URL parsing error, skip this check
       }
-      
-      // Check for suspicious domain patterns (letters followed by numbers)
-      try {
-        const parsedUrl = new URL(url);
-        const hostname = parsedUrl.hostname;
-        const domainPart = hostname.split('.')[0]; // Get the first part of the domain
-        
-        // Pattern for letters followed by numbers (e.g., "xz0515")
-        const letterNumberPattern = /^[a-z]+\d+$/i;
-        
-        if (letterNumberPattern.test(domainPart)) {
-          findings.push({
-            text: 'Suspicious domain name pattern',
-            description: `This domain uses the pattern of letters followed by numbers (${domainPart}), which is commonly seen in automatically generated phishing domains.`,
-            severity: 'medium',
-            category: 'domain'
-          });
-        }
-      } catch (e) {
-        // URL parsing error, skip this check
-      }
     } catch (error) {
       console.error('Error in domain checks:', error);
     }
@@ -458,6 +437,40 @@ class EducationService {
           severity: 'medium',
           category: 'url'
         });
+      }
+      
+      // NEW: Check for cryptographic content identifiers/hashes in URL
+      try {
+        const parsedUrl = new URL(url);
+        const pathAndParams = parsedUrl.pathname + parsedUrl.search;
+        
+        // Match common cryptographic hash patterns (32+ character hex/base58/base64 strings)
+        // Common in IPFS, blockchain links, and other decentralized systems
+        const hashPatterns = [
+          // IPFS CID pattern (Qm... or bafy... format)
+          /\/(Qm[a-zA-Z0-9]{44,}|bafy[a-zA-Z0-9]{44,})/,
+          // General long hex hash pattern (32+ hex chars)
+          /\/([a-fA-F0-9]{32,})/,
+          // Base64-like long hash pattern
+          /\/([A-Za-z0-9+/]{43,}=*)/,
+          // Long alphanumeric string that's likely a hash
+          /\/([a-zA-Z0-9]{32,})(?:\/|$|\?)/
+        ];
+        
+        for (const pattern of hashPatterns) {
+          const match = pathAndParams.match(pattern);
+          if (match) {
+            findings.push({
+              text: 'Cryptographic content identifier detected',
+              description: 'This URL contains a long cryptographic hash that obscures the actual content. This technique prevents security tools from understanding what content is being accessed without visiting the link.',
+              severity: 'medium',
+              category: 'url'
+            });
+            break; // Only add this finding once
+          }
+        }
+      } catch (e) {
+        // URL parsing error, skip this check
       }
       
       // Check for excessive subdomains
@@ -702,21 +715,6 @@ class EducationService {
         });
       }
       
-      // NEW: Check for incomplete domain registration information
-      if ('time_domain_activation' in features && 
-          'time_domain_expiration' in features) {
-        
-        // Check for cases where expiration date exists but creation date doesn't
-        // This is unusual and suspicious
-        if (features.time_domain_expiration > 0 && features.time_domain_activation === 0) {
-          findings.push({
-            text: 'Incomplete domain registration information',
-            description: 'The domain registration information is incomplete or hidden, which is unusual for legitimate websites and can indicate an attempt to hide ownership details.',
-            severity: 'medium',
-            category: 'infrastructure'
-          });
-        }
-      }
     } catch (error) {
       console.error('Error in infrastructure checks:', error);
     }

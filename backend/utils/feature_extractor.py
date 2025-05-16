@@ -198,7 +198,38 @@ class URLFeatureExtractor:
             
             # Additional security features
             self.features['email_in_url'] = 1 if re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', url) else 0
-            self.features['url_shortened'] = 1 if re.search(r'bit\.ly|goo\.gl|tinyurl\.com|t\.co|youtu\.be', url) else 0
+            
+            # Known URL shortening services
+            shortener_patterns = [
+                r'bit\.ly', r'goo\.gl', r'tinyurl\.com', r't\.co', r'youtu\.be', 
+                r'ow\.ly', r'is\.gd', r'buff\.ly', r'rebrand\.ly', r'cutt\.ly', 
+                r'tr\.im', r'tiny\.cc', r'rotf\.lol'
+            ]
+            
+            # Trusted domains that shouldn't trigger shortened URL detection despite using ID patterns
+            trusted_domains = [
+                'chatgpt.com', 'openai.com', 'github.com', 'linkedin.com', 'twitter.com', 
+                'facebook.com', 'microsoft.com', 'google.com', 'youtube.com',
+                'reddit.com', 'medium.com', 'notion.so', 'discord.com'
+            ]
+            
+            parsed_url = urlparse(url)
+            domain = parsed_url.netloc.lower()
+            
+            # Check if domain is in trusted list
+            if any(trusted_domain in domain for trusted_domain in trusted_domains):
+                self.features['url_shortened'] = 0
+            # Check if URL uses a known shortening service
+            elif any(re.search(pattern, url.lower()) for pattern in shortener_patterns):
+                self.features['url_shortened'] = 1
+            # Additional generic check for very short domains with suspicious path structure
+            elif (len(domain) <= 7 and 
+                  parsed_url.path.count('/') >= 1 and 
+                  len(parsed_url.path) > 2 and
+                  not re.search(r'\.[a-zA-Z0-9]{3,4}$', parsed_url.path)):  # Avoid matching file extensions
+                self.features['url_shortened'] = 1
+            else:
+                self.features['url_shortened'] = 0
             
             # Network and domain features - use concurrency for better performance
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
