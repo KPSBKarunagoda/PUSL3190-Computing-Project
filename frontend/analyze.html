@@ -1259,17 +1259,6 @@
           resultDescription.textContent = 'This URL shows multiple characteristics associated with phishing websites.';
           recommendationText.textContent = 'We strongly recommend avoiding this website.';
           animateScoreBar(score, '#f44336');
-
-          // Add blacklist notification if URL was blacklisted
-          if (result.blacklisted) {
-            const blacklistNotice = document.createElement('div');
-            blacklistNotice.className = 'blacklist-notice';
-            blacklistNotice.innerHTML = `
-              <i class="fas fa-shield-alt"></i>
-              <span>This URL has been added to the blacklist to protect users</span>
-            `;
-            document.getElementById('risk-summary').appendChild(blacklistNotice);
-          }
         } else if (isMediumRisk || mlPrediction === 1) {
           resultIcon.className = 'fas fa-exclamation-circle';
           resultIconContainer.className = 'result-icon-container icon-warning';
@@ -1464,3 +1453,4 @@
   </script>
 </body>
 </html>
+`
