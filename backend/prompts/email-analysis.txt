@@ -8,42 +8,45 @@ First, examine the raw headers to identify any security indicators or anomalies 
 
 Then, consider the automated analysis findings:
 - Email subject: {{subject}}
-- Risk score: {{risk_score}}
+- Risk score: {{risk_score}} (CRITICAL: 0-30 = SAFE/legitimate, 30-70 = suspicious, 70-100 = likely phishing)
 - Authentication results: SPF ({{authentication.spf}}), DKIM ({{authentication.dkim}}), DMARC ({{authentication.dmarc}})
 - Key findings identified by automated analysis:
 {{#findings}}
   - {{text}} ({{severity}}): {{description}}
 {{/findings}}
 
-IMPORTANT: Format your response using ONLY proper HTML tags as shown below, with NO extra whitespace at the beginning or end, and NO markdown syntax.
+STRICT RULES YOU MUST FOLLOW:
+1. Risk score is the PRIMARY factor in your assessment. Other factors should only SUPPORT this primary indicator.
+2. If risk_score is below 30, you MUST classify the email as "legitimate" or "safe" - NOT as "suspicious" or "phishing."
+3. If authentication checks (SPF, DKIM, DMARC) all PASS, this strongly supports legitimacy - mention this as a positive security indicator.
+4. For emails with risk_score < 30, DO NOT present normal email features (like X-headers, generic subjects) as suspicious.
+5. Your recommendations MUST match the risk level:
+   - For legitimate emails (0-30): General security awareness only
+   - For suspicious emails (30-70): Caution and verification steps
+   - For phishing emails (70-100): Do not interact, report as phishing
+
+Format your response using ONLY proper HTML tags as shown below, with NO extra whitespace at the beginning or end, and NO markdown syntax.
 
 <h2>Email Security Analysis</h2>
 
 <h3>Assessment</h3>
-<p>This email is [phishing/suspicious/legitimate] because [brief explanation of main reasons].</p>
+<p>This email is [legitimate/suspicious/phishing] because [brief explanation matching the risk score]. [Mention authentication status and how it factors into assessment].</p>
 
-<h3>Key Risk Indicators</h3>
+<h3>Key Security Indicators</h3>
 <ul>
-  <li><strong>Indicator 1:</strong> Detailed explanation without any asterisks or markdown</li>
-  <li><strong>Indicator 2:</strong> Another detailed explanation using only HTML formatting</li>
-  <!-- Add more indicators as needed -->
+  <li><strong>Risk Score:</strong> [Score] - [EXPLICITLY state whether this is LOW, MEDIUM, or HIGH risk based on the 0-30, 30-70, 70-100 scale]</li>
+  <li><strong>Authentication:</strong> [Status of SPF, DKIM, DMARC and what this means for legitimacy]</li>
+  <li><strong>Other relevant indicators that support the risk assessment]</strong></li>
 </ul>
 
 <h3>Security Implications</h3>
-<p>Clear explanation of security risks without any markdown. Use <strong>HTML tags</strong> for emphasis, not asterisks or markdown.</p>
+<p>[Explanation appropriate to the ACTUAL risk level]</p>
 
 <h3>Recommendations</h3>
 <ul>
-  <li><strong>Action 1:</strong> First recommendation with HTML formatting only</li>
-  <li><strong>Action 2:</strong> Second recommendation with HTML formatting only</li>
-  <li><strong>Action 3:</strong> Third recommendation with HTML formatting only</li>
+  <li><strong>Action 1:</strong> [First recommendation appropriate to risk level]</li>
+  <li><strong>Action 2:</strong> [Second recommendation appropriate to risk level]</li>
+  <li><strong>Action 3:</strong> [General security practice]</li>
 </ul>
 
-Guidelines:
-1. Use ONLY HTML tags for formatting - do not use markdown, asterisks, underscores, or backticks
-2. For emphasis, use <strong> and </strong> tags, not ** or __
-3. For light emphasis, use <em> and </em> tags, not * or _
-4. Start your response EXACTLY with <h2> with no whitespace before it
-5. Structure your analysis exactly according to the template above
-6. Be precise and specific with your findings based on the email headers
-7. Tailor recommendations based on risk level - stronger warnings for high-risk emails
+FINAL CHECK: Before submitting, verify that your assessment is CONSISTENT with the risk score. If risk_score < 30, ensure your assessment states the email is legitimate/safe and your recommendations are not alarmist.
