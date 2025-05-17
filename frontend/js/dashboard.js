@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('Dashboard.js loaded and running');
+  
   // CHECKED: Already using correct user token keys
   // Check if user is logged in - USING USER-SPECIFIC TOKEN
   const token = localStorage.getItem('phishguardToken');
@@ -30,8 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   // Initialize components
-  loadUserActivity();
-  loadUserStatistics();
   initializeCarousel();
   initializeSecurityScore();
   
@@ -40,10 +40,111 @@ document.addEventListener('DOMContentLoaded', () => {
   if (clearHistoryBtn) {
     clearHistoryBtn.addEventListener('click', clearUserActivity);
   }
+  
+  // Initialize current timeframe
+  let currentTimeframe = 'month'; // Default to month view
+  
+  console.log('Setting up timeframe filters with default:', currentTimeframe);
+  
+  // Update the timeframe indicator with initial value
+  updateTimeframeIndicator(currentTimeframe);
+  
+  // Set up filter button click handlers - FIXED to ensure single initialization
+  setupFilterButtons(currentTimeframe);
+  
+  // Initialize activity and stats with default timeframe
+  loadUserActivity(currentTimeframe);
+  loadUserStatistics(currentTimeframe);
 });
 
-// Load user statistics from API or use placeholders
-async function loadUserStatistics() {
+// New function to centralize filter button setup
+function setupFilterButtons(defaultTimeframe) {
+  console.log('Setting up filter buttons with default timeframe:', defaultTimeframe);
+  const filterButtons = document.querySelectorAll('.filter-btn');
+  
+  if (filterButtons.length === 0) {
+    console.warn('No filter buttons found on page');
+    return;
+  }
+  
+  console.log('Found', filterButtons.length, 'filter buttons');
+  
+  // First remove existing button handlers by cloning and replacing
+  filterButtons.forEach(button => {
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+  });
+  
+  // Make sure the correct button is active initially
+  const freshButtons = document.querySelectorAll('.filter-btn');
+  freshButtons.forEach(button => {
+    const buttonTimeframe = button.getAttribute('data-timeframe');
+    console.log('Setting up button for timeframe:', buttonTimeframe);
+    
+    // Mark the default timeframe button as active
+    if (buttonTimeframe === defaultTimeframe) {
+      button.classList.add('active');
+      console.log('Marked button as active:', buttonTimeframe);
+    } else {
+      button.classList.remove('active');
+    }
+    
+    // Add click event listener
+    button.addEventListener('click', function() {
+      console.log('Filter button clicked for timeframe:', buttonTimeframe);
+      
+      // Update active states
+      freshButtons.forEach(btn => btn.classList.remove('active'));
+      this.classList.add('active');
+      
+      // Set current timeframe and update indicators
+      const timeframe = buttonTimeframe;
+      updateTimeframeIndicator(timeframe);
+      
+      // Load data for selected timeframe
+      loadUserActivity(timeframe);
+      loadUserStatistics(timeframe);
+    });
+  });
+}
+
+// Fixed function to update the timeframe indicator text
+function updateTimeframeIndicator(timeframe) {
+  console.log('Updating timeframe indicator to:', timeframe);
+  const timeframeIndicator = document.getElementById('stats-timeframe');
+  
+  if (!timeframeIndicator) {
+    console.error('stats-timeframe element not found!');
+    return;
+  }
+  
+  // Set loading state first
+  timeframeIndicator.textContent = 'Loading...';
+  
+  // Update with proper timeframe text
+  switch(timeframe) {
+    case 'day':
+      timeframeIndicator.textContent = 'Daily Stats';
+      break;
+    case 'week':
+      timeframeIndicator.textContent = 'Weekly Stats';
+      break;
+    case 'month':
+      timeframeIndicator.textContent = 'Monthly Stats';
+      break;
+    case 'all':
+      timeframeIndicator.textContent = 'All-Time Stats';
+      break;
+    default:
+      timeframeIndicator.textContent = 'Monthly Stats';
+  }
+  
+  console.log('Timeframe indicator updated to:', timeframeIndicator.textContent);
+}
+
+// Load user statistics from API with timeframe parameter
+async function loadUserStatistics(timeframe = 'month') {
+  console.log('Loading user statistics for timeframe:', timeframe);
   try {
     const token = localStorage.getItem('phishguardToken');
     if (!token) {
@@ -52,7 +153,8 @@ async function loadUserStatistics() {
       return;
     }
     
-    const response = await fetch('http://localhost:3000/api/user/stats', {
+    // API call with explicit timeframe parameter
+    const response = await fetch(`http://localhost:3000/api/user/stats?timeframe=${timeframe}`, {
       headers: {
         'x-auth-token': token
       }
@@ -65,58 +167,43 @@ async function loadUserStatistics() {
     }
     
     const data = await response.json();
+    console.log('Statistics loaded successfully:', data);
     
-    // Update the UI with the statistics
-    document.getElementById('total-scans').textContent = data.totalScans || 0;
-    document.getElementById('threats-detected').textContent = data.threatsDetected || 0;
-    document.getElementById('safe-sites').textContent = data.safeSites || 0;
+    // Get previous values for animation
+    const previousTotalScans = parseInt(document.getElementById('total-scans').textContent) || 0;
+    const previousThreatsDetected = parseInt(document.getElementById('threats-detected').textContent) || 0;
+    const previousSafeSites = parseInt(document.getElementById('safe-sites').textContent) || 0;
+    
+    // Animate the changes
+    animateStatChange('total-scans', previousTotalScans, data.totalScans || 0);
+    animateStatChange('threats-detected', previousThreatsDetected, data.threatsDetected || 0);
+    animateStatChange('safe-sites', previousSafeSites, data.safeSites || 0);
+    
+    // Add stat-loaded class to trigger animations
+    setTimeout(() => {
+      document.querySelectorAll('.stat-card').forEach(card => {
+        card.classList.add('stat-loaded');
+      });
+    }, 100);
   } catch (error) {
     console.error('Error loading user statistics:', error);
     setPlaceholderStatistics();
-  }
-}
-
-// Animate statistic value change
-function animateStatChange(elementId, from, to) {
-  const element = document.getElementById(elementId);
-  if (!element) return;
-  
-  // Don't animate if the value is 0
-  if (to === 0) {
-    element.textContent = '0';
-    return;
-  }
-  
-  let current = from;
-  const duration = 1500; // Animation duration in ms
-  const interval = 20; // Update interval in ms
-  const steps = duration / interval;
-  const increment = (to - from) / steps;
-  
-  const timer = setInterval(() => {
-    current += increment;
-    if ((increment > 0 && current >= to) || (increment < 0 && current <= to)) {
-      current = to;
-      clearInterval(timer);
-    }
     
-    element.textContent = Math.round(current);
-  }, interval);
+    // Ensure timeframe indicator is updated even on error
+    updateTimeframeIndicator(timeframe);
+  }
 }
 
-// Show placeholder statistics instead of loading from localStorage
-function setPlaceholderStatistics() {
-  document.getElementById('total-scans').textContent = '0';
-  document.getElementById('threats-detected').textContent = '0';
-  document.getElementById('safe-sites').textContent = '0';
-}
-
-// Load user activity history
-async function loadUserActivity() {
+// Load user activity data
+async function loadUserActivity(timeframe = 'month') {
+  console.log('Loading user activity for timeframe:', timeframe);
   const activityContainer = document.getElementById('scan-history');
   const clearHistoryBtn = document.getElementById('clear-history-btn');
   
-  if (!activityContainer) return;
+  if (!activityContainer) {
+    console.error('Scan history container not found!');
+    return;
+  }
   
   // Initially hide the clear button until we know there's activity
   if (clearHistoryBtn) {
@@ -133,7 +220,8 @@ async function loadUserActivity() {
       return;
     }
     
-    const response = await fetch('http://localhost:3000/api/user/activity', {
+    // Make the API call with timeframe parameter
+    const response = await fetch(`http://localhost:3000/api/user/activity?timeframe=${timeframe}`, {
       headers: {
         'x-auth-token': token
       }
@@ -144,9 +232,27 @@ async function loadUserActivity() {
     }
     
     const activities = await response.json();
+    console.log(`Received ${activities.length} activities for timeframe: ${timeframe}`);
     
     if (!activities || activities.length === 0) {
-      activityContainer.innerHTML = '<p class="no-data">No activity found. Start analyzing URLs to build your history.</p>';
+      // Show appropriate message based on timeframe
+      let message = 'No activity found.';
+      switch(timeframe) {
+        case 'day':
+          message = 'No activity found for today.';
+          break;
+        case 'week':
+          message = 'No activity found for this week.';
+          break;
+        case 'month':
+          message = 'No activity found for this month.';
+          break;
+        case 'all':
+          message = 'No activity found. Start analyzing URLs to build your history.';
+          break;
+      }
+      
+      activityContainer.innerHTML = `<p class="no-data">${message}</p>`;
       return;
     }
     
@@ -154,58 +260,72 @@ async function loadUserActivity() {
     activityContainer.innerHTML = '';
     
     activities.forEach(activity => {
-      // Determine risk class
-      let riskClass = 'safe';
-      let riskText = 'Safe';
+      // Format date to a more readable format
+      const date = new Date(activity.Timestamp);
+      const formattedDate = date.toLocaleDateString('en-US', {
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
       
+      // Determine risk level badge class
+      let badgeClass = 'status-safe';
       if (activity.Risk >= 70) {
-        riskClass = 'danger';
-        riskText = 'High Risk';
-      } else if (activity.Risk >= 50) {
-        riskClass = 'warning';
-        riskText = 'Medium Risk';
+        badgeClass = 'status-danger';
+      } else if (activity.Risk >= 40) {
+        badgeClass = 'status-warning';
       }
       
-      // Format date
-      const date = new Date(activity.Timestamp);
-      const formattedDate = date.toLocaleDateString() + ' ' + 
-                           date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
-      // Create activity item
+      // Create activity item HTML
       const activityItem = document.createElement('div');
-      activityItem.className = `history-item risk-${riskClass}`;
+      activityItem.className = 'history-item';
       activityItem.innerHTML = `
-        <div class="history-content">
-          <div class="history-title">${escapeHtml(activity.Title)}</div>
+        <div>
+          <div class="history-title">${activity.Title}</div>
           <div class="history-time">${formattedDate}</div>
         </div>
-        <div class="history-status">
-          <span class="status-badge status-${riskClass}">${riskText}</span>
+        <div class="status-badge ${badgeClass}">
+          ${activity.Risk < 40 ? 'Safe' : activity.Risk >= 70 ? 'High Risk' : 'Medium Risk'}
         </div>
       `;
       
       activityContainer.appendChild(activityItem);
     });
     
-    // Show the clear history button since we have activities
+    // Show the clear history button if we have activity
     if (clearHistoryBtn) {
-      clearHistoryBtn.style.display = 'block';
-      clearHistoryBtn.addEventListener('click', clearUserActivity);
+      clearHistoryBtn.style.display = 'flex';
     }
+    
   } catch (error) {
     console.error('Error loading activity:', error);
-    activityContainer.innerHTML = '<p class="error">Failed to load activity history</p>';
+    activityContainer.innerHTML = `
+      <div class="error">
+        <i class="fas fa-exclamation-circle"></i>
+        Error loading activity. Please try again later.
+      </div>
+    `;
   }
+}
+
+// Show placeholder statistics instead of loading from localStorage
+function setPlaceholderStatistics() {
+  document.getElementById('total-scans').textContent = '0';
+  document.getElementById('threats-detected').textContent = '0';
+  document.getElementById('safe-sites').textContent = '0';
 }
 
 // Function to clear user activity
 async function clearUserActivity() {
-  if (!confirm('Are you sure you want to clear your activity history?')) {
-    return;
-  }
+  const confirmed = confirm('Are you sure you want to clear all your activity history? This action cannot be undone.');
+  if (!confirmed) return;
   
   try {
     const token = localStorage.getItem('phishguardToken');
+    if (!token) return;
+    
     const response = await fetch('http://localhost:3000/api/user/activity', {
       method: 'DELETE',
       headers: {
@@ -213,337 +333,114 @@ async function clearUserActivity() {
       }
     });
     
-    if (response.ok) {
-      // Reload activity and stats
-      loadUserActivity();
-      loadUserStatistics();
-      
-      // Show success message
-      showMessage('Activity history cleared successfully', 'success');
-    } else {
-      showMessage('Failed to clear activity history', 'error');
+    if (!response.ok) {
+      throw new Error('Failed to clear activity history');
     }
+    
+    // Reload current activity view with current timeframe
+    const activeButton = document.querySelector('.filter-btn.active');
+    const currentTimeframe = activeButton ? activeButton.getAttribute('data-timeframe') : 'month';
+    
+    // Reload both activity and statistics
+    loadUserActivity(currentTimeframe);
+    loadUserStatistics(currentTimeframe);
+    
+    alert('Activity history has been cleared successfully.');
   } catch (error) {
     console.error('Error clearing activity history:', error);
-    showMessage('Error clearing activity history', 'error');
+    alert('Failed to clear activity history. Please try again later.');
   }
 }
 
-// Helper function to show messages
-function showMessage(message, type = 'info') {
-  const alertElement = document.createElement('div');
-  alertElement.className = `alert alert-${type}`;
-  alertElement.textContent = message;
-  
-  document.body.appendChild(alertElement);
-  
-  // Remove after a delay
-  setTimeout(() => {
-    alertElement.classList.add('alert-fade-out');
-    setTimeout(() => {
-      document.body.removeChild(alertElement);
-    }, 500);
-  }, 3000);
+// Initialize security score features (in case they're needed)
+function initializeSecurityScore() {
+  // This function is kept empty as it's handled in the HTML inline script
+  // We leave it here for completeness and in case we want to move the code here later
 }
 
-// Helper function to escape HTML
-function escapeHtml(text) {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  };
-  return text.replace(/[&<>"']/g, m => map[m]);
-}
-
-// Show placeholder history instead of loading from localStorage
-function showPlaceholderHistory() {
-  const scanHistoryContainer = document.getElementById('scan-history');
-  
-  scanHistoryContainer.innerHTML = `
-    <div class="history-placeholder">
-      <p>Your recent URL scan results will appear here after analysis</p>
-    </div>
-  `;
-}
-
-// Initialize the security tips carousel
+// Initialize carousel if it exists on the page
 function initializeCarousel() {
-  const tips = document.querySelectorAll('.tip-card');
-  const indicators = document.querySelectorAll('.indicator');
-  const prevBtn = document.querySelector('.carousel-prev');
-  const nextBtn = document.querySelector('.carousel-next');
+  const carousel = document.querySelector('.security-tips-carousel');
+  if (!carousel) return;
+  
+  const cards = carousel.querySelectorAll('.tip-card');
+  const indicators = carousel.querySelectorAll('.carousel-indicators .indicator');
+  const prevBtn = carousel.querySelector('.carousel-prev');
+  const nextBtn = carousel.querySelector('.carousel-next');
+  
   let currentIndex = 0;
   
-  function showTip(index) {
-    // Hide all tips
-    tips.forEach(tip => tip.classList.remove('active'));
-    indicators.forEach(ind => ind.classList.remove('active'));
+  function showCard(index) {
+    cards.forEach(card => card.classList.remove('active'));
+    indicators.forEach(indicator => indicator.classList.remove('active'));
     
-    // Show selected tip
-    tips[index].classList.add('active');
+    cards[index].classList.add('active');
     indicators[index].classList.add('active');
     currentIndex = index;
   }
   
-  // Next tip
-  nextBtn.addEventListener('click', () => {
-    let nextIndex = currentIndex + 1;
-    if (nextIndex >= tips.length) nextIndex = 0;
-    showTip(nextIndex);
-  });
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      let prevIndex = currentIndex - 1;
+      if (prevIndex < 0) prevIndex = cards.length - 1;
+      showCard(prevIndex);
+    });
+  }
   
-  // Previous tip
-  prevBtn.addEventListener('click', () => {
-    let prevIndex = currentIndex - 1;
-    if (prevIndex < 0) prevIndex = tips.length - 1;
-    showTip(prevIndex);
-  });
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      let nextIndex = currentIndex + 1;
+      if (nextIndex >= cards.length) nextIndex = 0;
+      showCard(nextIndex);
+    });
+  }
   
-  // Indicator clicks
   indicators.forEach((indicator, index) => {
     indicator.addEventListener('click', () => {
-      showTip(index);
+      showCard(index);
     });
   });
   
-  // Auto-rotate tips every 10 seconds
+  // Auto-advance every 8 seconds
   setInterval(() => {
     let nextIndex = currentIndex + 1;
-    if (nextIndex >= tips.length) nextIndex = 0;
-    showTip(nextIndex);
-  }, 10000);
+    if (nextIndex >= cards.length) nextIndex = 0;
+    showCard(nextIndex);
+  }, 8000);
 }
 
-// Initialize security score widget
-function initializeSecurityScore() {
-  const scoreElement = document.getElementById('security-score');
-  const scoreProgress = document.getElementById('score-progress');
-  if (!scoreElement || !scoreProgress) return;
+// Simple stat value change animation
+function animateStatChange(elementId, from, to) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
   
-  // Check for completed security tasks
-  const completed = {
-    passwordCheck: localStorage.getItem('completed_password_check') === 'true',
-    urlAnalysis: localStorage.getItem('completed_url_analysis') === 'true',
-    emailAnalysis: localStorage.getItem('completed_email_analysis') === 'true',
-    education: localStorage.getItem('completed_education') === 'true'
+  // Skip animation for small or zero values
+  if (from === to || (from === 0 && to < 10)) {
+    element.textContent = to;
+    return;
+  }
+  
+  const duration = 1000; // ms
+  const frameRate = 60;
+  const frames = duration / 1000 * frameRate;
+  const increment = (to - from) / frames;
+  let current = from;
+  let frame = 0;
+  
+  const animate = () => {
+    current += increment;
+    frame++;
+    
+    if ((increment > 0 && current >= to) || 
+        (increment < 0 && current <= to) || 
+        frame >= frames) {
+      element.textContent = to;
+      return;
+    }
+    
+    element.textContent = Math.round(current);
+    requestAnimationFrame(animate);
   };
   
-  // Calculate current score based on completed tasks
-  const totalTasks = 4; // Updated to include email analysis
-  let completedTasks = 0;
-  
-  if (completed.passwordCheck) completedTasks++;
-  if (completed.urlAnalysis) completedTasks++;
-  if (completed.emailAnalysis) completedTasks++;
-  if (completed.education) completedTasks++;
-  
-  const score = Math.floor((completedTasks / totalTasks) * 100);
-  
-  // Update security checklist display
-  updateSecurityChecklist(completed);
-  
-  // Animate score change
-  animateSecurityScore(0, score);
-  
-  // Add click events to checklist items for easy navigation
-  setupChecklistNavigation();
-}
-
-// Update security checklist based on completed tasks
-function updateSecurityChecklist(completed) {
-  const checklist = document.getElementById('security-checklist');
-  if (!checklist) return;
-  
-  const items = checklist.querySelectorAll('.score-item');
-  
-  // Password health check
-  updateChecklistItem(items[0], completed.passwordCheck);
-  
-  // URL analysis
-  updateChecklistItem(items[1], completed.urlAnalysis);
-  
-  // Email analysis (new)
-  updateChecklistItem(items[2], completed.emailAnalysis);
-  
-  // Security education
-  updateChecklistItem(items[3], completed.education);
-}
-
-// Update individual checklist item
-function updateChecklistItem(item, completed) {
-  if (!item) return;
-  
-  const icon = item.querySelector('.score-item-icon');
-  const status = item.querySelector('.score-item-status');
-  
-  if (completed) {
-    icon.className = 'score-item-icon score-item-complete';
-    status.textContent = 'Completed';
-  } else {
-    icon.className = 'score-item-icon score-item-incomplete';
-    status.textContent = 'Pending';
-  }
-}
-
-// Update specific checklist item by key
-function updateSecurityChecklistItem(key, completed) {
-  const checklist = document.getElementById('security-checklist');
-  if (!checklist) return;
-  
-  const items = checklist.querySelectorAll('.score-item');
-  let targetItem;
-  
-  switch(key) {
-    case 'passwordCheck':
-      targetItem = items[0];
-      break;
-    case 'urlAnalysis':
-      targetItem = items[1];
-      break;
-    case 'emailAnalysis':
-      targetItem = items[2];
-      break;
-    case 'education':
-      targetItem = items[3];
-      break;
-  }
-  
-  if (targetItem) {
-    updateChecklistItem(targetItem, completed);
-    
-    // Recalculate and update security score
-    const completed = {
-      passwordCheck: localStorage.getItem('completed_password_check') === 'true',
-      urlAnalysis: localStorage.getItem('completed_url_analysis') === 'true',
-      emailAnalysis: localStorage.getItem('completed_email_analysis') === 'true',
-      education: localStorage.getItem('completed_education') === 'true'
-    };
-    
-    const totalTasks = 4; // Updated to include email analysis
-    let completedTasks = 0;
-    
-    if (completed.passwordCheck) completedTasks++;
-    if (completed.urlAnalysis) completedTasks++;
-    if (completed.emailAnalysis) completedTasks++; // Add this line
-    if (completed.education) completedTasks++;
-    
-    const newScore = Math.floor((completedTasks / totalTasks) * 100);
-    
-    // Get current score from display
-    const scoreElement = document.getElementById('security-score');
-    let currentScore = 0;
-    if (scoreElement) {
-      currentScore = parseInt(scoreElement.textContent) || 0;
-    }
-    
-    animateSecurityScore(currentScore, newScore);
-  }
-}
-
-// Animate security score change
-function animateSecurityScore(from, to) {
-  const scoreElement = document.getElementById('security-score');
-  const scoreProgress = document.getElementById('score-progress');
-  if (!scoreElement || !scoreProgress) return;
-  
-  let current = from;
-  const duration = 1500; // Animation duration in ms
-  const interval = 20; // Update interval in ms
-  const steps = duration / interval;
-  const increment = (to - from) / steps;
-  
-  // Animate score number
-  const timer = setInterval(() => {
-    current += increment;
-    if ((increment > 0 && current >= to) || (increment < 0 && current <= to)) {
-      current = to;
-      clearInterval(timer);
-    }
-    
-    scoreElement.textContent = Math.round(current) + '%';
-    
-    // Animate circle progress
-    const angle = 3.6 * Math.round(current); // 3.6 degrees per percentage
-    scoreProgress.style.transform = `rotate(${angle}deg)`;
-    
-    // Change color based on score
-    if (current < 30) {
-      scoreProgress.style.borderTopColor = '#f44336';
-      scoreProgress.style.borderRightColor = '#f44336';
-      scoreElement.style.color = '#f44336';
-    } else if (current < 70) {
-      scoreProgress.style.borderTopColor = '#ff9800';
-      scoreProgress.style.borderRightColor = '#ff9800';
-      scoreElement.style.color = '#ff9800';
-    } else {
-      scoreProgress.style.borderTopColor = '#4caf50';
-      scoreProgress.style.borderRightColor = '#4caf50';
-      scoreElement.style.color = '#4caf50';
-    }
-  }, interval);
-}
-
-// Setup security checklist item navigation
-function setupChecklistNavigation() {
-  const checklist = document.getElementById('security-checklist');
-  if (!checklist) return;
-  
-  const items = checklist.querySelectorAll('.score-item');
-  
-  // Password health check
-  items[0].addEventListener('click', () => {
-    window.location.href = 'password-health.html';
-  });
-  
-  // URL analysis
-  items[1].addEventListener('click', () => {
-    window.location.href = 'analyze.html';
-  });
-  
-  // Email analysis (new)
-  items[2].addEventListener('click', () => {
-    window.location.href = 'email-analysis.html';
-  });
-  
-  // Security education
-  items[3].addEventListener('click', () => {
-    window.location.href = 'education.html';
-    // Mark as completed when the user visits the education page
-    localStorage.setItem('completed_education', 'true');
-  });
-}
-
-// Helper function to get status text
-function getStatusText(scan) {
-  if (scan.is_phishing) {
-    return 'Phishing';
-  } else if (scan.risk_score > 60) {
-    return 'High Risk';
-  } else if (scan.risk_score > 30) {
-    return 'Suspicious';
-  } else {
-    return 'Safe';
-  }
-}
-
-// Helper function to truncate URLs
-function truncateUrl(url, maxLength = 40) {
-  if (url.length <= maxLength) return url;
-  
-  try {
-    const urlObj = new URL(url);
-    const domain = urlObj.hostname;
-    const path = urlObj.pathname;
-    
-    if (domain.length > maxLength - 10) {
-      return domain.substring(0, maxLength - 10) + '...' + domain.substring(domain.length - 7);
-    }
-    
-    return domain + path.substring(0, 10) + '...';
-  } catch (e) {
-    return url.substring(0, maxLength - 3) + '...';
-  }
+  animate();
 }

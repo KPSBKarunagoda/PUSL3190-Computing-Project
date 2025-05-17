@@ -596,6 +596,81 @@
       transform: translateY(-1px);
     }
     
+    /* Timeframe indicator styling */
+    .timeframe-indicator {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    
+    .timeframe-indicator span {
+      background-color: rgba(61, 133, 198, 0.1);
+      color: var(--primary-color);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    
+    /* Filter options styling */
+    .filter-options {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .filter-label {
+      color: var(--text-secondary);
+      margin-right: 15px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    
+    .filter-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .filter-btn {
+      background: rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .filter-btn:hover {
+      background: rgba(0, 0, 0, 0.15);
+      transform: translateY(-1px);
+    }
+    
+    .filter-btn.active {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+    
+    /* Mobile responsiveness for filters */
+    @media (max-width: 600px) {
+      .filter-options {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      
+      .filter-buttons {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 5px;
+      }
+    }
+    
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -802,6 +877,19 @@
         </div>
         <section class="dashboard-section">
           <h2><i class="fas fa-chart-line"></i> Your Activity Overview</h2>
+          <div class="timeframe-indicator">
+            <span id="stats-timeframe">Monthly Stats</span>
+          </div>
+          <!-- Add timeframe filter options -->
+          <div class="filter-options">
+            <span class="filter-label">Time period:</span>
+            <div class="filter-buttons">
+              <button class="filter-btn" data-timeframe="day">Day</button>
+              <button class="filter-btn" data-timeframe="week">Week</button>
+              <button class="filter-btn active" data-timeframe="month">Month</button>
+              <button class="filter-btn" data-timeframe="all">All Time</button>
+            </div>
+          </div>
           <div class="stats-container">
             <div class="stat-card">
               <div class="stat-icon"><i class="fas fa-search"></i></div>
@@ -1063,6 +1151,7 @@
       // Setup security checklist item navigation
       setupChecklistNavigation();
     });
+
     function initSecurityScore() {
       let score = 0;
       const securityChecklist = document.getElementById('security-checklist');
@@ -1170,6 +1259,7 @@
         localStorage.setItem('completed_education', 'true');
       });
     }
+
   </script>
 </body>
 </html>

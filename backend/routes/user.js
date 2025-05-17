@@ -277,20 +277,49 @@ module.exports = function(dbConnection) {
         try {
             const userId = req.user.id;
             const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+            const timeframe = req.query.timeframe || 'all'; // Default to all if not specified
             
-            console.log(`Fetching activity for user ${userId}, limit ${limit}`);
+            console.log(`Fetching activity for user ${userId}, timeframe ${timeframe}, limit ${limit}`);
+            
+            // Build the SQL query with timeframe filter
+            let query = `
+                SELECT ActivityID, Title, Risk, Timestamp 
+                FROM UserActivity 
+                WHERE UserID = ?`;
+                
+            const queryParams = [userId];
+            
+            // Add timeframe condition if specified
+            if (timeframe !== 'all') {
+                let interval;
+                
+                switch(timeframe) {
+                    case 'day':
+                        interval = '1 DAY';
+                        break;
+                    case 'week':
+                        interval = '7 DAY';
+                        break;
+                    case 'month':
+                        interval = '30 DAY';
+                        break;
+                    default:
+                        interval = null;
+                }
+                
+                if (interval) {
+                    query += ` AND Timestamp >= DATE_SUB(NOW(), INTERVAL ${interval})`;
+                }
+            }
+            
+            // Add order and limit
+            query += ` ORDER BY Timestamp DESC LIMIT ?`;
+            queryParams.push(limit);
             
             // Get activities from DB
-            const [activities] = await dbConnection.execute(
-                `SELECT ActivityID, Title, Risk, Timestamp 
-                 FROM UserActivity 
-                 WHERE UserID = ? 
-                 ORDER BY Timestamp DESC 
-                 LIMIT ?`,
-                [userId, limit]
-            );
+            const [activities] = await dbConnection.execute(query, queryParams);
             
-            console.log(`Found ${activities.length} activities for user ${userId}`);
+            console.log(`Found ${activities.length} activities for user ${userId} in timeframe ${timeframe}`);
             res.json(activities);
         } catch (error) {
             console.error('Error fetching user activity:', error);
@@ -302,23 +331,51 @@ module.exports = function(dbConnection) {
     router.get('/stats', async (req, res) => {
         try {
             const userId = req.user.id;
+            const timeframe = req.query.timeframe || 'all'; // Default to all if not specified
             
-            console.log(`Fetching stats for user ${userId}`);
+            console.log(`Fetching stats for user ${userId} with timeframe ${timeframe}`);
             
-            // Get counts from UserActivity table
-            const [stats] = await dbConnection.execute(`
+            // Build query with timeframe filter
+            let query = `
                 SELECT 
                     COUNT(*) as totalScans,
                     SUM(CASE WHEN Risk >= 50 THEN 1 ELSE 0 END) as threatsDetected,
                     SUM(CASE WHEN Risk < 50 THEN 1 ELSE 0 END) as safeSites
                 FROM UserActivity 
-                WHERE UserID = ?
-            `, [userId]);
+                WHERE UserID = ?`;
+                
+            const queryParams = [userId];
+            
+            // Add timeframe condition if specified
+            if (timeframe !== 'all') {
+                let interval;
+                
+                switch(timeframe) {
+                    case 'day':
+                        interval = '1 DAY';
+                        break;
+                    case 'week':
+                        interval = '7 DAY';
+                        break;
+                    case 'month':
+                        interval = '30 DAY';
+                        break;
+                    default:
+                        interval = null;
+                }
+                
+                if (interval) {
+                    query += ` AND Timestamp >= DATE_SUB(NOW(), INTERVAL ${interval})`;
+                }
+            }
+            
+            const [stats] = await dbConnection.execute(query, queryParams);
             
             res.json({
                 totalScans: stats[0]?.totalScans || 0,
                 threatsDetected: stats[0]?.threatsDetected || 0,
-                safeSites: stats[0]?.safeSites || 0
+                safeSites: stats[0]?.safeSites || 0,
+                timeframe: timeframe
             });
         } catch (error) {
             console.error('Error fetching user stats:', error);
