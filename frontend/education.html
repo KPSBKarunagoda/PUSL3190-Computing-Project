@@ -89,28 +89,8 @@
       padding: 20px;
     }
     
-    .education-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-      padding-bottom: 15px;
-      border-bottom: 1px solid var(--border-color);
-    }
-    
-    .education-header h1 {
-      font-size: 2rem;
-      color: var(--primary-color);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 0;
-    }
-    
-    .education-header h1 i {
-      font-size: 1.8rem;
-      color: var(--accent-color);
-    }
+    /* Using analysis-header styling for consistency */
+    /* The education-header styles are removed as we're using analysis-header instead */
     
     .education-card {
       background: linear-gradient(145deg, var(--card-bg), var(--card-bg) 80%, rgba(78, 201, 176, 0.05));
@@ -257,25 +237,6 @@
       position: absolute;
       left: 0;
       top: 2px;
-    }
-    
-    .btn-back {
-      background-color: rgba(0, 0, 0, 0.2);
-      color: var(--text-primary);
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      padding: 12px 25px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      text-decoration: none;
-    }
-    
-    .btn-back:hover {
-      background-color: rgba(0, 0, 0, 0.3);
     }
     
     .quiz-section {
@@ -1409,9 +1370,9 @@
   </header>
 
   <div class="education-wrapper">
-    <div class="education-header">
+    <div class="analysis-header">
       <h1><i class="fas fa-book"></i> Phishing Education</h1>
-      <a href="dashboard.html" class="btn-back">
+      <a href="dashboard.html" class="btn-new-analysis">
         <i class="fas fa-arrow-left"></i> Back to Dashboard
       </a>
     </div>
@@ -2287,5 +2248,4 @@
   </footer>
 </body>
 </html>
-``` 
 
