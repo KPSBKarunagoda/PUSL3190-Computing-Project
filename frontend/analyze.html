@@ -1139,11 +1139,8 @@
         </div>
             
         <div class="card-section">
-          <div class="score-interpretation">
-            <h3 id="result-interpretation">Analyzing Results...</h3>
-            <p id="result-description">We're evaluating the security characteristics of this URL.</p>
-          </div>
-
+          <!-- Removed the score-interpretation div here -->
+          
           <!-- New Risk Summary Section -->
           <div id="risk-summary" class="risk-summary risk-summary-safe">
             <div class="risk-summary-header">
@@ -1288,8 +1285,9 @@
       const analyzedUrl = document.getElementById('analyzed-url');
       const scoreBar = document.getElementById('score-bar');
       const riskScoreValue = document.getElementById('risk-score-value');
-      const resultInterpretation = document.getElementById('result-interpretation');
-      const resultDescription = document.getElementById('result-description');
+      // Remove references to the elements we've deleted
+      // const resultInterpretation = document.getElementById('result-interpretation');
+      // const resultDescription = document.getElementById('result-description');
       const recommendationText = document.getElementById('recommendation-text');
       const findingsCards = document.getElementById('findings-cards');
       const newAnalysisButton = document.getElementById('new-analysis');
@@ -1380,9 +1378,10 @@
           resultIconContainer.className = 'result-icon-container icon-danger';
           resultTitle.textContent = 'Phishing Detected!';
           resultTitle.style.color = '#f44336';
-          resultInterpretation.textContent = 'High Risk Detected';
-          resultInterpretation.style.color = '#f44336';
-          resultDescription.textContent = 'This URL shows multiple characteristics associated with phishing websites.';
+          // Remove references to deleted elements
+          // resultInterpretation.textContent = 'High Risk Detected';
+          // resultInterpretation.style.color = '#f44336';
+          // resultDescription.textContent = 'This URL shows multiple characteristics associated with phishing websites.';
           recommendationText.textContent = 'We strongly recommend avoiding this website.';
           animateScoreBar(score, '#f44336');
         } else if (isMediumRisk || mlPrediction === 1) {
@@ -1390,9 +1389,10 @@
           resultIconContainer.className = 'result-icon-container icon-warning';
           resultTitle.textContent = 'Caution Advised';
           resultTitle.style.color = '#ff9800';
-          resultInterpretation.textContent = 'Suspicious URL';
-          resultInterpretation.style.color = '#ff9800';
-          resultDescription.textContent = 'This URL has some suspicious characteristics that warrant caution.';
+          // Remove references to deleted elements
+          // resultInterpretation.textContent = 'Suspicious URL';
+          // resultInterpretation.style.color = '#ff9800';
+          // resultDescription.textContent = 'This URL has some suspicious characteristics that warrant caution.';
           recommendationText.textContent = 'Exercise caution if you choose to visit this website.';
           animateScoreBar(score, '#ff9800');
         } else {
@@ -1400,9 +1400,10 @@
           resultIconContainer.className = 'result-icon-container icon-safe';
           resultTitle.textContent = 'Likely Safe';
           resultTitle.style.color = '#4caf50';
-          resultInterpretation.textContent = 'Low Risk';
-          resultInterpretation.style.color = '#4caf50';
-          resultDescription.textContent = 'No major phishing indicators were detected for this URL.';
+          // Remove references to deleted elements
+          // resultInterpretation.textContent = 'Low Risk';
+          // resultInterpretation.style.color = '#4caf50';
+          // resultDescription.textContent = 'No major phishing indicators were detected for this URL.';
           recommendationText.textContent = 'This URL appears to be legitimate based on our analysis.';
           animateScoreBar(score, '#4caf50');
         }
