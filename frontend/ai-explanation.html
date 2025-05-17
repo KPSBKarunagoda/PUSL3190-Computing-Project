@@ -1210,6 +1210,36 @@
       // Call API for AI explanation
       fetchAIExplanation(analysisData);
 
+      // Helper function to update risk level indicator
+      function updateRiskLevelIndicator(riskScore) {
+        const riskLevelElement = document.getElementById('risk-level');
+        if (!riskLevelElement) return;
+        
+        // Determine risk level based on score
+        let riskClass, riskText, riskIcon;
+        
+        if (riskScore >= 70) {
+          riskClass = 'high';
+          riskText = 'High Risk';
+          riskIcon = 'fa-exclamation-triangle';
+        } else if (riskScore >= 30) {
+          riskClass = 'medium';
+          riskText = 'Medium Risk';
+          riskIcon = 'fa-exclamation-circle';
+        } else {
+          riskClass = 'low';
+          riskText = 'Low Risk';
+          riskIcon = 'fa-shield-check';
+        }
+        
+        // Update classes and content
+        riskLevelElement.className = `ai-card-risk ${riskClass}`;
+        riskLevelElement.innerHTML = `
+          <i class="fas ${riskIcon}"></i>
+          <span>${riskText} (${Math.round(riskScore)}%)</span>
+        `;
+      }
+
       // Helper function to initialize tabs
       function initializeTabs() {
         const tabs = document.querySelectorAll('.ai-tab');
@@ -1241,9 +1271,7 @@
         aiContent.style.display = 'none';
         
         try {
-          // Make the API call - let the server handle caching
-          console.log('Fetching AI explanation from API');
-          
+          // Make the API call for AI explanation
           const response = await fetch('/api/ai/explain', {
             method: 'POST',
             headers: {
@@ -1263,6 +1291,34 @@
           
           const result = await response.json();
           
+          // Simultaneously fetch key findings for technical features tab
+          let keyFindings = [];
+          try {
+            const keyFindingsResponse = await fetch('/api/education/key-findings', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-auth-token': localStorage.getItem('phishguardToken')
+              },
+              body: JSON.stringify({ 
+                url: analysisData.url, 
+                analysisResult: {
+                  blacklist_id: analysisData.result?.blacklist_id,
+                  is_phishing: analysisData.result?.is_phishing,
+                  risk_score: analysisData.result?.risk_score,
+                  features: analysisData.features || {}
+                }
+              })
+            });
+            
+            if (keyFindingsResponse.ok) {
+              const findingsData = await keyFindingsResponse.json();
+              keyFindings = findingsData.findings || [];
+            }
+          } catch (findingsError) {
+            console.error('Error fetching key findings:', findingsError);
+          }
+          
           // Update the risk level indicator
           updateRiskLevelIndicator(analysisData.result.risk_score);
           
@@ -1271,7 +1327,10 @@
           aiContent.style.display = 'block';
           
           document.getElementById('explanation-content').innerHTML = result.explanation;
-          document.getElementById('features-content').innerHTML = createFeaturesHTML(analysisData.features);
+          
+          // Use key findings for technical features instead of generating them from scratch
+          document.getElementById('features-content').innerHTML = createFeaturesFromFindings(keyFindings, analysisData);
+          
           document.getElementById('recommendations-content').innerHTML = createRecommendationsHTML(result, analysisData.result.risk_score);
           
         } catch (error) {
@@ -1281,276 +1340,56 @@
         }
       }
 
-      // Add new function to update risk level indicator
-      function updateRiskLevelIndicator(riskScore) {
-        const riskLevelElement = document.getElementById('risk-level');
-        if (!riskLevelElement) return;
-        
-        // Clear the spinner and "Analyzing..." text
-        riskLevelElement.innerHTML = '';
-        
-        // Determine risk level based on score
-        let riskClass = 'low';
-        let riskText = 'Low Risk';
-        
-        if (riskScore > 70) {
-          riskClass = 'high';
-          riskText = 'High Risk';
-        } else if (riskScore > 30) {
-          riskClass = 'medium';
-          riskText = 'Medium Risk';
+      // New function to create technical features content from key findings
+      function createFeaturesFromFindings(findings, analysisData) {
+        if (!findings || findings.length === 0) {
+          // Fall back to simplified fallback method
+          return createFeaturesFallback(analysisData.features);
         }
         
-        // Update the risk level element
-        riskLevelElement.classList.add(riskClass);
-        riskLevelElement.innerHTML = `
-          <i class="fas ${riskClass === 'high' ? 'fa-exclamation-triangle' : 
-                        riskClass === 'medium' ? 'fa-exclamation-circle' : 
-                        'fa-check-circle'}"></i>
-          <span>${riskText} (${Math.round(riskScore)}%)</span>
-        `;
-      }
-      
-      function createFeaturesHTML(features) {
-        if (!features || Object.keys(features).length === 0) {
-          return `
-            <div class="feature-empty">
-              <i class="fas fa-database"></i>
-              <h3>No Technical Features Available</h3>
-              <p>We couldn't retrieve the technical features for this URL analysis.</p>
-            </div>
-          `;
-        }
-        
-        // Enhanced feature information with more concise descriptions
-        const featureInfo = {
-          domain_in_ip: {
-            name: "IP Address Instead of Domain",
-            description: "Shows if the URL uses IP address (192.168.1.1) instead of domain (example.com)",
-            explanation: "Legitimate websites almost always use domain names rather than raw IP addresses.",
-            getImpact: (value) => value ? 
-              { level: "high", text: "High Risk - Legitimate sites rarely use IP addresses" } : 
-              { level: "low", text: "Low Risk - Uses proper domain name" },
-            valueLabel: "IP-based:",
-            formatValue: (v) => v ? "Yes" : "No",
-            icon: "fa-globe",
-            learnMoreUrl: "https://www.phishing.org/phishing-techniques"
-          },
-          tls_ssl_certificate: {
-            name: "HTTPS Encryption",
-            description: "Shows if the site uses secure HTTPS encryption",
-            explanation: "HTTPS encryption protects your data during transmission.",
-            getImpact: (value) => value ? 
-              { level: "positive", text: "Positive - Uses HTTPS encryption" } : 
-              { level: "negative", text: "Negative - Site lacks encryption" },
-            valueLabel: "HTTPS:",
-            formatValue: (v) => v ? "Yes" : "No",
-            icon: "fa-lock",
-            learnMoreUrl: "https://support.google.com/chrome/answer/95617"
-          },
-          time_domain_activation: {
-            name: "Domain Age",
-            description: "How long the domain has been registered",
-            explanation: "New domains (< 30 days) are more likely to be used for phishing.",
-            getImpact: (value) => value < 30 ? 
-              { level: "high", text: "High Risk - Very new domain (< 30 days)" } : 
-              value < 90 ? 
-              { level: "medium", text: "Medium Risk - Relatively new domain" } : 
-              { level: "low", text: "Low Risk - Established domain" },
-            valueLabel: "Age:",
-            formatValue: (v) => v === 1 ? "1 day" : `${v} days`,
-            icon: "fa-calendar-alt",
-            learnMoreUrl: "https://www.spamhaus.org/whitepapers/dblwhitepaper/"
-          },
-          domain_google_index: {
-            name: "Google Indexing (Domain)",
-            description: "Whether Google has indexed this domain",
-            explanation: "Legitimate domains are typically indexed by search engines.",
-            getImpact: (value) => value ? 
-              { level: "positive", text: "Positive - Domain is indexed by Google" } : 
-              { level: "negative", text: "Negative - Domain not indexed" },
-            valueLabel: "Indexed:",
-            formatValue: (v) => v ? "Yes" : "No",
-            icon: "fa-search",
-            learnMoreUrl: "https://support.google.com/webmasters/answer/9012289"
-          },
-          url_google_index: {
-            name: "Google Indexing (Page)",
-            description: "Whether this specific page has been indexed by Google",
-            explanation: "Non-indexed pages may be new or intentionally hidden.",
-            getImpact: (value) => value ? 
-              { level: "positive", text: "Positive - Page is indexed" } : 
-              { level: "negative", text: "Negative - Page not indexed" },
-            valueLabel: "Indexed:",
-            formatValue: (v) => v ? "Yes" : "No",
-            icon: "fa-search",
-            learnMoreUrl: "https://developers.google.com/search/docs/fundamentals/seo-starter-guide"
-          },
-          qty_dot_url: {
-            name: "Dots in URL",
-            description: "Number of dots (periods) in the URL",
-            explanation: "High dot count may indicate deceptive subdomains.",
-            getImpact: (value) => value > 5 ? 
-              { level: "medium", text: "Medium Risk - Excessive dots" } : 
-              { level: "low", text: "Low Risk - Normal dot count" },
-            valueLabel: "Count:",
-            formatValue: (v) => v.toString(),
-            icon: "fa-ellipsis-h",
-            learnMoreUrl: "https://www.malwarebytes.com/phishing"
-          },
-          qty_hyphen_url: {
-            name: "Hyphens in URL",
-            description: "Number of hyphens (-) in the URL",
-            explanation: "Excessive hyphens may indicate a deceptive website.",
-            getImpact: (value) => value > 3 ? 
-              { level: "medium", text: "Medium Risk - Multiple hyphens" } : 
-              { level: "low", text: "Low Risk - Normal hyphen use" },
-            valueLabel: "Count:",
-            formatValue: (v) => v.toString(),
-            icon: "fa-minus",
-            learnMoreUrl: "https://www.malwarebytes.com/phishing"
-          },
-          length_url: {
-            name: "URL Length",
-            description: "Total character length of the URL",
-            explanation: "Long URLs may hide suspicious elements.",
-            getImpact: (value) => value > 75 ? 
-              { level: "medium", text: "Medium Risk - Unusually long URL" } : 
-              { level: "low", text: "Low Risk - Normal URL length" },
-            valueLabel: "Length:",
-            formatValue: (v) => `${v} chars`,
-            icon: "fa-text-width",
-            learnMoreUrl: "https://www.phishing.org/phishing-techniques"
-          },
-          qty_at_url: {
-            name: "@ Symbols in URL",
-            description: "Number of @ symbols in the URL",
-            explanation: "@ symbol can redirect to malicious sites.",
-            getImpact: (value) => value > 0 ? 
-              { level: "high", text: "High Risk - @ symbol detected" } : 
-              { level: "low", text: "Low Risk - No @ symbols" },
-            valueLabel: "Count:",
-            formatValue: (v) => v.toString(),
-            icon: "fa-at",
-            learnMoreUrl: "https://www.phishing.org/phishing-techniques"
-          },
-          qty_redirects: {
-            name: "URL Redirects",
-            description: "Number of redirects before reaching final URL",
-            explanation: "Multiple redirects may mask true destination.",
-            getImpact: (value) => value > 1 ? 
-              { level: "medium", text: "Medium Risk - Multiple redirects" } : 
-              { level: "low", text: "Low Risk - Minimal redirects" },
-            valueLabel: "Count:",
-            formatValue: (v) => v.toString(),
-            icon: "fa-exchange-alt",
-            learnMoreUrl: "https://www.malwarebytes.com/phishing"
-          },
-          qty_mx_servers: {
-            name: "Mail Servers",
-            description: "Number of mail exchange (MX) servers",
-            explanation: "Legitimate businesses typically have email servers.",
-            getImpact: (value) => value === 0 ? 
-              { level: "medium", text: "Medium Risk - No email capability" } : 
-              { level: "low", text: "Low Risk - Has email servers" },
-            valueLabel: "Count:",
-            formatValue: (v) => v.toString(),
-            icon: "fa-envelope",
-            learnMoreUrl: "https://support.google.com/a/answer/174125"
-          },
-          qty_nameservers: {
-            name: "DNS Nameservers",
-            description: "Number of DNS nameservers for the domain",
-            explanation: "Legitimate sites have multiple nameservers.",
-            getImpact: (value) => value < 2 ? 
-              { level: "medium", text: "Medium Risk - Few nameservers" } : 
-              { level: "low", text: "Low Risk - Proper configuration" },
-            valueLabel: "Count:",
-            formatValue: (v) => v.toString(),
-            icon: "fa-server",
-            learnMoreUrl: "https://www.cloudflare.com/learning/dns/dns-records/dns-ns-record/"
-          },
-          domain_spf: {
-            name: "Email Security (SPF)",
-            description: "Has SPF records to prevent email spoofing",
-            explanation: "SPF helps prevent attackers from sending emails as your domain.",
-            getImpact: (value) => value ? 
-              { level: "positive", text: "Positive - Has SPF security" } : 
-              { level: "negative", text: "Negative - No SPF protection" },
-            valueLabel: "SPF:",
-            formatValue: (v) => v ? "Yes" : "No",
-            icon: "fa-envelope-open",
-            learnMoreUrl: "https://support.google.com/a/answer/33786"
-          },
-          url_shortened: {
-            name: "URL Shortening",
-            description: "Whether this is a shortened URL (bit.ly, etc.)",
-            explanation: "URL shorteners hide the actual destination.",
-            getImpact: (value) => value ? 
-              { level: "high", text: "High Risk - Shortened URL" } : 
-              { level: "low", text: "Low Risk - Not shortened" },
-            valueLabel: "Shortened:",
-            formatValue: (v) => v ? "Yes" : "No",
-            icon: "fa-link",
-            learnMoreUrl: "https://www.malwarebytes.com/blog/news/2020/06/the-dangers-of-shortened-links"
-          }
+        // Categorize findings
+        const categorizedFindings = {
+          domain: { items: [], title: "Domain Factors", icon: "fa-globe" },
+          url: { items: [], title: "URL Structure", icon: "fa-link" },
+          certificate: { items: [], title: "SSL/Certificate Issues", icon: "fa-lock" },
+          infrastructure: { items: [], title: "Infrastructure Factors", icon: "fa-server" },
+          content: { items: [], title: "Content Analysis", icon: "fa-file-alt" },
+          safe_browsing: { items: [], title: "Safe Browsing Results", icon: "fa-shield-alt" },
+          other: { items: [], title: "Other Factors", icon: "fa-search" }
         };
         
-        // Categorize features and identify key risk factors
-        const highRiskFeatures = {};
-        const mediumRiskFeatures = {};
-        const securityFeatures = {};
-        const technicalFeatures = {};
+        // Sort findings by severity first
+        findings.sort((a, b) => {
+          const severityOrder = { high: 0, medium: 1, low: 2 };
+          return severityOrder[a.severity || 'medium'] - severityOrder[b.severity || 'medium'];
+        });
         
-        // Calculate overall technical risk level
-        let criticalIssues = 0;
-        let majorIssues = 0;
-        let positivePoints = 0;
-        
-        for (const [key, value] of Object.entries(features)) {
-          // Skip internal or irrelevant features
-          if (key.startsWith('_') || typeof value === 'undefined' || value === null) {
-            continue;
-          }
-          
-          if (!featureInfo[key]) continue;
-          
-          const impact = featureInfo[key].getImpact(value);
-          
-          if (impact.level === "high") {
-            highRiskFeatures[key] = value;
-            criticalIssues++;
-          } else if (impact.level === "medium" || impact.level === "negative") {
-            mediumRiskFeatures[key] = value;
-            majorIssues++;
-          } else if (impact.level === "positive") {
-            positivePoints++;
-            securityFeatures[key] = value;
+        // Group findings by category
+        findings.forEach(finding => {
+          const category = finding.category || 'other';
+          if (categorizedFindings[category]) {
+            categorizedFindings[category].items.push(finding);
           } else {
-            technicalFeatures[key] = value;
+            categorizedFindings.other.items.push(finding);
           }
-        }
+        });
         
-        // Determine overall technical assessment
+        // Calculate risk statistics
+        const highRiskCount = findings.filter(f => f.severity === 'high').length;
+        const mediumRiskCount = findings.filter(f => f.severity === 'medium').length;
+        
         let overallRiskLevel = "low";
-        let overallAssessment = "No significant technical issues detected";
-        
-        if (criticalIssues > 0) {
+        if (highRiskCount > 0) {
           overallRiskLevel = "high";
-          overallAssessment = `${criticalIssues} critical technical issue${criticalIssues > 1 ? 's' : ''} detected`;
-        } else if (majorIssues > 1) {
+        } else if (mediumRiskCount > 0) {
           overallRiskLevel = "medium";
-          overallAssessment = `${majorIssues} concerning technical issues detected`;
-        } else if (majorIssues === 1) {
-          overallRiskLevel = "medium";
-          overallAssessment = "1 concerning technical issue detected";
         }
         
-        // Start building the HTML with an overview section
+        // Start building HTML
         let html = `
           <div class="feature-overview">
             <h3>Technical Risk Assessment</h3>
-            <p>Our system analyzed ${Object.keys(features).length} technical elements of this URL to determine its security characteristics.</p>
+            <p>Our system analyzed ${findings.length} key technical elements of this URL to determine its security characteristics.</p>
             
             <div class="risk-summary-box risk-summary-${overallRiskLevel}">
               <div class="risk-summary-icon">
@@ -1562,7 +1401,10 @@
                 <strong>${overallRiskLevel === 'high' ? 'High Technical Risk' : 
                          overallRiskLevel === 'medium' ? 'Medium Technical Risk' : 
                          'Low Technical Risk'}</strong>
-                <p>${overallAssessment}.</p>
+                <p>${highRiskCount > 0 ? `${highRiskCount} critical issue${highRiskCount !== 1 ? 's' : ''}` : ''}
+                   ${mediumRiskCount > 0 ? `${highRiskCount > 0 ? ' and ' : ''}${mediumRiskCount} concerning factor${mediumRiskCount !== 1 ? 's' : ''}` : ''}
+                   ${highRiskCount === 0 && mediumRiskCount === 0 ? 'No significant issues detected' : 'detected'}.
+                </p>
               </div>
             </div>
             
@@ -1581,59 +1423,46 @@
           </div>
         `;
         
-        // Function to build feature cards
-        const buildFeatureCards = (features, title, icon, badgeText = null) => {
-          const keys = Object.keys(features);
+        // Function to build feature cards from findings
+        const buildFeatureSection = (category, items) => {
+          if (!items || items.length === 0) return '';
           
-          if (keys.length === 0) return '';
+          const categoryInfo = categorizedFindings[category];
           
           let sectionHtml = `
             <div class="feature-section">
               <div class="feature-section-header">
-                <i class="fas ${icon}"></i>
-                <h3>${title}</h3>
-                ${badgeText ? `<span class="badge">${badgeText}</span>` : ''}
+                <i class="fas ${categoryInfo.icon}"></i>
+                <h3>${categoryInfo.title}</h3>
+                ${items.some(i => i.severity === 'high') ? '<span class="badge">High Risk</span>' : 
+                  items.some(i => i.severity === 'medium') ? '<span class="badge">Medium Risk</span>' : ''}
               </div>
               <div class="feature-grid">
           `;
           
-          keys.forEach(key => {
-            const value = features[key];
-            const info = featureInfo[key];
+          items.forEach(finding => {
+            const severityLevel = finding.severity || 'medium';
+            const impactLevel = severityLevel === 'high' ? 'high' : 
+                              severityLevel === 'medium' ? 'medium' : 'low';
             
-            if (!info) return;
-            
-            const impact = info.getImpact(value);
-            const displayValue = info.formatValue ? info.formatValue(value) : String(value);
+            const iconClass = severityLevel === 'high' ? 'fa-exclamation-triangle' :
+                            severityLevel === 'medium' ? 'fa-exclamation-circle' : 
+                            'fa-info-circle';
             
             sectionHtml += `
-              <div class="feature-card impact-${impact.level}">
+              <div class="feature-card impact-${impactLevel}">
                 <div class="feature-icon-area">
                   <div class="feature-icon">
-                    <i class="fas ${info.icon || 'fa-code'}"></i>
+                    <i class="fas ${iconClass}"></i>
                   </div>
                 </div>
-                <h4 class="feature-name">${info.name}</h4>
-                <div class="feature-value-wrapper">
-                  <span class="feature-label">${info.valueLabel || 'Value:'}</span>
-                  <span class="feature-value">${displayValue}</span>
+                <h4 class="feature-name">${finding.text}</h4>
+                <p class="feature-description">${finding.description || 'No additional details available.'}</p>
+                <div class="feature-impact impact-${impactLevel}">
+                  <i class="fas ${iconClass}"></i>
+                  ${severityLevel === 'high' ? 'High Risk Factor' : 
+                    severityLevel === 'medium' ? 'Medium Risk Factor' : 'Low Risk Factor'}
                 </div>
-                <p class="feature-description">${info.description}</p>
-                <div class="feature-impact impact-${impact.level}">
-                  <i class="fas ${
-                    impact.level === 'high' || impact.level === 'negative' ? 'fa-exclamation-triangle' : 
-                    impact.level === 'medium' ? 'fa-exclamation-circle' : 
-                    'fa-check-circle'
-                  }"></i>
-                  ${impact.text}
-                </div>
-                ${info.learnMoreUrl ? `
-                  <div class="feature-learn-more">
-                    <a href="${info.learnMoreUrl}" target="_blank" title="Learn more">
-                      <i class="fas fa-external-link-alt"></i>
-                    </a>
-                  </div>
-                ` : ''}
               </div>
             `;
           });
@@ -1642,22 +1471,12 @@
           return sectionHtml;
         };
         
-        // Add feature sections in order of importance
-        if (Object.keys(highRiskFeatures).length > 0) {
-          html += buildFeatureCards(highRiskFeatures, "Critical Risk Factors", "fa-exclamation-triangle", "High Risk");
-        }
-        
-        if (Object.keys(mediumRiskFeatures).length > 0) {
-          html += buildFeatureCards(mediumRiskFeatures, "Concerning Factors", "fa-exclamation-circle", "Medium Risk");
-        }
-        
-        if (Object.keys(securityFeatures).length > 0) {
-          html += buildFeatureCards(securityFeatures, "Security Positives", "fa-shield-alt", "Positive");
-        }
-        
-        if (Object.keys(technicalFeatures).length > 0) {
-          html += buildFeatureCards(technicalFeatures, "Other Technical Properties", "fa-cogs");
-        }
+        // Build sections for each category with findings
+        Object.keys(categorizedFindings).forEach(category => {
+          if (categorizedFindings[category].items.length > 0) {
+            html += buildFeatureSection(category, categorizedFindings[category].items);
+          }
+        });
         
         // Add educational footer
         html += `
@@ -1688,6 +1507,99 @@
                 <div>Whether the site appears in Google search results, which can indicate legitimacy.</div>
               </div>
             </div>
+          </div>
+        `;
+        
+        return html;
+      }
+      
+      // Simplified fallback function for when key findings are unavailable
+      function createFeaturesFallback(features) {
+        if (!features || Object.keys(features).length === 0) {
+          return `
+            <div class="feature-empty">
+              <i class="fas fa-database"></i>
+              <h3>No Technical Features Available</h3>
+              <p>We couldn't retrieve the technical features for this URL analysis.</p>
+            </div>
+          `;
+        }
+        
+        // Simple technical assessment based on common risk indicators
+        let criticalIssues = 0;
+        let majorIssues = 0;
+        
+        // Check for high-risk indicators
+        if (features.domain_in_ip === 1) criticalIssues++;
+        if (features.tls_ssl_certificate === 0) criticalIssues++;
+        if (features.url_shortened === 1) criticalIssues++;
+        if (features.qty_at_url > 0) criticalIssues++;
+        if (features.time_domain_activation < 30) criticalIssues++;
+        
+        // Check for medium-risk indicators
+        if (!features.domain_google_index) majorIssues++;
+        if (!features.url_google_index) majorIssues++;
+        if (features.qty_redirects > 1) majorIssues++;
+        if (features.length_url > 75) majorIssues++;
+        if (features.qty_hyphen_url > 3) majorIssues++;
+        if (features.qty_dot_url > 5) majorIssues++;
+        
+        // Determine overall risk level
+        let overallRiskLevel = "low";
+        let overallAssessment = "No significant technical issues detected";
+        
+        if (criticalIssues > 0) {
+          overallRiskLevel = "high";
+          overallAssessment = `${criticalIssues} critical technical issue${criticalIssues > 1 ? 's' : ''} detected`;
+        } else if (majorIssues > 0) {
+          overallRiskLevel = "medium";
+          overallAssessment = `${majorIssues} concerning technical issue${majorIssues > 1 ? 's' : ''} detected`;
+        }
+        
+        // Build basic HTML
+        let html = `
+          <div class="feature-overview">
+            <h3>Technical Risk Assessment</h3>
+            <p>Our system analyzed the technical elements of this URL to determine its security characteristics.</p>
+            
+            <div class="risk-summary-box risk-summary-${overallRiskLevel}">
+              <div class="risk-summary-icon">
+                <i class="fas ${overallRiskLevel === 'high' ? 'fa-exclamation-triangle' : 
+                              overallRiskLevel === 'medium' ? 'fa-exclamation-circle' : 
+                              'fa-check-circle'}"></i>
+              </div>
+              <div>
+                <strong>${overallRiskLevel === 'high' ? 'High Technical Risk' : 
+                         overallRiskLevel === 'medium' ? 'Medium Technical Risk' : 
+                         'Low Technical Risk'}</strong>
+                <p>${overallAssessment}</p>
+              </div>
+            </div>
+            
+            <div class="risk-gauge">
+              <div class="risk-gauge-bar"></div>
+              <div class="risk-gauge-marker" style="left: ${
+                overallRiskLevel === 'high' ? '85%' : 
+                overallRiskLevel === 'medium' ? '50%' : '15%'
+              }"></div>
+              <div class="risk-gauge-labels">
+                <span>Low Risk</span>
+                <span>Medium Risk</span>
+                <span>High Risk</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="feature-section">
+            <div class="feature-section-header">
+              <i class="fas fa-exclamation-circle"></i>
+              <h3>Technical Details</h3>
+            </div>
+            <p>Key technical feature details unavailable. Please check the AI explanation tab for more information.</p>
+          </div>
+          
+          <div class="tech-info-footer">
+            <p>Our technical analysis examines URL structure, certificates, domain age, and other security characteristics.</p>
           </div>
         `;
         
@@ -1757,13 +1669,6 @@
           actions: [
             { icon: 'fa-book', text: 'Learn More', url: 'education.html' }
           ]
-        });
-        
-        recommendations.push({
-          icon: 'fa-sync',
-          title: 'Keep Software Updated',
-          content: 'Ensure your browser and operating system are up-to-date with the latest security patches.',
-          actions: []
         });
         
         // Build HTML for recommendations
@@ -1925,15 +1830,12 @@
           pdfContent.appendChild(toc);
           
           // Get all three panel contents regardless of which is active
-          // 1. AI Explanation
           const explanationContent = document.getElementById('explanation-content').cloneNode(true);
           explanationContent.id = "ai-explanation";
           
-          // 2. Technical Features
           const featuresContent = document.getElementById('features-content').cloneNode(true);
           featuresContent.id = "technical-features";
           
-          // 3. Security Recommendations
           const recommendationsContent = document.getElementById('recommendations-content').cloneNode(true);
           recommendationsContent.id = "security-recommendations";
           
@@ -2000,30 +1902,13 @@
                 el.style.pageBreakAfter = 'avoid';
               }
               
-              // Style paragraphs
-              if (el.tagName === 'P') {
-                el.style.lineHeight = '1.6';
-                el.style.marginBottom = '10px';
-              }
+              if (el.tagName === 'P') el.style.lineHeight = '1.6';
               
-              // Style lists
-              if (el.tagName === 'UL' || el.tagName === 'OL') {
-                el.style.marginBottom = '15px';
-                el.style.paddingLeft = '25px';
-              }
-              
-              if (el.tagName === 'LI') {
-                el.style.marginBottom = '5px';
-                el.style.lineHeight = '1.6';
-              }
-              
-              // Style feature cards for technical features panel
               if (el.classList && el.classList.contains('feature-card')) {
                 el.style.backgroundColor = '#f9f9f9';
                 el.style.border = '1px solid #eee';
                 el.style.borderRadius = '5px';
                 el.style.padding = '15px';
-                el.style.marginBottom = '15px';
               }
             });
             
@@ -2129,5 +2014,4 @@
   </script>
 </body>
 </html>
-`
 

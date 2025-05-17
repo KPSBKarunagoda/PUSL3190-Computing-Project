@@ -1443,7 +1443,8 @@
           result: {
             risk_score: displayScore,
             is_phishing: result.is_phishing,
-            risk_explanation: result.risk_explanation || ""
+            risk_explanation: result.risk_explanation || "",
+            blacklist_id: result.blacklist_id || null  // Ensure blacklist_id is included in session storage
           }
         }));
         
