@@ -922,7 +922,133 @@
       color: var(--text-primary);
       font-weight: 500;
     }
+
+    /* Enhanced input section styling */
+    .card-section.input-section {
+      padding: 40px;
+    }
+    
+    .input-section h2 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+    
+    .input-section p {
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+      max-width: 850px;
+      line-height: 1.7;
+    }
+    
+    /* Enhanced URL input */
+    .url-input-container {
+      max-width: 800px;
+      margin: 35px auto;
+    }
+    
+    .url-input-field {
+      padding: 22px 150px 22px 60px;
+      font-size: 1.2rem;
+      border-width: 3px;
+    }
+    
+    .url-icon {
+      font-size: 1.5rem;
+    }
+    
+    .analyze-btn {
+      padding: 15px 25px;
+      font-size: 1.1rem;
+    }
+
+    /* URL Structure Breakdown Styles */
+    .url-structure {
+      background: linear-gradient(145deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.05));
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      border-left: 5px solid var(--primary-color);
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .url-structure-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .url-structure-header i {
+      color: var(--primary-color);
+      font-size: 1.3rem;
+    }
+    
+    .url-structure-header h4 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--text-primary);
+    }
+    
+    .url-structure-content {
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 15px;
+      overflow-x: auto;
+      font-family: monospace;
+    }
+    
+    .url-part {
+      padding: 5px 0;
+      display: flex;
+      align-items: flex-start;
+    }
+    
+    .url-part-label {
+      min-width: 100px;
+      color: var(--text-tertiary);
+      margin-right: 15px;
+      text-align: right;
+    }
+    
+    .url-part-value {
+      color: var(--text-primary);
+      word-break: break-all;
+    }
+    
+    .url-part-value.domain {
+      color: #4caf50;
+      font-weight: 600;
+    }
+    
+    .url-part-value.path {
+      color: #2196f3;
+    }
+    
+    .url-part-value.query {
+      color: #ff9800;
+    }
+    
+    .url-part-value.fragment {
+      color: #9c27b0;
+    }
+
+    .url-alert {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background-color: rgba(255, 152, 0, 0.1);
+      border-left: 3px solid #ff9800;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .url-alert i {
+      color: #ff9800;
+      font-size: 1rem;
+    }
   </style>
+  
   <link rel="stylesheet" href="footer-styles.css">
 </head>
 <body class="dark-theme">
@@ -959,12 +1085,12 @@
       </a>
     </div>
     
-    <!-- Analysis Card -->
+    <!-- Analysis Card - Enhanced and Expanded -->
     <div class="analysis-card">
-      <!-- Input Section -->
+      <!-- Input Section - Enhanced -->
       <div class="card-section input-section" id="analysis-input">
-        <h2><i class="fas fa-shield-alt"></i> Check Any URL for Threats</h2>
-        <p>Enter a website address below to analyze it for potential phishing indicators and security risks.</p>
+        <h2><i class="fas fa-shield-alt"></i> Check Any URL for Security Threats</h2>
+        <p>Enter a website address below to analyze it for potential phishing indicators, malware, and other security risks. Our advanced detection system will evaluate the URL's safety using multiple security checks.</p>
         
         <div class="url-input-container">
           <i class="fas fa-globe url-icon"></i>
@@ -978,6 +1104,7 @@
           <i class="fas fa-exclamation-circle"></i>
           <span>Please enter a valid URL (e.g., https://example.com)</span>
         </div>
+        
         <div class="input-footer">
           <i class="fas fa-info-circle"></i>
           <span>Include http:// or https:// for accurate analysis</span>
@@ -997,7 +1124,7 @@
         </div>
       </div>
       
-      <!-- Results Section - Redesigned with Score Bar -->
+      <!-- Results Section -->
       <div id="results-container" class="result-section" style="display: none;">
         <div class="result-header-banner">
           <div class="result-header-content">
@@ -1051,6 +1178,17 @@
             <p id="recommendation-text">View the detailed report for more information.</p>
           </div>
           
+          <!-- URL Structure Breakdown - MOVED HERE -->
+          <div class="url-structure">
+            <div class="url-structure-header">
+              <i class="fas fa-link"></i>
+              <h4>URL Structure Breakdown</h4>
+            </div>
+            <div class="url-structure-content" id="url-structure-content">
+              <!-- Will be populated by JavaScript -->
+            </div>
+          </div>
+          
           <!-- Key Findings Section with Enhanced Cards -->
           <div class="findings-section-header">
             <i class="fas fa-exclamation-circle"></i>
@@ -1069,21 +1207,6 @@
               <i class="fas fa-robot"></i> AI Explanation
             </a>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Educational Resources Section - Simplified -->
-    <div class="education-container">
-      <div class="education-header">
-        <i class="fas fa-graduation-cap"></i>
-        <h2>Phishing Prevention Tips</h2>
-      </div>
-      <div class="education-content">
-        <div id="education-content" class="education-placeholder">
-          <i class="fas fa-shield-alt"></i>
-          <h3>Stay Protected Online</h3>
-          <p>Always verify website URLs before entering sensitive information. Look for HTTPS, check domain names carefully, and be cautious with unfamiliar sites.</p>
         </div>
       </div>
     </div>
@@ -1234,6 +1357,9 @@
       function displayResults(url, result) {
         analyzedUrl.textContent = `URL: ${url}`;
         
+        // Add URL structure breakdown
+        displayUrlStructure(url);
+        
         let score;
         if (result.risk_score > 1) {
           score = Math.min(100, result.risk_score);
@@ -1324,6 +1450,109 @@
         resultsContainer.style.display = 'block';
       }
 
+      // Function to display URL structure breakdown
+      function displayUrlStructure(urlString) {
+        try {
+          const urlObj = new URL(urlString);
+          const urlContent = document.getElementById('url-structure-content');
+          let structureHtml = '';
+          
+          // Protocol
+          structureHtml += `
+            <div class="url-part">
+              <div class="url-part-label">Protocol:</div>
+              <div class="url-part-value">${urlObj.protocol}</div>
+            </div>`;
+            
+          // Domain (hostname)
+          structureHtml += `
+            <div class="url-part">
+              <div class="url-part-label">Domain:</div>
+              <div class="url-part-value domain">${urlObj.hostname}</div>
+            </div>`;
+            
+          // Port (if specified)
+          if (urlObj.port) {
+            structureHtml += `
+              <div class="url-part">
+                <div class="url-part-label">Port:</div>
+                <div class="url-part-value">${urlObj.port}</div>
+              </div>`;
+          }
+            
+          // Path
+          structureHtml += `
+            <div class="url-part">
+              <div class="url-part-label">Path:</div>
+              <div class="url-part-value path">${urlObj.pathname || '/'}</div>
+            </div>`;
+            
+          // Query Parameters
+          if (urlObj.search) {
+            structureHtml += `
+              <div class="url-part">
+                <div class="url-part-label">Query:</div>
+                <div class="url-part-value query">${urlObj.search}</div>
+              </div>`;
+              
+            // Add detailed param breakdown
+            const params = new URLSearchParams(urlObj.search);
+            if (params.toString()) {
+              structureHtml += `<div class="url-part"><div class="url-part-label">Parameters:</div><div class="url-part-value">`;
+              for (const [key, value] of params.entries()) {
+                structureHtml += `<div>${key} = ${value}</div>`;
+              }
+              structureHtml += `</div></div>`;
+            }
+          }
+            
+          // Fragment (if present)
+          if (urlObj.hash) {
+            structureHtml += `
+              <div class="url-part">
+                <div class="url-part-label">Fragment:</div>
+                <div class="url-part-value fragment">${urlObj.hash}</div>
+              </div>`;
+          }
+          
+          // Check for common suspicious patterns
+          const suspicious = [];
+          
+          // Check for IP address as hostname
+          if (/^\d+\.\d+\.\d+\.\d+$/.test(urlObj.hostname)) {
+            suspicious.push('IP address used instead of domain name');
+          }
+          
+          // Check for deceptive subdomains
+          const domainParts = urlObj.hostname.split('.');
+          if (domainParts.length > 2) {
+            // Check for brand names in subdomains
+            const commonBrands = ['paypal', 'apple', 'microsoft', 'amazon', 'google', 'facebook'];
+            for (const brand of commonBrands) {
+              if (domainParts[0].includes(brand) && !urlObj.hostname.endsWith(brand + '.com')) {
+                suspicious.push(`Possible misleading use of "${brand}" in subdomain`);
+                break;
+              }
+            }
+          }
+          
+          // Add warnings if suspicious patterns found
+          if (suspicious.length > 0) {
+            structureHtml += `<div class="url-alert">
+              <i class="fas fa-exclamation-triangle"></i>
+              <div>
+                <strong>Note:</strong> ${suspicious.join(', ')}
+              </div>
+            </div>`;
+          }
+          
+          urlContent.innerHTML = structureHtml;
+        } catch (error) {
+          console.error('Error parsing URL:', error);
+          document.getElementById('url-structure-content').innerHTML = `<p>Unable to parse URL structure: ${error.message}</p>`;
+        }
+      }
+      
       // New improved function to fetch key findings from the backend
       async function displayKeyFindings(container, result, url) {
         container.innerHTML = '<div class="loading-findings">Loading key findings...</div>';
@@ -1453,4 +1682,3 @@
   </script>
 </body>
 </html>
-`
