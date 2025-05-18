@@ -511,7 +511,8 @@ class EmailHeaderAnalyzer {
     
     try {
       // ADDED: Check for spam scores and explicit spam flags
-      this._checkSpamScoreIndicators(headerFields, results);
+      // Pass parsedHeaders as the third parameter to _checkSpamScoreIndicators
+      this._checkSpamScoreIndicators(headerFields, results, parsedHeaders);
       
       // ADDED: Check for suspicious authentication warnings
       this._checkAuthenticationWarnings(headerFields, results);
@@ -573,7 +574,7 @@ class EmailHeaderAnalyzer {
     }
   }
   
-  _checkSpamScoreIndicators(headerFields, results) {
+  _checkSpamScoreIndicators(headerFields, results, parsedHeaders = {}) {
     try {
       // Check for explicit spam score
       if ('x-spamscore' in headerFields) {
@@ -599,8 +600,8 @@ class EmailHeaderAnalyzer {
       const spamFlagHeaders = ['x-spam', 'x-fose-spam', 'x-spam-flag'];
       for (const flagHeader of spamFlagHeaders) {
         if (flagHeader in headerFields && 
-            headerFields[flagHeader].toLowerCase().includes('spam') || 
-            headerFields[flagHeader].toLowerCase().includes('yes')) {
+            (headerFields[flagHeader].toLowerCase().includes('spam') || 
+             headerFields[flagHeader].toLowerCase().includes('yes'))) {
           results.findings.push({
             text: 'Email Flagged as Spam',
             description: `This email was explicitly flagged as spam by email filtering systems. Header: ${flagHeader}: ${headerFields[flagHeader]}`,
@@ -610,14 +611,16 @@ class EmailHeaderAnalyzer {
         }
       }
       
-      // Check for spam indicators in subject
-      if (parsedHeaders.subject && 
-          parsedHeaders.subject.toLowerCase().includes('[spam')) {
-        results.findings.push({
-          text: 'Spam Flag in Subject',
-          description: `This email was marked as spam in the subject line: "${parsedHeaders.subject}"`,
-          severity: 'high'
-        });
+      // Check for spam indicators in subject - Fixed to properly handle undefined subject
+      if (parsedHeaders && parsedHeaders.subject && typeof parsedHeaders.subject === 'string') {
+        const subject = parsedHeaders.subject.toLowerCase();
+        if (subject.includes('[spam')) {
+          results.findings.push({
+            text: 'Spam Flag in Subject',
+            description: `This email was marked as spam in the subject line: "${parsedHeaders.subject}"`,
+            severity: 'high'
+          });
+        }
       }
       
       // Check SpamAssassin-style headers
