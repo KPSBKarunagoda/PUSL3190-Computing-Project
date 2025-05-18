@@ -982,11 +982,12 @@
         const modal = document.getElementById('report-modal');
         modal.classList.add('show');
         
-        // Update the modal footer to include delete button
+        // Update the modal footer to include delete button (positioned at right)
         const modalFooter = modal.querySelector('.modal-footer');
         modalFooter.innerHTML = `
-          <button class="btn-danger" id="delete-report-modal"><i class="fas fa-trash-alt"></i> Delete Report</button>
-          <button class="btn" id="close-modal-footer">Close</button>
+          <div style="align-items: right;">
+            <button class="btn-danger" id="delete-report-modal"><i class="fas fa-trash-alt"></i> Delete Report</button>
+          </div>
         `;
         
         // Add event listener for delete button in modal
