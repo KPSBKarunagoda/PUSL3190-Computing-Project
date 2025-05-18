@@ -91,6 +91,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  function displayResult(result) {
+    const resultContainer = document.getElementById('result-container');
+    const riskScore = result.risk_score || 0;
+    let riskLevel, riskClass, riskIconClass, riskMessage;
+    
+    // Fix the risk level determination logic
+    // Ensure risk score properly maps to risk level messages
+    // Updated risk level thresholds
+    if (riskScore >= 70) {
+      riskLevel = 'High Risk Detected';
+      riskClass = 'result-danger';
+      riskIconClass = 'fa-exclamation-triangle';
+      riskMessage = 'This URL has characteristics typical of phishing or malicious sites. We strongly recommend against visiting or sharing any information with this site.';
+    } else if (riskScore >= 30) {
+      riskLevel = 'Medium Risk Detected';
+      riskClass = 'result-warning';
+      riskIconClass = 'fa-exclamation-circle';
+      riskMessage = 'This URL has suspicious characteristics that warrant caution. While not definitively malicious, we recommend verifying its legitimacy through other means before sharing sensitive information.';
+    } else {
+      riskLevel = 'Low Risk Detected';
+      riskClass = 'result-safe';
+      riskIconClass = 'fa-check-circle';
+      riskMessage = 'This URL appears to be safe based on our analysis. As always, exercise normal caution when browsing.';
+    }
+    
+    // Apply the risk level to the UI elements
+    document.getElementById('risk-level').textContent = riskLevel;
+    document.getElementById('risk-message').textContent = riskMessage;
+    resultContainer.classList.add(riskClass);
+    document.getElementById('result-icon').className = `fas ${riskIconClass}`;
+    
+    // Set risk score display (ensure this is always showing the actual score)
+    const scoreElement = document.getElementById('risk-score');
+    if (scoreElement) {
+      scoreElement.textContent = `${Math.round(riskScore)}`;
+    }
+  }
+
   async function displayKeyFindings(container, result, url) {
     try {
       container.innerHTML = ''; // Clear container
