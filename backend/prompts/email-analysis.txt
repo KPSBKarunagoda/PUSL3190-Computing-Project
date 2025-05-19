@@ -49,4 +49,10 @@ Format your response using ONLY proper HTML tags as shown below, with NO extra w
   <li><strong>Action 3:</strong> [General security practice]</li>
 </ul>
 
+<h3>Technical Details</h3>
+<p>Provide a detailed analysis of the email headers, routing paths, and authentication patterns that were examined. Include any anomalies or indicators of compromise that were found.</p>
+
+<h3>Context and Explanations</h3>
+<p>Offer additional context or explanations for the findings, especially if the risk level is not clear-cut. This may include historical data, comparison with known phishing attempts, or other relevant information.</p>
+
 FINAL CHECK: Before submitting, verify that your assessment is CONSISTENT with the risk score. If risk_score < 30, ensure your assessment states the email is legitimate/safe and your recommendations are not alarmist.
