@@ -955,12 +955,9 @@
         const reportDate = new Date(report.ReportDate);
         const formattedDate = reportDate.toLocaleDateString() + ' ' + reportDate.toLocaleTimeString();
         
-        // Create details HTML
+        // Create details HTML - Remove the Report ID field
         modalBody.innerHTML = `
           <div class="report-details">
-            <div class="label">Report ID:</div>
-            <div class="value">${escapeHtml(report.ReportID)}</div>
-            
             <div class="label">URL:</div>
             <div class="value url">${escapeHtml(report.URL)}</div>
             

@@ -37,8 +37,7 @@ module.exports = function(dbConnection) {
             
             if (existingReports.length > 0) {
                 return res.json({ 
-                    alreadyReported: true,
-                    reportId: existingReports[0].ReportID
+                    alreadyReported: true
                 });
             }
             
@@ -73,8 +72,7 @@ module.exports = function(dbConnection) {
             if (existingReports.length > 0) {
                 return res.status(409).json({ 
                     message: 'You have already reported this URL',
-                    alreadyReported: true,
-                    reportId: existingReports[0].ReportID
+                    alreadyReported: true
                 });
             }
             
@@ -127,8 +125,7 @@ module.exports = function(dbConnection) {
             
             res.status(201).json({ 
                 success: true,
-                message: 'Report submitted successfully',
-                reportId: result.insertId
+                message: 'Report submitted successfully'
             });
             
         } catch (error) {

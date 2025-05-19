@@ -215,11 +215,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Success - show enhanced success message and reset form
             showSuccessMessage(`Report submitted successfully. Thank you for helping keep the web safe!`, elements);
             
-            // Add report ID to success message if available
-            if (responseData.reportId) {
-              console.log(`Report created with ID: ${responseData.reportId}`);
-            }
-            
             // Hide form and reset it
             elements.reportForm.style.display = 'none';
             elements.reportForm.reset();
@@ -658,7 +653,7 @@ function showLoginRequiredMessage(elements) {
 }
 
 // Add this new function to show a persistent message when a site has already been reported
-function showAlreadyReportedMessage(elements, reportId) {
+function showAlreadyReportedMessage(elements) {
   // Hide the report form if it's visible
   if (elements.reportForm) {
     elements.reportForm.style.display = 'none';
@@ -673,7 +668,7 @@ function showAlreadyReportedMessage(elements, reportId) {
     messageContainer.id = 'already-reported-message';
     messageContainer.className = 'already-reported-container';
     
-    // Create the HTML content for the message
+    // Create the HTML content for the message - remove the reportId
     messageContainer.innerHTML = `
       <div class="already-reported-content">
         <div class="already-reported-icon">
@@ -682,7 +677,6 @@ function showAlreadyReportedMessage(elements, reportId) {
         <div class="already-reported-text">
           <h4>Already Reported</h4>
           <p>You have already reported this website. Thank you for helping keep the web safe!</p>
-          ${reportId ? `<p class="report-id">Report ID: ${reportId}</p>` : ''}
         </div>
       </div>
     `;
@@ -693,22 +687,6 @@ function showAlreadyReportedMessage(elements, reportId) {
   } else {
     // If it exists, just make it visible
     messageContainer.style.display = 'block';
-    
-    // Update the report ID if provided
-    if (reportId) {
-      const reportIdElement = messageContainer.querySelector('.report-id');
-      if (reportIdElement) {
-        reportIdElement.textContent = `Report ID: ${reportId}`;
-      } else {
-        const textDiv = messageContainer.querySelector('.already-reported-text');
-        if (textDiv) {
-          const reportIdP = document.createElement('p');
-          reportIdP.className = 'report-id';
-          reportIdP.textContent = `Report ID: ${reportId}`;
-          textDiv.appendChild(reportIdP);
-        }
-      }
-    }
   }
   
   // Also show a brief notification
@@ -1715,18 +1693,6 @@ document.head.insertAdjacentHTML('beforeend', `
       font-size: 0.9rem;
       opacity: 0.95;
       line-height: 1.4;
-    }
-    
-    .report-id {
-      margin-top: 8px !important;
-      font-size: 0.8rem !important;
-      opacity: 0.9 !important;
-      font-family: monospace;
-      background: rgba(0, 0, 0, 0.15);
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 4px;
-      border-left: 2px solid rgba(255, 255, 255, 0.5);
     }
   </style>
 `);
