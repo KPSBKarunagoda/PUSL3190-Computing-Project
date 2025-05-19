@@ -201,6 +201,9 @@ async function loadActivityData() {
     // Update chart
     renderActivityChart(data, chartType);
     
+    // NEW: Sync the total activities with total scans display
+    syncScansWithActivities(data.totalActivities);
+    
   } catch (error) {
     console.error('Error loading activity data:', error);
     
@@ -211,6 +214,9 @@ async function loadActivityData() {
     const sampleData = generateSampleData(parseInt(daysValue));
     updateSummaryStats(sampleData);
     renderActivityChart(sampleData, chartType);
+    
+    // Even with sample data, sync the counts
+    syncScansWithActivities(sampleData.totalActivities);
     
   } finally {
     // Hide loading state
@@ -226,6 +232,18 @@ function updateSummaryStats(data) {
   document.getElementById('high-risk-count').textContent = data.highRiskCount || 0;
   document.getElementById('medium-risk-count').textContent = data.mediumRiskCount || 0;
   document.getElementById('low-risk-count').textContent = data.lowRiskCount || 0;
+}
+
+/**
+ * NEW: Function to sync scans count with total activities
+ */
+function syncScansWithActivities(totalActivities) {
+  // Update the scans count to match total activities
+  const scansElement = document.getElementById('scans-count');
+  if (scansElement) {
+    scansElement.textContent = totalActivities.toLocaleString();
+    console.log('Updated total scans count with activity data:', totalActivities);
+  }
 }
 
 /**
