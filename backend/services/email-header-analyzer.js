@@ -48,10 +48,12 @@ class EmailHeaderAnalyzer {
       await this._analyzeRouting(parsedHeaders, results);
       await this._analyzeDomains(parsedHeaders, results);
       await this._detectDeception(parsedHeaders, results);
-      // ADDED: New check for suspicious headers
       await this._checkSuspiciousHeaders(parsedHeaders, results);
       
       console.log('All analysis steps completed');
+      
+      // Deduplicate findings before calculating score
+      results.findings = this._deduplicateFindings(results.findings);
       
       // Calculate overall risk score
       results.riskScore = this._calculateRiskScore(results);
@@ -295,7 +297,7 @@ class EmailHeaderAnalyzer {
       
       // Extract domains using regex
       const extractDomain = (header) => {
-        const emailMatch = header.match(/<([^@]+@([^>]+))>/i) || header.match(/([^@\s]+@([^\s]+))/i);
+        const emailMatch = header.match(/<([^@]+@([^>]+))>/i) || header.match(/([^@\s]+@[^\s]+)/i);
         if (emailMatch && emailMatch[2]) {
           return emailMatch[2].toLowerCase();
         }
@@ -309,6 +311,9 @@ class EmailHeaderAnalyzer {
       domainAnalysis.fromDomain = fromDomain;
       domainAnalysis.returnPathDomain = returnPathDomain;
       domainAnalysis.replyToDomain = replyToDomain;
+      
+      // Track found mismatches to avoid redundancies
+      const mismatchTypes = [];
       
       // Check for domain mismatches - improved logic to handle subdomains
       if (fromDomain && returnPathDomain && fromDomain !== returnPathDomain) {
@@ -328,11 +333,12 @@ class EmailHeaderAnalyzer {
         // Only flag as suspicious if root domains differ
         if (fromRootDomain !== returnPathRootDomain) {
           results.findings.push({
-            text: 'Completely Different Sender Domains',
+            text: 'From/Return-Path Domain Mismatch',
             description: `The From domain (${fromDomain}) doesn't match the Return-Path domain (${returnPathDomain}). Different root domains are a strong indicator of email spoofing.`,
             severity: 'high'
           });
           domainAnalysis.domainMismatch = true;
+          mismatchTypes.push('from-returnpath');
         } else {
           // Subdomain case - less severe warning
           results.findings.push({
@@ -344,7 +350,7 @@ class EmailHeaderAnalyzer {
         }
       }
       
-      if (fromDomain && replyToDomain && fromDomain !== replyToDomain) {
+      if (fromDomain && replyToDomain && fromDomain !== replyToDomain && !mismatchTypes.includes('from-returnpath')) {
         // Similar check for Reply-To domain
         const fromRootDomain = fromDomain.split('.').slice(-2).join('.');
         const replyToRootDomain = replyToDomain.split('.').slice(-2).join('.');
@@ -356,6 +362,7 @@ class EmailHeaderAnalyzer {
             severity: 'high'
           });
           domainAnalysis.replyToMismatch = true;
+          mismatchTypes.push('from-replyto');
         }
       }
       
@@ -510,18 +517,27 @@ class EmailHeaderAnalyzer {
     const { headerFields } = parsedHeaders;
     
     try {
+      // Track types of issues found to avoid redundancy
+      const foundIssueTypes = {
+        spamFlagged: false,
+        authenticationWarning: false,
+        hiddenRecipients: false,
+        suspiciousReturnPath: false
+      };
+      
       // ADDED: Check for spam scores and explicit spam flags
-      // Pass parsedHeaders as the third parameter to _checkSpamScoreIndicators
-      this._checkSpamScoreIndicators(headerFields, results, parsedHeaders);
+      this._checkSpamScoreIndicators(headerFields, results, parsedHeaders, foundIssueTypes);
       
       // ADDED: Check for suspicious authentication warnings
-      this._checkAuthenticationWarnings(headerFields, results);
+      this._checkAuthenticationWarnings(headerFields, results, foundIssueTypes);
       
       // ADDED: Check for hidden recipients
-      this._checkHiddenRecipients(headerFields, results);
+      this._checkHiddenRecipients(headerFields, results, foundIssueTypes);
       
       // ADDED: Check for suspicious return path formats
-      this._checkSuspiciousReturnPath(headerFields, results);
+      if (!foundIssueTypes.spamFlagged) { 
+        this._checkSuspiciousReturnPath(headerFields, results, foundIssueTypes);
+      }
       
       // Look for suspicious script indicators in headers
       const suspiciousScriptKeywords = ['php', 'script', 'spoof', 'originating-script'];
@@ -574,7 +590,7 @@ class EmailHeaderAnalyzer {
     }
   }
   
-  _checkSpamScoreIndicators(headerFields, results, parsedHeaders = {}) {
+  _checkSpamScoreIndicators(headerFields, results, parsedHeaders = {}, foundIssueTypes = {}) {
     try {
       // Check for explicit spam score
       if ('x-spamscore' in headerFields) {
@@ -586,33 +602,38 @@ class EmailHeaderAnalyzer {
               description: `This email has an extremely high spam score (${spamScore}). Legitimate emails rarely trigger such high scores.`,
               severity: 'high'
             });
+            foundIssueTypes.spamFlagged = true;
           } else if (spamScore > 20) {
             results.findings.push({
               text: 'Elevated Spam Score',
               description: `This email has a high spam score (${spamScore}), which indicates it contains characteristics commonly found in spam or phishing emails.`,
               severity: 'medium'
             });
+            foundIssueTypes.spamFlagged = true;
           }
         }
       }
       
-      // Check for explicit spam flags in headers
-      const spamFlagHeaders = ['x-spam', 'x-fose-spam', 'x-spam-flag'];
-      for (const flagHeader of spamFlagHeaders) {
-        if (flagHeader in headerFields && 
-            (headerFields[flagHeader].toLowerCase().includes('spam') || 
-             headerFields[flagHeader].toLowerCase().includes('yes'))) {
-          results.findings.push({
-            text: 'Email Flagged as Spam',
-            description: `This email was explicitly flagged as spam by email filtering systems. Header: ${flagHeader}: ${headerFields[flagHeader]}`,
-            severity: 'high'
-          });
-          break;
+      // Check for explicit spam flags in headers only if we haven't already found a spam score
+      if (!foundIssueTypes.spamFlagged) {
+        const spamFlagHeaders = ['x-spam', 'x-fose-spam', 'x-spam-flag'];
+        for (const flagHeader of spamFlagHeaders) {
+          if (flagHeader in headerFields && 
+              (headerFields[flagHeader].toLowerCase().includes('spam') || 
+              headerFields[flagHeader].toLowerCase().includes('yes'))) {
+            results.findings.push({
+              text: 'Email Flagged as Spam',
+              description: `This email was explicitly flagged as spam by email filtering systems. Header: ${flagHeader}: ${headerFields[flagHeader]}`,
+              severity: 'high'
+            });
+            foundIssueTypes.spamFlagged = true;
+            break;
+          }
         }
       }
       
-      // Check for spam indicators in subject - Fixed to properly handle undefined subject
-      if (parsedHeaders && parsedHeaders.subject && typeof parsedHeaders.subject === 'string') {
+      // Check for spam indicators in subject - only if we haven't found spam indicators yet
+      if (!foundIssueTypes.spamFlagged && parsedHeaders && parsedHeaders.subject && typeof parsedHeaders.subject === 'string') {
         const subject = parsedHeaders.subject.toLowerCase();
         if (subject.includes('[spam')) {
           results.findings.push({
@@ -620,11 +641,12 @@ class EmailHeaderAnalyzer {
             description: `This email was marked as spam in the subject line: "${parsedHeaders.subject}"`,
             severity: 'high'
           });
+          foundIssueTypes.spamFlagged = true;
         }
       }
       
-      // Check SpamAssassin-style headers
-      if ('x-spam-status' in headerFields) {
+      // Check SpamAssassin-style headers - only if we haven't found spam indicators yet
+      if (!foundIssueTypes.spamFlagged && 'x-spam-status' in headerFields) {
         const status = headerFields['x-spam-status'].toLowerCase();
         if (status.includes('yes')) {
           results.findings.push({
@@ -632,6 +654,7 @@ class EmailHeaderAnalyzer {
             description: `SpamAssassin has identified this as spam: ${headerFields['x-spam-status']}`,
             severity: 'high'
           });
+          foundIssueTypes.spamFlagged = true;
         }
       }
     } catch (error) {
@@ -639,23 +662,29 @@ class EmailHeaderAnalyzer {
     }
   }
   
-  _checkAuthenticationWarnings(headerFields, results) {
+  _checkAuthenticationWarnings(headerFields, results, foundIssueTypes = {}) {
     try {
       // Check for X-Authentication-Warning headers
       const authWarnings = Object.keys(headerFields)
         .filter(key => key.toLowerCase().includes('authentication-warning'));
       
       if (authWarnings.length > 0) {
-        const warningText = authWarnings.map(key => headerFields[key]).join('; ');
-        results.findings.push({
-          text: 'Authentication Warnings Present',
-          description: `The email contains ${authWarnings.length} authentication warnings, which indicates potential spoofing. Details: ${warningText.substring(0, 200)}${warningText.length > 200 ? '...' : ''}`,
-          severity: 'high'
-        });
+        const warningTexts = authWarnings.map(key => headerFields[key]);
+        
+        // Combine multiple warnings into a single finding
+        if (warningTexts.length > 0) {
+          const warningText = warningTexts.join('; ');
+          results.findings.push({
+            text: 'Authentication Warnings Present',
+            description: `The email contains ${authWarnings.length} authentication warnings, which indicates potential spoofing. Details: ${warningText.substring(0, 200)}${warningText.length > 200 ? '...' : ''}`,
+            severity: 'high'
+          });
+          foundIssueTypes.authenticationWarning = true;
+        }
       }
       
-      // Check for suspicious authentication
-      if ('authenticated-by' in headerFields) {
+      // Check for suspicious authentication only if no auth warnings were found
+      if (!foundIssueTypes.authenticationWarning && 'authenticated-by' in headerFields) {
         const authBy = headerFields['authenticated-by'].toLowerCase();
         if (authBy === 'nobody' || authBy.includes('unauthenticated') || authBy.includes('failed')) {
           results.findings.push({
@@ -663,6 +692,7 @@ class EmailHeaderAnalyzer {
             description: `The email has a suspicious "Authenticated-By: ${headerFields['authenticated-by']}" header, which is highly unusual for legitimate emails.`,
             severity: 'high'
           });
+          foundIssueTypes.authenticationWarning = true;
         }
       }
     } catch (error) {
@@ -670,8 +700,11 @@ class EmailHeaderAnalyzer {
     }
   }
   
-  _checkHiddenRecipients(headerFields, results) {
+  _checkHiddenRecipients(headerFields, results, foundIssueTypes = {}) {
     try {
+      // Track if we've already added a finding about recipients
+      let recipientFindingAdded = false;
+      
       // Check To: field for "Undisclosed recipients"
       if ('to' in headerFields && headerFields['to'].toLowerCase().includes('undisclosed recipients')) {
         results.findings.push({
@@ -679,25 +712,29 @@ class EmailHeaderAnalyzer {
           description: 'The email was sent to "Undisclosed recipients", a technique commonly used in phishing campaigns to hide the target list.',
           severity: 'medium'
         });
+        recipientFindingAdded = true;
+        foundIssueTypes.hiddenRecipients = true;
       }
       
-      // Check for BCC-only emails (no To: or CC:)
-      if (!('to' in headerFields) && !('cc' in headerFields) && 'from' in headerFields) {
+      // Check for BCC-only emails only if we haven't already added a recipient finding
+      if (!recipientFindingAdded && !('to' in headerFields) && !('cc' in headerFields) && 'from' in headerFields) {
         results.findings.push({
           text: 'Missing Recipients',
           description: 'This email has no visible recipients in the To: or CC: fields, which is common in mass phishing campaigns.',
           severity: 'medium'
         });
+        foundIssueTypes.hiddenRecipients = true;
       }
     } catch (error) {
       console.error('Error checking hidden recipients:', error);
     }
   }
   
-  _checkSuspiciousReturnPath(headerFields, results) {
+  _checkSuspiciousReturnPath(headerFields, results, foundIssueTypes = {}) {
     try {
       if ('return-path' in headerFields) {
         const returnPath = headerFields['return-path'].toLowerCase();
+        let returnPathFindingAdded = false;
         
         // Check for random strings in return path
         const randomStringPattern = /[<\[]?[a-z0-9]{8,}@/i;
@@ -707,19 +744,23 @@ class EmailHeaderAnalyzer {
             description: 'The Return-Path contains what appears to be a random string typical of spam/phishing campaigns.',
             severity: 'high'
           });
+          returnPathFindingAdded = true;
+          foundIssueTypes.suspiciousReturnPath = true;
         }
         
-        // Check for mismatched domains with From header
-        if ('from' in headerFields) {
+        // Check for mismatched domains with From header only if we haven't already found a domain mismatch
+        if (!returnPathFindingAdded && 'from' in headerFields && !foundIssueTypes.domainMismatch) {
           const fromMatch = headerFields['from'].match(/@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
           const returnPathMatch = returnPath.match(/@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
           
+          // Only add if we didn't already find this mismatch in _analyzeDomains
           if (fromMatch && returnPathMatch && fromMatch[1] !== returnPathMatch[1]) {
             results.findings.push({
               text: 'Return-Path Domain Mismatch',
               description: `The Return-Path domain (${returnPathMatch[1]}) doesn't match the From domain (${fromMatch[1]}), suggesting possible email spoofing.`,
               severity: 'high'
             });
+            foundIssueTypes.suspiciousReturnPath = true;
           }
         }
       }
@@ -727,76 +768,24 @@ class EmailHeaderAnalyzer {
       console.error('Error checking return path:', error);
     }
   }
-  
-  _checkGeographicInconsistencies(headerFields, results) {
-    try {
-      // Extract all received headers
-      const receivedHeaders = [];
-      for (const key in headerFields) {
-        if (key.startsWith('received')) {
-          receivedHeaders.push(headerFields[key]);
-        }
+
+  // Add a new method to deduplicate findings before returning results
+  _deduplicateFindings(findings) {
+    const uniqueFindings = [];
+    const seenTexts = new Set();
+    
+    for (const finding of findings) {
+      // Create a key based on the finding text and severity
+      const key = `${finding.severity}:${finding.text}`;
+      
+      // Only add if we haven't seen this key before
+      if (!seenTexts.has(key)) {
+        uniqueFindings.push(finding);
+        seenTexts.add(key);
       }
-      
-      if (receivedHeaders.length <= 1) return;
-      
-      // Look for country/region indicators in headers
-      const countryMatches = [];
-      const countryIndicators = [
-        { pattern: /\.(jp|co\.jp|ne\.jp)/i, country: 'Japan' },
-        { pattern: /\.(cn|com\.cn)/i, country: 'China' },
-        { pattern: /\.(ru|su|рф)/i, country: 'Russia' },
-        { pattern: /\.(kr|co\.kr)/i, country: 'South Korea' },
-        { pattern: /\.(in|co\.in)/i, country: 'India' },
-        { pattern: /\.(br|com\.br)/i, country: 'Brazil' },
-        { pattern: /\.(uk|co\.uk|org\.uk)/i, country: 'United Kingdom' },
-        { pattern: /\.(au|com\.au)/i, country: 'Australia' },
-        { pattern: /\.(ca)/i, country: 'Canada' },
-        { pattern: /\.(de)/i, country: 'Germany' },
-        { pattern: /\.(fr)/i, country: 'France' },
-        { pattern: /\.(es)/i, country: 'Spain' },
-        { pattern: /\.(it)/i, country: 'Italy' },
-        { pattern: /\.(nl)/i, country: 'Netherlands' },
-        { pattern: /\.(se)/i, country: 'Sweden' },
-        { pattern: /\.(no)/i, country: 'Norway' },
-        { pattern: /\.(fi)/i, country: 'Finland' },
-        { pattern: /\.(dk)/i, country: 'Denmark' },
-        { pattern: /\.(za)/i, country: 'South Africa' },
-        { pattern: /\.(mx)/i, country: 'Mexico' },
-        { pattern: /\.(ar)/i, country: 'Argentina' },
-        { pattern: /\.(sg)/i, country: 'Singapore' },
-        { pattern: /\.(hk)/i, country: 'Hong Kong' },
-        { pattern: /\.(tw)/i, country: 'Taiwan' },
-        { pattern: /\.(nz)/i, country: 'New Zealand' },
-        { pattern: /\.(il)/i, country: 'Israel' },
-        { pattern: /\.(tr)/i, country: 'Turkey' },
-        { pattern: /\.(ch)/i, country: 'Switzerland' },
-        { pattern: /\.(at)/i, country: 'Austria' },
-        { pattern: /\.(be)/i, country: 'Belgium' },
-        { pattern: /\.(ph)/i, country: 'Philippines' },
-      ];
-      
-      for (const header of receivedHeaders) {
-        for (const { pattern, country } of countryIndicators) {
-          if (pattern.test(header)) {
-            countryMatches.push(country);
-            break;
-          }
-        }
-      }
-      
-      // Look for unusual routing paths (3+ different countries)
-      const uniqueCountries = [...new Set(countryMatches)];
-      if (uniqueCountries.length >= 3) {
-        results.findings.push({
-          text: 'Unusual Geographic Routing',
-          description: `This email passed through servers in ${uniqueCountries.length} different countries (${uniqueCountries.join(', ')}), which is unusual for legitimate email and could indicate a suspicious relay path.`,
-          severity: 'medium'
-        });
-      }
-    } catch (error) {
-      console.error('Error checking geographic routing:', error);
     }
+    
+    return uniqueFindings;
   }
   
   _calculateRiskScore(results) {

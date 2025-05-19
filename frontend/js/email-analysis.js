@@ -93,9 +93,8 @@ function formatAIResponse(analysisText) {
     .replace(/<p>\s+/g, '<p>')
     // Ensure proper spacing after headings
     .replace(/<\/h([2-6])>\s*</g, '</h$1>\n<')
-    // Clean up any remaining excessive spacing
     .replace(/\n{3,}/g, '\n\n');
-  
+    
   // Wrap the content in a div with styling for better presentation
   return `<div class="ai-analysis-content">${formatted}</div>`;
 }
