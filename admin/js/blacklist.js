@@ -1,6 +1,4 @@
-/**
- * PhishGuard Admin Blacklist Controller
- */
+/*PhishGuard Admin Blacklist Controller*/
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
@@ -17,7 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupRefreshButton();
     setupSearchFunctionality();
     setupBlacklistAnalytics();
-    setupExportButton(); // Add this line to initialize export button
+    setupExportButton(); 
     
     // Load blacklist data
     await loadBlacklist();
@@ -86,12 +84,12 @@ async function loadBlacklist() {
     blacklist.forEach(entry => {
       const tr = document.createElement('tr');
       
-      // URL column (first column) - UPDATED with proper overflow handling
+      // URL column (first column) 
       const urlTd = document.createElement('td');
       urlTd.className = 'url-column';
       const urlDiv = document.createElement('div');
       urlDiv.className = 'url-cell';
-      urlDiv.title = entry.URL; // Add title for tooltip on hover
+      urlDiv.title = entry.URL; 
       urlDiv.textContent = entry.URL || 'Unknown URL';
       urlTd.appendChild(urlDiv);
       tr.appendChild(urlTd);
@@ -119,7 +117,7 @@ async function loadBlacklist() {
       riskTd.appendChild(riskBadge);
       tr.appendChild(riskTd);
       
-      // Added by column - show "System" if is_system flag is true
+      // show "System" if is_system flag is true
       const addedByTd = document.createElement('td');
       if (entry.is_system) {
         // Create a styled badge for system entries
@@ -555,7 +553,7 @@ function filterDomains(searchTerm) {
   
   // Loop through all table rows
   for (let i = 0; i < rows.length; i++) {
-    const urlCell = rows[i].cells[0]; // URL is in first column
+    const urlCell = rows[i].cells[0]; 
     
     if (urlCell) {
       const url = urlCell.textContent.toLowerCase();
@@ -742,7 +740,7 @@ async function loadBlacklistStats(timeframe = 'week', chartType = 'auto') {
     // Format labels based on timeframe
     const formattedLabels = formatLabels(stats.labels, timeframe);
     
-    // Determine if we should use line chart based on type or timeframe
+   
     // If chartType is 'auto', use line for day view and bar for others
     // Otherwise use the explicitly selected chart type
     const useLineChart = chartType === 'line' || (chartType === 'auto' && timeframe === 'day');
@@ -859,7 +857,7 @@ async function loadBlacklistStats(timeframe = 'week', chartType = 'auto') {
     if (blacklistChart) {
       blacklistChart.data = chartConfig.data;
       blacklistChart.options = chartConfig.options;
-      blacklistChart.config.type = chartConfig.type; // Update chart type
+      blacklistChart.config.type = chartConfig.type; 
       blacklistChart.update();
     } else {
       blacklistChart = new Chart(ctx, chartConfig);

@@ -46,9 +46,7 @@ const DOM = {
     }
   },
   
-  /**
-   * Show an alert message
-   */
+  /*Show an alert message*/
   showAlert: (message, type = 'info', selector = '.alert-container') => {
     const container = document.querySelector(selector);
     if (!container) return;
@@ -115,7 +113,7 @@ if (typeof window.Auth === 'undefined') {
 }
 
 // Export utilities to global scope
-window.DOM = DOM; // Auth is already attached to window above
+window.DOM = DOM; 
 
 // Run auth check on all admin pages except login page
 document.addEventListener('DOMContentLoaded', () => {

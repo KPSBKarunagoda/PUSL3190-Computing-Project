@@ -1,7 +1,6 @@
 /**
  * PhishGuard Admin Authentication Handler
- * 
- * Handles login form, session management, and auth protection
+ *  Handles login form, session management, and auth protection
  */
 
 document.addEventListener('DOMContentLoaded', () => {

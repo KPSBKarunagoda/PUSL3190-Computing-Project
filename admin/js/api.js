@@ -77,11 +77,10 @@ async function apiRequest(endpoint, options = {}) {
   }
 }
 
-/**
- * Authentication APIs
- */
+/* Authentication APIs*/
+
 const authAPI = {
-  // Login with email and password - streamlined implementation
+  // Login with email and password 
   login: async (email, password) => {
     try {
       console.log(`Attempting admin login for email: ${email}`);
@@ -137,9 +136,7 @@ const authAPI = {
   }
 };
 
-/**
- * Dashboard APIs
- */
+/* Dashboard APIs*/
 const dashboardAPI = {
   // Get system statistics
   getStats: async () => {
@@ -162,9 +159,8 @@ const dashboardAPI = {
   }
 };
 
-/**
- * Whitelist/Blacklist APIs
- */
+/* Whitelist/Blacklist APIs*/
+
 const listsAPI = {
   // Get whitelisted domains
   getWhitelist: async () => {
@@ -282,7 +278,7 @@ const listsAPI = {
     }
   },
   
-  // Add URL to whitelist with specific token (for external components)
+  // Add URL to whitelist with specific token 
   addUrlToWhitelist: async (url, token) => {
     if (!token) {
       // Try to get token from Auth if available
@@ -367,9 +363,7 @@ const listsAPI = {
   }
 };
 
-/**
- * User Management APIs
- */
+/** User Management APIs*/
 const usersAPI = {
   // Get all users
   getUsers: async () => {
@@ -445,9 +439,7 @@ const usersAPI = {
   }
 };
 
-/**
- * Votes API
- */
+/* Votes API*/
 const votesAPI = {
   /**
    * Get raw votes directly from database
@@ -634,9 +626,7 @@ const votesAPI = {
   }
 };
 
-/**
- * Analytics APIs
- */
+/* Analytics APIs*/
 const analyticsAPI = {
   // Get activity analytics data
   getActivityAnalytics: async (params = {}) => {
@@ -667,9 +657,7 @@ const analyticsAPI = {
   }
 };
 
-/**
- * Contact API
- */
+/* Contact API*/
 const api = {
   // Generic fetch with auth
   async fetch(endpoint, options = {}) {
@@ -745,9 +733,7 @@ const api = {
   }
 };
 
-/**
- * Helper function to extract domain from URL
- */
+/*Helper function to extract domain from URL*/
 function extractDomain(url) {
   try {
     const parsed = new URL(url);
