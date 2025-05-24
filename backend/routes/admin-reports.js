@@ -1,7 +1,31 @@
+/**
+ * Admin Reports API Router
+ * 
+ * This module implements secure admin-only routes for managing user-submitted phishing reports.
+ * All routes are protected by admin authentication middleware to ensure only authorized
+ * administrators can access these endpoints.
+ * 
+ * Features:
+ * - Retrieval of all user-submitted reports with reporter information
+ * - Statistical analysis of report data (total, pending, resolved, daily counts)
+ * - Individual report management by ID
+ * - Status updates for reports (marking as Pending or Resolved)
+ * 
+ * Security:
+ * - All routes enforce admin-level permissions
+ * - Uses LEFT JOIN to safely handle cases where user data might be missing
+ * - Implements parameterized queries to prevent SQL injection
+ * 
+ * Endpoints:
+ * - GET /api/admin/reports - List all reports with reporter details
+ * - GET /api/admin/reports/stats - Get statistical overview of reporting activity
+ * - GET /api/admin/reports/:id - Get detailed information about a specific report
+ * - PUT /api/admin/reports/:id - Update a report's status (resolution workflow)
+ */
 const express = require('express');
 const router = express.Router();
 const adminAuth = require('../middleware/admin-auth');
-
+//
 module.exports = function(dbConnection) {
     // Apply admin authentication middleware to all routes
     router.use(adminAuth(dbConnection));

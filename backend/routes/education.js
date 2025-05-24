@@ -1,3 +1,6 @@
+/**
+ * Educational Content API Router - Provides security key analysis findings, phishing indicators,
+ */
 const express = require('express');
 const auth = require('../middleware/auth');
 const EducationService = require('../services/education-service');
@@ -35,7 +38,7 @@ module.exports = function(db) {
       // Check if we have a blacklist ID and can retrieve stored findings
       if (analysisResult.blacklist_id) {
         try {
-          // Try to get stored findings for this blacklisted URL - use db parameter instead of req.db
+          // Try to get stored findings for this blacklisted URL 
           const [eduContent] = await db.execute(
             'SELECT KeyFeatures FROM EducationalContent WHERE BlacklistID = ? ORDER BY CreatedDate DESC LIMIT 1',
             [analysisResult.blacklist_id]

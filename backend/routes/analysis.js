@@ -1,3 +1,7 @@
+/**
+ * Email Header Analysis API Router - Provides endpoints for analyzing email headers to detect phishing
+ * with robust error handling for large payloads, timeouts, and edge cases.
+ */
 const express = require('express');
 const router = express.Router();
 const emailHeaderAnalyzer = require('../services/email-header-analyzer');

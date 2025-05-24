@@ -1,3 +1,7 @@
+/**
+ * Authentication API Router - Provides secure endpoints for user registration, login, admin authentication,
+ * password reset, and token verification with rate limiting and proper security measures.
+ */
 const express = require('express');
 const router = express.Router();
 const AuthService = require('../services/auth');
@@ -62,10 +66,10 @@ module.exports = function(dbConnection) {
     // Admin login route - completely separated from regular login
     router.post('/admin-login', async (req, res) => {
         try {
-            // Get admin credentials from request body
+            // Get admin credentials 
             const { username, email, password } = req.body;
             
-            // Check what credential was provided (username or email)
+            // Check what credential was provided
             let user = null;
             
             if (!password) {
@@ -77,7 +81,7 @@ module.exports = function(dbConnection) {
                 console.log('Admin login attempt with email:', email);
                 user = await authService.authenticateByEmail(email, password);
             } 
-            // Otherwise try with username if provided
+            
             else if (username) {
                 console.log('Admin login attempt with username:', username);
                 user = await authService.authenticateUser(username, password);
@@ -146,7 +150,7 @@ module.exports = function(dbConnection) {
             console.log('Registration request received:', { 
                 name, 
                 email: email.substring(0, 3) + '***' + email.substring(email.indexOf('@')) 
-                // Don't log the password at all
+                
             });
             
             // Validate required fields
@@ -179,11 +183,11 @@ module.exports = function(dbConnection) {
             // Create the user
             const user = await authService.createUser(name, email, password);
             
-            // Log minimal user info without sensitive data
+            
             console.log('User created:', { 
                 id: user.UserID,
                 role: user.Role
-                // Don't log username or email - these are PII
+                
             });
             
             // Generate token for auto-login
@@ -226,8 +230,7 @@ module.exports = function(dbConnection) {
             try {
                 await authService.sendPasswordResetEmail(email);
                 
-                // For security reasons, always return the same response
-                // regardless of whether the email exists or not
+                
                 res.status(200).json({ 
                     message: 'If your email is registered, you will receive reset instructions.' 
                 });

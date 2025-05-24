@@ -1,3 +1,7 @@
+/**
+ * URL Analysis Router - Handles URL submission, threat detection, whitelist/blacklist checking,
+ * and automated phishing site categorization with educational content generation.
+ */
 const express = require('express');
 const { spawn } = require('child_process');
 const ActivityService = require('../services/activity-service');
@@ -174,7 +178,7 @@ module.exports = function(db) {
         });
       }
       
-      // Now db is properly defined from the function parameter
+      
       // Check whitelist first
       const [whitelisted] = await db.execute(
         'SELECT * FROM Whitelist WHERE URL = ? OR Domain = ?',
@@ -274,7 +278,7 @@ module.exports = function(db) {
                 ml_confidence: response.ml_confidence
               });
               
-              // Auto-blacklist phishing sites - lowered threshold from 60 to 55 to match displayed risk score
+              // Auto-blacklist phishing sites -
               if (response.is_phishing || response.risk_score >= 55) {  
                 console.log(`Auto-blacklisting detected phishing URL: ${url} (risk: ${response.risk_score})`);
                 
@@ -321,9 +325,9 @@ module.exports = function(db) {
                     // Use the exact risk score from analysis instead of enforcing minimum threshold
                     const riskLevel = response.risk_score !== undefined ? 
                                     Math.round(response.risk_score) : 
-                                    90; // Default to high risk
+                                    90; 
                     
-                    // Add to blacklist - using the full URL as detected, not just domain
+                    // Add to blacklist - using the full URL as detected, 
                     try {
                       const [result] = await db.execute(
                         'INSERT INTO Blacklist (URL, RiskLevel, AddedDate, AddedBy, is_system) VALUES (?, ?, NOW(), ?, 1)',
@@ -340,7 +344,7 @@ module.exports = function(db) {
                       );
                       
                       if (verifyInsert && verifyInsert.length > 0) {
-                        // Add blacklisting info to response
+                        
                         response.blacklisted = true;
                         response.blacklist_id = insertId;
                         response.message = 'URL has been automatically blacklisted for your protection';

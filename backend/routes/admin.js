@@ -1,3 +1,7 @@
+/**
+ * Admin API Router - Provides secure endpoints for admin authentication, user management,
+ * system statistics, and analytics for the PhishGuard administration dashboard.
+ */
 const express = require('express');
 const router = express.Router();
 const adminAuth = require('../middleware/admin-auth');

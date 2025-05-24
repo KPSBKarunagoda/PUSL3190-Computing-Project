@@ -1,3 +1,8 @@
+/**
+ * Contact Form API Router - Handles user contact submissions with database storage,
+ * and provides admin endpoints for managing, tracking, and responding to user inquiries
+ * with status updates and admin notes functionality.
+ */
 const express = require('express');
 const router = express.Router();
 
