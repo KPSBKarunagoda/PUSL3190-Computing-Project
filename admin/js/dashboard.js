@@ -1,6 +1,5 @@
-/**
- * PhishGuard Admin Dashboard Controller
- */
+/* PhishGuard Admin Dashboard Controller*/
+
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     // Remove redundant Auth fallback - rely on common.js
@@ -105,7 +104,7 @@ async function loadSystemStats() {
         });
       }
       
-      // Update element if we found its type and corresponding data exists
+      // Update element if  its type and corresponding data exists
       if (statType && statKeyMap[statType] && stats[statKeyMap[statType]] !== undefined) {
         element.textContent = stats[statKeyMap[statType]].toLocaleString();
       } else {
@@ -142,9 +141,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Analytics variables
 let activityChart = null;
 
-/**
- * Initialize activity analytics components
- */
+/* Initialize activity analytics components*/
+
 function initActivityAnalytics() {
   // Get filter elements
   const dateRangeFilter = document.getElementById('date-range');
@@ -177,9 +175,8 @@ function initActivityAnalytics() {
   loadActivityData();
 }
 
-/**
- * Load activity analytics data
- */
+/*Load activity analytics data*/
+
 async function loadActivityData() {
   // Show loading state
   const loader = document.getElementById('analytics-loader');
@@ -201,7 +198,7 @@ async function loadActivityData() {
     // Update chart
     renderActivityChart(data, chartType);
     
-    // NEW: Sync the total activities with total scans display
+    // Sync the total activities with total scans display
     syncScansWithActivities(data.totalActivities);
     
   } catch (error) {
@@ -224,9 +221,8 @@ async function loadActivityData() {
   }
 }
 
-/**
- * Update summary statistics
- */
+/* Update summary statistics*/
+
 function updateSummaryStats(data) {
   document.getElementById('total-activities').textContent = data.totalActivities || 0;
   document.getElementById('high-risk-count').textContent = data.highRiskCount || 0;
@@ -234,9 +230,7 @@ function updateSummaryStats(data) {
   document.getElementById('low-risk-count').textContent = data.lowRiskCount || 0;
 }
 
-/**
- * NEW: Function to sync scans count with total activities
- */
+
 function syncScansWithActivities(totalActivities) {
   // Update the scans count to match total activities
   const scansElement = document.getElementById('scans-count');
@@ -246,9 +240,7 @@ function syncScansWithActivities(totalActivities) {
   }
 }
 
-/**
- * Render activity chart
- */
+/* Render activity chart*/
 function renderActivityChart(data, chartType) {
   const ctx = document.getElementById('activity-chart');
   if (!ctx) return;

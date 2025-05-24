@@ -509,8 +509,8 @@ function showUserModal(userId = null) {
     // Hide delete button in add mode
     if (deleteBtn) {
       deleteBtn.style.display = 'none';
-      deleteBtn.disabled = false; // Reset the disabled state
-      deleteBtn.classList.remove('btn-disabled'); // Remove the disabled styling
+      deleteBtn.disabled = false; 
+      deleteBtn.classList.remove('btn-disabled'); 
     }
     
     // Show password fields in add mode

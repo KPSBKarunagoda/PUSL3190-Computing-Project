@@ -3,7 +3,7 @@
  * Updated to use consistent terminology (Positive/Negative)
  */
 
-// Define functions first before they're called
+// Define functions 
 function setupVoteActions() {
   // Set up search functionality
   const searchInput = document.getElementById('vote-search');
@@ -349,7 +349,7 @@ async function loadVoteStats() {
     if (stats.recentActivity && Array.isArray(stats.recentActivity)) {
       console.log('Recent activity data:', stats.recentActivity);
       
-      // Try to find today's entry, handling different possible date formats
+      // handling different possible date formats
       const todayEntry = stats.recentActivity.find(item => {
         // Handle different date formats that might come from the API
         const itemDate = item.date ? item.date.split('T')[0] : null;

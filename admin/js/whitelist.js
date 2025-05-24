@@ -1,6 +1,4 @@
-/**
- * PhishGuard Admin Whitelist Controller
- */
+/*PhishGuard Admin Whitelist Controller*/
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
@@ -16,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupAddForm();
     setupRefreshButton();
     setupSearchFunctionality();
-    setupExportButton(); // Add this line to initialize the export button
+    setupExportButton(); 
     
     // Load whitelist data
     await loadWhitelist();
@@ -296,7 +294,7 @@ function filterDomains(searchTerm) {
   
   // Loop through all table rows
   for (let i = 0; i < rows.length; i++) {
-    const domainCell = rows[i].cells[0]; // Assuming domain is in first column
+    const domainCell = rows[i].cells[0]; 
     
     if (domainCell) {
       const domain = domainCell.textContent.toLowerCase();

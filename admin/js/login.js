@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btnText) btnText.style.display = 'none';
       if (btnLoader) btnLoader.style.display = 'inline-block';
 
-      // Call the login API - ADDED ADMIN-SPECIFIC ENDPOINT
+      // Call the login API - ADMIN-SPECIFIC ENDPOINT
       const response = await fetch('http://localhost:3000/api/admin/login', {
         method: 'POST',
         headers: {
