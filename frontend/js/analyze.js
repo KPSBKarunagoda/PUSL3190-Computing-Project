@@ -1,3 +1,7 @@
+/**
+ * URL Analysis Module - Handles URL submission, phishing detection API requests,
+ * and visualization of key analysis results with risk scoring.
+ */
 document.addEventListener('DOMContentLoaded', function() {
   // Check auth status on page load
   const token = localStorage.getItem('phishguardToken');
@@ -96,9 +100,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const riskScore = result.risk_score || 0;
     let riskLevel, riskClass, riskIconClass, riskMessage;
     
-    // Fix the risk level determination logic
-    // Ensure risk score properly maps to risk level messages
-    // Updated risk level thresholds
+ 
+    //  risk level thresholds
     if (riskScore >= 70) {
       riskLevel = 'High Risk Detected';
       riskClass = 'result-danger';
@@ -131,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function displayKeyFindings(container, result, url) {
     try {
-      container.innerHTML = ''; // Clear container
+      container.innerHTML = ''; 
       
       // Get findings from result or fetch them if needed
       let findings = result.findings || [];

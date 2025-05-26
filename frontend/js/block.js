@@ -1,3 +1,7 @@
+/**
+ * Blocking Page Controller - Handles blocked URL display, risk visualization, 
+ * security findings presentation, and user navigation options for PhishGuard's protection interface.
+ */
 document.addEventListener('DOMContentLoaded', function() {
   // Get URL parameters
   const urlParams = new URLSearchParams(window.location.search);

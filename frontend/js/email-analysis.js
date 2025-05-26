@@ -1,4 +1,7 @@
-// Email Analysis script
+/**
+ * Email Analysis Formatter - Processes AI-generated security analysis of email headers, converting raw text to 
+ * structured HTML with proper formatting, risk highlighting, and markup.
+ */
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize any additional email analysis functionality here
 });
@@ -37,7 +40,7 @@ function formatAIResponse(analysisText) {
     // Fix multiple consecutive newlines
     .replace(/\n{3,}/g, '\n\n');
     
-  // Fix spacing issues by normalizing whitespace between sections
+  
   // 1. Remove excessive blank lines between sections and list items
   formatted = formatted.replace(/(<\/h[2-6]>)\s*\n+\s*/g, '$1\n');
   formatted = formatted.replace(/(<\/p>)\s*\n+\s*/g, '$1\n');
@@ -59,8 +62,8 @@ function formatAIResponse(analysisText) {
   // 5. Ensure proper spacing in nested HTML elements
   formatted = formatted.replace(/>(\s*\n+\s*)</g, '>\n<');
   
-  // UPDATED: Only highlight specific risk assessment terms in a classification context
-  // instead of applying colors to common words throughout the document
+  // Only highlight specific risk assessment terms in a classification context
+  
   formatted = formatted
     // Look for assessment context like "This email is [classification]"
     .replace(/This email is\s+(\bphishing\b)/gi, 'This email is <span class="risk-high">phishing</span>')

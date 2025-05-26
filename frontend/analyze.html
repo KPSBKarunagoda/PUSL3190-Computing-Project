@@ -1,3 +1,7 @@
+<!-- 
+  URL Analysis Interface - Provides a user-friendly pagefor submitting and analyzing URLs for 
+  phishing detection, with interactive risk visualization and detailed security key findings display.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -767,7 +771,7 @@
       font-size: 0.95rem;
     }
 
-    /* Action Buttons Enhancement */
+    /* Action Buttons */
     .action-buttons {
       display: flex;
       gap: 15px;
@@ -1085,9 +1089,9 @@
       </a>
     </div>
     
-    <!-- Analysis Card - Enhanced and Expanded -->
+    <!-- Analysis Card -->
     <div class="analysis-card">
-      <!-- Input Section - Enhanced -->
+      <!-- Input Section -->
       <div class="card-section input-section" id="analysis-input">
         <h2><i class="fas fa-shield-alt"></i> Check Any URL for Security Threats</h2>
         <p>Enter a website address below to analyze it for potential phishing indicators, malware, and other security risks. Our advanced detection system will evaluate the URL's safety using multiple security checks.</p>
@@ -1139,7 +1143,7 @@
         </div>
             
         <div class="card-section">
-          <!-- Removed the score-interpretation div here -->
+          
           
           <!-- New Risk Summary Section -->
           <div id="risk-summary" class="risk-summary risk-summary-safe">
@@ -1175,14 +1179,14 @@
             <p id="recommendation-text">View the detailed report for more information.</p>
           </div>
           
-          <!-- URL Structure Breakdown - MOVED HERE -->
+          <!-- URL Structure Breakdown -->
           <div class="url-structure">
             <div class="url-structure-header">
               <i class="fas fa-link"></i>
               <h4>URL Structure Breakdown</h4>
             </div>
             <div class="url-structure-content" id="url-structure-content">
-              <!-- Will be populated by JavaScript -->
+              
             </div>
           </div>
           
@@ -1285,9 +1289,6 @@
       const analyzedUrl = document.getElementById('analyzed-url');
       const scoreBar = document.getElementById('score-bar');
       const riskScoreValue = document.getElementById('risk-score-value');
-      // Remove references to the elements we've deleted
-      // const resultInterpretation = document.getElementById('result-interpretation');
-      // const resultDescription = document.getElementById('result-description');
       const recommendationText = document.getElementById('recommendation-text');
       const findingsCards = document.getElementById('findings-cards');
       const newAnalysisButton = document.getElementById('new-analysis');
@@ -1378,10 +1379,6 @@
           resultIconContainer.className = 'result-icon-container icon-danger';
           resultTitle.textContent = 'Phishing Detected!';
           resultTitle.style.color = '#f44336';
-          // Remove references to deleted elements
-          // resultInterpretation.textContent = 'High Risk Detected';
-          // resultInterpretation.style.color = '#f44336';
-          // resultDescription.textContent = 'This URL shows multiple characteristics associated with phishing websites.';
           recommendationText.textContent = 'We strongly recommend avoiding this website.';
           animateScoreBar(score, '#f44336');
         } else if (isMediumRisk || mlPrediction === 1) {
@@ -1389,10 +1386,7 @@
           resultIconContainer.className = 'result-icon-container icon-warning';
           resultTitle.textContent = 'Caution Advised';
           resultTitle.style.color = '#ff9800';
-          // Remove references to deleted elements
-          // resultInterpretation.textContent = 'Suspicious URL';
-          // resultInterpretation.style.color = '#ff9800';
-          // resultDescription.textContent = 'This URL has some suspicious characteristics that warrant caution.';
+          
           recommendationText.textContent = 'Exercise caution if you choose to visit this website.';
           animateScoreBar(score, '#ff9800');
         } else {
@@ -1400,10 +1394,7 @@
           resultIconContainer.className = 'result-icon-container icon-safe';
           resultTitle.textContent = 'Likely Safe';
           resultTitle.style.color = '#4caf50';
-          // Remove references to deleted elements
-          // resultInterpretation.textContent = 'Low Risk';
-          // resultInterpretation.style.color = '#4caf50';
-          // resultDescription.textContent = 'No major phishing indicators were detected for this URL.';
+          
           recommendationText.textContent = 'This URL appears to be legitimate based on our analysis.';
           animateScoreBar(score, '#4caf50');
         }
@@ -1433,7 +1424,7 @@
           summaryContent.textContent = 'Our analysis indicates this URL is likely safe. No significant security concerns were detected, though we always recommend practicing standard online security measures.';
         }
         
-        // Generate key findings with a more robust approach
+        // Generate key findings 
         displayKeyFindings(findingsCards, result, url);
         
         // Store complete analysis data for the details page

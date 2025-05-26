@@ -1,5 +1,6 @@
 /**
- * PhishGuard User Reports Management
+ * User Reports Management Module - Handles fetching, displaying, and managing user-submitted phishing reports in user dashboard
+ * with authentication, interactive details viewing, and report deletion functionality.
  */
 document.addEventListener('DOMContentLoaded', async () => {
   // Check authentication
@@ -9,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
   
-  // UI References
+  // UI 
   const reportsLoader = document.getElementById('reports-loader');
   const reportsTable = document.getElementById('reports-table');
   const reportsTableBody = document.getElementById('reports-table-body');
@@ -33,9 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initial load of reports
   await loadUserReports();
   
-  /**
-   * Create confirmation modal for delete actions
-   */
+  
   function createConfirmationModal() {
     const modal = document.createElement('div');
     modal.id = 'confirm-delete-modal';
@@ -274,7 +273,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const reportDate = new Date(report.ReportDate);
     const formattedDate = reportDate.toLocaleDateString() + ' ' + reportDate.toLocaleTimeString();
     
-    // Create details HTML - Remove the Report ID field
+    // Create details HTML 
     modalBody.innerHTML = `
       <div class="report-details">
         <div class="label">URL:</div>

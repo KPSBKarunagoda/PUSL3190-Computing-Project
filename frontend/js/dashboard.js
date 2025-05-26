@@ -1,7 +1,10 @@
+/**
+ * PhishGuard User Dashboard Controller - Manages user dashboard statistics, activity history, timeframe filtering and security metrics visualization.
+ */
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Dashboard.js loaded and running');
   
-  // CHECKED: Already using correct user token keys
+  
   // Check if user is logged in - USING USER-SPECIFIC TOKEN
   const token = localStorage.getItem('phishguardToken');
   
@@ -35,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeCarousel();
   initializeSecurityScore();
   
-  // Initialize clear history button if present
+  // Initialize clear history button
   const clearHistoryBtn = document.getElementById('clear-history-btn');
   if (clearHistoryBtn) {
     clearHistoryBtn.addEventListener('click', clearUserActivity);
@@ -49,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Update the timeframe indicator with initial value
   updateTimeframeIndicator(currentTimeframe);
   
-  // Set up filter button click handlers - FIXED to ensure single initialization
+  // Set up filter button click handlers 
   setupFilterButtons(currentTimeframe);
   
   // Initialize activity and stats with default timeframe
@@ -57,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadUserStatistics(currentTimeframe);
 });
 
-// New function to centralize filter button setup
+// function to centralize filter button setup
 function setupFilterButtons(defaultTimeframe) {
   console.log('Setting up filter buttons with default timeframe:', defaultTimeframe);
   const filterButtons = document.querySelectorAll('.filter-btn');
@@ -108,7 +111,7 @@ function setupFilterButtons(defaultTimeframe) {
   });
 }
 
-// Fixed function to update the timeframe indicator text
+// function to update the timeframe indicator text
 function updateTimeframeIndicator(timeframe) {
   console.log('Updating timeframe indicator to:', timeframe);
   const timeframeIndicator = document.getElementById('stats-timeframe');
@@ -355,7 +358,7 @@ async function clearUserActivity() {
 // Initialize security score features (in case they're needed)
 function initializeSecurityScore() {
   // This function is kept empty as it's handled in the HTML inline script
-  // We leave it here for completeness and in case we want to move the code here later
+  // left completeness and in case we want to move the code here later
 }
 
 // Initialize carousel if it exists on the page

@@ -1,4 +1,4 @@
-// Enhanced caching system for background.js
+// caching system for background.js
 const analyzedURLs = {}; // In-memory cache
 const CACHE_EXPIRY = 15 * 60 * 1000; // 15 minutes cache lifetime
 
@@ -895,8 +895,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           // Get the user's feedback type based on vote
           let userFeedbackType = null;
           if (data.userVote) {
-            // Look up the user's current prediction from storage
-            // (temporary fix - we would need to store this on the server long-term)
             const existingVoteData = voteCounts[message.url];
             if (existingVoteData && existingVoteData.userVote) {
               userFeedbackType = existingVoteData.userVote; // This should be 'agree' or 'disagree'
@@ -1047,7 +1045,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 message.userVote === 'Negative' ? 'Phishing' : null
     };
     
-    // Actually send the processed message
+    //send the processed message
     safelySendMessage(response);
   }
 
