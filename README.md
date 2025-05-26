@@ -43,16 +43,17 @@ PhishGuard employs a sophisticated four-step analysis process:
 
 1. **Blacklist Check**: Compares against known malicious domains
 2. **Whitelist Check**: Validates against trusted domains
-3. **Safe Browsing API**: Queries Google's Safe Browsing database
-4. **ML Analysis**: Extracts 50+ features from the URL and applies our trained machine learning model
+3. **ML and Heuristics Analysis**: Extracts 80+ features from the URL and applies our trained machine learning model and the Heuristic analysis to give a final result
 
 The risk score is calculated using a weighted algorithm that considers:
 - Domain age and registration information
 - URL structure and characteristics
+- HTTPS validity
 - SSL/TLS certificate status
 - Redirect patterns
 - Google indexing status
 - IP-based hosting detection
+- Use of Unusual characters.
 - And many other security indicators
 
 ## 🚀 Getting Started
@@ -122,7 +123,8 @@ cp .env.example .env
 
 6. Start the server
 ```
-npm start
+cd backend
+npm start or node server.js
 ```
 
 ### Chrome Extension Installation
@@ -146,7 +148,7 @@ PhishGuard includes a comprehensive admin dashboard to manage:
 ## 🔗 Contact
 
 KPSB Karuangoda-10899226 <br>
-10899226@students.plymouth.ac.uk
+10899226@students.plymouth.ac.uk <br>
 sanuthkarunagoda@gmail.com
 
 
@@ -154,6 +156,7 @@ sanuthkarunagoda@gmail.com
 
 Linkdin - https://www.linkedin.com/in/sanuth-karunagoda/ <br>
 Instagram - https://www.instagram.com/sanuth.karunagoda?igsh=eWRjd2lzaTNheDlv&utm_source=qr
+GitHub - https://github.com/KPSBKarunagoda
 
 ---
 
