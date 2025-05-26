@@ -146,8 +146,12 @@ class IPReputationService:
         if not listed_blocklists:
             return 0
             
-        # Base score depends on number of listings
-        base_score = min(30, len(listed_blocklists) * 10)
+        # Start with a base score of 25 for any blocklist match
+        base_score = 25
+        
+        # Add 10 points for each additional blocklist beyond the first
+        if len(listed_blocklists) > 1:
+            base_score += min(25, (len(listed_blocklists) - 1) * 10)
         
         # Premium blocklists have higher weight
         premium_weight = 0
@@ -157,5 +161,5 @@ class IPReputationService:
             elif 'barracuda' in bl:
                 premium_weight += 8   # Barracuda is also quite reliable
                 
-        # Cap the total score at 50
-        return min(50, base_score + premium_weight)
+        # Cap the total score at 60
+        return min(60, base_score + premium_weight)

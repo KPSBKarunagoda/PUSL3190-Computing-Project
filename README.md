@@ -160,4 +160,4 @@ GitHub - https://github.com/KPSBKarunagoda
 
 ---
 
-
+Note that the this project havent been hosted, so it has to be run locally.
