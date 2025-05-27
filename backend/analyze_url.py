@@ -1,3 +1,6 @@
+"""URL Analysis Engine - Core component that performs multi-layered phishing detection by combining
+ML models, reputation services, blocklist checks and security features extraction."""
+
 import sys
 import json
 import os

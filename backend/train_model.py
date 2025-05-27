@@ -1,3 +1,5 @@
+"""ML Training script - Trains, optimizes and exports phishing detection models with GPU acceleration
+support, feature importance analysis, and automatic hyperparameter tuning."""
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
